@@ -1,0 +1,23 @@
+{
+  "name": "voyager-monorepo",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend/web",
+    "frontend/mobile",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=backend",
+    "dev:web": "npm run dev --workspace=frontend/web",
+    "dev:worker": "npm run worker --workspace=backend",
+    "build": "npm run build --workspaces --if-present",
+    "build:shared": "npm run build --workspace=@voyager/shared",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

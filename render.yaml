@@ -1,0 +1,132 @@
+# ============================================
+# RENDER.COM DEPLOYMENT CONFIGURATION
+# Infrastructure as Code (IaC)
+# ============================================
+
+services:
+  # ============================================
+  # API SERVICE (Backend HTTP)
+  # ============================================
+  - type: web
+    name: voyager-api
+    runtime: docker
+    repo: https://github.com/YOUR_USERNAME/voyager.git
+    region: oregon
+    plan: starter
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    autoDeploy: true
+    
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: MONGO_URI
+        fromDatabase:
+          name: voyager-mongodb
+          property: connectionString
+      - key: REDIS_HOST
+        fromService:
+          name: voyager-redis
+          type: redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: voyager-redis
+          type: redis
+          property: port
+      - key: CLERK_SECRET_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: CLERK_WEBHOOK_SIGNING_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+    
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetCPUPercent: 70
+
+  # ============================================
+  # WORKER SERVICE (Background Jobs)
+  # ============================================
+  - type: worker
+    name: voyager-worker
+    runtime: docker
+    repo: https://github.com/YOUR_USERNAME/voyager.git
+    region: oregon
+    plan: starter
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: node dist/worker.js
+    autoDeploy: true
+    
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        fromDatabase:
+          name: voyager-mongodb
+          property: connectionString
+      - key: REDIS_HOST
+        fromService:
+          name: voyager-redis
+          type: redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: voyager-redis
+          type: redis
+          property: port
+      - key: OPENAI_API_KEY
+        sync: false
+    
+    scaling:
+      minInstances: 1
+      maxInstances: 5
+      targetMemoryPercent: 80
+
+  # ============================================
+  # FRONTEND (Static Site)
+  # ============================================
+  - type: web
+    name: voyager-web
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./frontend/web/dist
+    pullRequestPreviewsEnabled: true
+    
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: voyager-api
+          type: web
+          property: url
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: VITE_MAPBOX_ACCESS_TOKEN
+        sync: false
+    
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+# ============================================
+# DATABASES
+# ============================================
+databases:
+  - name: voyager-mongodb
+    databaseName: voyager_db
+    user: voyager_admin
+    plan: starter
+    region: oregon
+
+  - name: voyager-redis
+    plan: starter
+    region: oregon
+    maxmemoryPolicy: allkeys-lru

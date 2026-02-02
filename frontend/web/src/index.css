@@ -1,0 +1,381 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Accent Colors */
+    --accent-blue: 199 79% 52%;
+    --accent-blue-hover: 199 94% 41%;
+    --accent-blue-active: 199 100% 37%;
+    --accent-red: 0 79% 59%;
+
+    /* Backgrounds */
+    --background: 0 0% 100%;
+    --background-secondary: 40 20% 98%;
+    --background-card: 0 0% 100%;
+
+    /* Foreground/Text */
+    --foreground: 20 12% 19%;
+    --foreground-secondary: 20 12% 19% / 0.6;
+    --muted-foreground: 160 3% 60%;
+
+    /* UI Elements */
+    --border: 40 14% 93%;
+    --input: 40 14% 93%;
+    --ring: 199 79% 52%;
+
+    --ui-hover: 30 6% 20% / 0.08;
+    --ui-active: 30 6% 20% / 0.16;
+
+    /* Icons */
+    --icon: 30 6% 20% / 0.8;
+    --icon-secondary: 30 6% 20% / 0.4;
+
+    /* Scrollbar */
+    --scrollbar-thumb: 30 6% 20% / 0.16;
+    --scrollbar-thumb-hover: 40 3% 67%;
+
+    /* Component Colors */
+    --card: 0 0% 100%;
+    --card-foreground: 20 12% 19%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 12% 19%;
+    --primary: 199 79% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 20% 96%;
+    --secondary-foreground: 20 12% 19%;
+    --muted: 40 20% 96%;
+    --accent: 40 20% 96%;
+    --accent-foreground: 20 12% 19%;
+    --destructive: 0 79% 59%;
+    --destructive-foreground: 0 0% 100%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-background: 40 20% 98%;
+    --sidebar-foreground: 20 12% 19%;
+    --sidebar-primary: 199 79% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 20% 96%;
+    --sidebar-accent-foreground: 20 12% 19%;
+    --sidebar-border: 40 14% 93%;
+    --sidebar-ring: 199 79% 52%;
+
+    /* Tag Colors */
+    --tag-gray: 0 0% 92%;
+    --tag-gray-text: 0 0% 7%;
+    --tag-brown: 0 0% 81%;
+    --tag-brown-text: 25 100% 17%;
+    --tag-orange: 35 100% 80%;
+    --tag-orange-text: 27 100% 39%;
+    --tag-yellow: 60 100% 92%;
+    --tag-yellow-text: 27 100% 57%;
+    --tag-green: 148 81% 91%;
+    --tag-green-text: 120 100% 27%;
+    --tag-blue: 200 100% 94%;
+    --tag-blue-text: 195 100% 50%;
+    --tag-purple: 260 100% 95%;
+    --tag-purple-text: 266 100% 60%;
+    --tag-pink: 340 100% 97%;
+    --tag-pink-text: 324 100% 50%;
+    --tag-red: 355 70% 91%;
+    --tag-red-text: 354 100% 27%;
+
+    /* Callout Colors */
+    --callout-gray: 210 7% 89%;
+    --callout-green: 134 41% 88%;
+    --callout-blue: 211 100% 90%;
+    --callout-yellow: 60 100% 92%;
+    --callout-orange: 35 100% 80%;
+    --callout-red: 355 70% 91%;
+    --callout-purple: 263 48% 80%;
+    --callout-pink: 330 100% 90%;
+
+    /* Code */
+    --code-inline-text: 0 64% 43%;
+    --code-inline-bg: 270 2% 89%;
+  }
+
+  .dark {
+    /* Accent Colors */
+    --accent-blue: 199 79% 52%;
+    --accent-blue-hover: 199 94% 41%;
+    --accent-blue-active: 199 100% 37%;
+    --accent-red: 0 79% 59%;
+
+    /* Backgrounds */
+    --background: 0 0% 5%;
+    --background-secondary: 0 0% 0%;
+    --background-card: 0 0% 0%;
+
+    /* Foreground/Text */
+    --foreground: 0 0% 100%;
+    --foreground-secondary: 0 0% 89%;
+    --muted-foreground: 160 2% 60%;
+
+    /* UI Elements */
+    --border: 0 0% 14% / 0.7;
+    --input: 0 0% 14% / 0.7;
+    --ring: 199 79% 52%;
+
+    --ui-hover: 180 1% 22% / 0.3;
+    --ui-active: 180 1% 22% / 0.4;
+
+    /* Icons */
+    --icon: 0 0% 89%;
+    --icon-secondary: 0 0% 83% / 0.64;
+
+    /* Scrollbar */
+    --scrollbar-thumb: 0 0% 9%;
+    --scrollbar-thumb-hover: 0 0% 13%;
+
+    /* Component Colors */
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 199 79% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 14%;
+    --accent: 0 0% 14%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 79% 59%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 199 79% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 10%;
+    --sidebar-ring: 199 79% 52%;
+    --sidebar: 0 0% 6%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 14.9%;
+    --sidebar-accent: 0 0% 14.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
+
+    /* Tag Colors - Dark Mode */
+    --tag-gray: 0 0% 50% / 0.5;
+    --tag-gray-text: 0 0% 100%;
+    --tag-brown: 20 43% 22%;
+    --tag-brown-text: 0 0% 100%;
+    --tag-orange: 36 100% 50% / 0.58;
+    --tag-orange-text: 0 0% 100%;
+    --tag-yellow: 45 100% 36%;
+    --tag-yellow-text: 0 0% 100%;
+    --tag-green: 120 44% 35%;
+    --tag-green-text: 0 0% 100%;
+    --tag-blue: 204 100% 29% / 0.71;
+    --tag-blue-text: 0 0% 100%;
+    --tag-purple: 267 50% 39% / 0.74;
+    --tag-purple-text: 0 0% 100%;
+    --tag-pink: 330 79% 60% / 0.5;
+    --tag-pink-text: 0 0% 100%;
+    --tag-red: 0 72% 28%;
+    --tag-red-text: 0 0% 100%;
+
+    /* Callout Colors - Dark Mode */
+    --callout-gray: 0 0% 50% / 0.3;
+    --callout-green: 120 47% 34% / 0.39;
+    --callout-blue: 204 100% 29% / 0.52;
+    --callout-yellow: 45 100% 36% / 0.45;
+    --callout-orange: 36 100% 50% / 0.32;
+    --callout-red: 0 72% 28% / 0.62;
+    --callout-purple: 267 50% 39% / 0.35;
+    --callout-pink: 330 79% 60% / 0.3;
+
+    /* Code */
+    --code-inline-text: 120 35% 64%;
+    --code-inline-bg: 0 0% 0%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--scrollbar-thumb));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--scrollbar-thumb-hover));
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .glass {
+    @apply bg-background/80 backdrop-blur-lg;
+  }
+
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-lg border border-border/50;
+  }
+
+  .gradient-text {
+    background: linear-gradient(
+      to right,
+      hsl(var(--primary)),
+      hsl(var(--accent-blue))
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hover-lift {
+    @apply transition-transform duration-300 hover:-translate-y-1;
+  }
+
+  .accent-glow {
+    box-shadow: 0 0 40px -10px hsl(var(--primary) / 0.5);
+  }
+}
+
+/* Animation keyframes */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px -5px hsl(var(--primary) / 0.5);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+/* Stagger children animations */
+.stagger-children > * {
+  opacity: 0;
+  animation: slide-up 0.5s ease-out forwards;
+}
+
+.stagger-children > *:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.stagger-children > *:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.stagger-children > *:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.stagger-children > *:nth-child(4) {
+  animation-delay: 0.4s;
+}
+.stagger-children > *:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+/* Shake animation for error states */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-4px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Success checkmark animation */
+@keyframes checkmark-draw {
+  0% {
+    stroke-dashoffset: 50;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-checkmark {
+  animation: checkmark-draw 0.4s ease-out forwards;
+}

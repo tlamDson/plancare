@@ -1,0 +1,134 @@
+# ============================================
+# Voyager Local Development Environment
+# Services: MongoDB, Redis, API, Worker
+# ============================================
+
+services:
+  # ============================================
+  # MONGODB - Primary Database
+  # ============================================
+  mongodb:
+    image: mongo:7.0
+    container_name: voyager-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: voyager_admin
+      MONGO_INITDB_ROOT_PASSWORD: dev_password_change_in_prod
+      MONGO_INITDB_DATABASE: voyager_db
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - voyager-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # REDIS - Queue & Cache
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: voyager-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass dev_redis_password
+    volumes:
+      - redis_data:/data
+    networks:
+      - voyager-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "dev_redis_password", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # API - Backend HTTP Server
+  # ============================================
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: development
+    container_name: voyager-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      MONGO_URI: "${MONGO_URI}"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: dev_redis_password
+      CLERK_PUBLISHABLE_KEY: "${CLERK_PUBLISHABLE_KEY:-}"
+      CLERK_SECRET_KEY: "${CLERK_SECRET_KEY}"
+      CLERK_WEBHOOK_SIGNING_SECRET: "${CLERK_WEBHOOK_SIGNING_SECRET}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+    volumes:
+      - ./backend/src:/app/backend/src
+      - ./packages/shared/src:/app/packages/shared/src
+      - /app/node_modules
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - voyager-network
+    command: sh -c "npm run build -w packages/shared && npm run dev -w backend"
+
+  # ============================================
+  # WORKER - Background Job Processor
+  # ============================================
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: development
+    container_name: voyager-worker
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      MONGO_URI: "${MONGO_URI}"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: dev_redis_password
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      CLERK_SECRET_KEY: "${CLERK_SECRET_KEY}"
+      CLERK_WEBHOOK_SIGNING_SECRET: "${CLERK_WEBHOOK_SIGNING_SECRET}"
+
+    volumes:
+      - ./backend/src:/app/backend/src
+      - ./packages/shared/src:/app/packages/shared/src
+      - /app/node_modules
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - voyager-network
+    command: sh -c "npm run build -w packages/shared && npm run worker -w backend"
+
+# ============================================
+# VOLUMES - Persistent Data
+# ============================================
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ============================================
+# NETWORKS
+# ============================================
+networks:
+  voyager-network:
+    driver: bridge

@@ -1,0 +1,96 @@
+# ============================================
+# RAILWAY DEPLOYMENT CONFIGURATION
+# Infrastructure as Code (IaC)
+# ============================================
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "backend/Dockerfile"
+
+# ============================================
+# API SERVICE
+# ============================================
+[[services]]
+name = "voyager-api"
+dockerfile = "backend/Dockerfile"
+target = "production"
+
+[services.build]
+watchPatterns = ["backend/**"]
+
+[services.deploy]
+startCommand = "node dist/index.js"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[services.healthcheck]
+path = "/health"
+initialDelaySeconds = 10
+periodSeconds = 30
+timeoutSeconds = 5
+
+[services.resources]
+memory = 512
+cpu = 0.5
+
+[[services.ports]]
+port = 3000
+protocol = "http"
+
+# ============================================
+# WORKER SERVICE
+# ============================================
+[[services]]
+name = "voyager-worker"
+dockerfile = "backend/Dockerfile"
+target = "production"
+
+[services.build]
+watchPatterns = ["backend/**"]
+
+[services.deploy]
+startCommand = "node dist/worker.js"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[services.resources]
+memory = 512
+cpu = 0.5
+replicas = 1
+
+# Auto-scale based on queue depth
+[services.scaling]
+minReplicas = 1
+maxReplicas = 5
+targetCPUPercent = 70
+
+# ============================================
+# REDIS (Cache & Queue)
+# ============================================
+[[services]]
+name = "voyager-redis"
+image = "redis:7-alpine"
+
+[[services.ports]]
+port = 6379
+protocol = "tcp"
+
+[services.resources]
+memory = 256
+cpu = 0.25
+
+# ============================================
+# MONGODB (Database)
+# ============================================
+# Note: Railway provides MongoDB as a plugin
+# Configure via Railway UI or use MongoDB Atlas
+
+# ============================================
+# ENVIRONMENT VARIABLES
+# (Set via Railway UI or CLI)
+# ============================================
+# MONGO_URI=<from_railway_plugin>
+# REDIS_URL=<auto_injected>
+# CLERK_SECRET_KEY=<from_vault>
+# CLERK_WEBHOOK_SIGNING_SECRET=<from_vault>
+# OPENAI_API_KEY=<from_vault>
