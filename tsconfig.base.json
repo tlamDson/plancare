@@ -12,8 +12,8 @@
     "declarationMap": true,
     "baseUrl": ".",
     "paths": {
-      "@voyager/shared": ["packages/shared/src/index.ts"],
-      "@voyager/shared/*": ["packages/shared/src/*"]
+      "@travelplan/shared": ["packages/shared/src/index.ts"],
+      "@travelplan/shared/*": ["packages/shared/src/*"]
     }
   }
 }

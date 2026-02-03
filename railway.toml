@@ -11,7 +11,7 @@ dockerfilePath = "backend/Dockerfile"
 # API SERVICE
 # ============================================
 [[services]]
-name = "voyager-api"
+name = "travelplan-api"
 dockerfile = "backend/Dockerfile"
 target = "production"
 
@@ -41,7 +41,7 @@ protocol = "http"
 # WORKER SERVICE
 # ============================================
 [[services]]
-name = "voyager-worker"
+name = "travelplan-worker"
 dockerfile = "backend/Dockerfile"
 target = "production"
 
@@ -68,7 +68,7 @@ targetCPUPercent = 70
 # REDIS (Cache & Queue)
 # ============================================
 [[services]]
-name = "voyager-redis"
+name = "travelplan-redis"
 image = "redis:7-alpine"
 
 [[services.ports]]

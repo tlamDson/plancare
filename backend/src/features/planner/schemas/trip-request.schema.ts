@@ -1,6 +1,6 @@
 import { z } from "zod";
-export { TripPreferencesSchema } from "@voyager/shared";
-export type { TripPreferences } from "@voyager/shared";
+export { TripPreferencesSchema } from "@travelplan/shared";
+export type { TripPreferences } from "@travelplan/shared";
 
 // ============================================
 // TRIP STATUS QUERY SCHEMA

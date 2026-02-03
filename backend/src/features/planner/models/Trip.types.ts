@@ -1,5 +1,5 @@
 import { Document, Types } from "mongoose";
-import type { TripStatus as SharedTripStatus } from "@voyager/shared";
+import type { TripStatus as SharedTripStatus } from "@travelplan/shared";
 
 export type TripStatus = SharedTripStatus;
 

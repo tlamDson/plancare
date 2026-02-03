@@ -41,7 +41,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-query": "^5.90.16",
     "@tanstack/react-query-devtools": "^5.91.2",
-    "@voyager/shared": "*",
+    "@travelplan/shared": "*",
     "axios": "^1.7.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

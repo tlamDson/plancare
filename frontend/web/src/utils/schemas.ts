@@ -7,9 +7,8 @@
  * FAILURE: If safeParse fails, log error and render DataError component
  */
 
-import { TripPreferencesSchema, TripStatusValues } from "@voyager/shared";
+import { TripPreferencesSchema, TripStatusValues } from "@travelplan/shared";
 import { z } from "zod";
-
 // ============================================
 // COMMON SCHEMAS
 // ============================================

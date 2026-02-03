@@ -67,7 +67,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <Link to="/dashboard" className="font-bold text-lg">
-            Voyager
+            TravelPlan
           </Link>
           <ThemeToggle />
         </div>
@@ -92,7 +92,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* Sidebar header */}
           <div className="flex items-center justify-between px-4 h-14 border-b">
             <Link to="/dashboard" className="font-bold text-lg">
-              Voyager
+              TravelPlan
             </Link>
             <Button
               variant="ghost"

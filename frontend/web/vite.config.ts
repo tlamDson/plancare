@@ -6,39 +6,18 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: [
-      { find: "@", replacement: path.resolve(__dirname, "./src") },
-      {
-        find: "@voyager/shared",
-        replacement: path.resolve(
-          __dirname,
-          "../../packages/shared/src/index.ts",
-        ),
-      },
-      {
-        find: /^@voyager\/shared\//,
-        replacement: `${path.resolve(
-          __dirname,
-          "../../packages/shared/src",
-        )}/`,
-      },
-      // Workaround: some packages import internal React subpaths like
-      // 'react/jsx-runtime' which may not be resolved correctly in some
-      // environments. Explicitly alias them to the installed package files.
-      {
-        find: "react/jsx-runtime",
-        replacement: path.resolve(
-          __dirname,
-          "./node_modules/react/jsx-runtime.js",
-        ),
-      },
-      {
-        find: "react/jsx-dev-runtime",
-        replacement: path.resolve(
-          __dirname,
-          "./node_modules/react/jsx-dev-runtime.js",
-        ),
-      },
-    ],
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      // Let Vite resolve @travelplan/shared via node_modules (workspace symlink)
+      // No manual alias needed - npm workspaces handles it
+      "react/jsx-runtime": path.resolve(
+        __dirname,
+        "./node_modules/react/jsx-runtime.js",
+      ),
+      "react/jsx-dev-runtime": path.resolve(
+        __dirname,
+        "./node_modules/react/jsx-dev-runtime.js",
+      ),
+    },
   },
 });

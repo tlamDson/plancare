@@ -7,7 +7,7 @@ import {
   ICityStop,
   ITrip,
 } from "./Trip.types";
-import { TripStatusValues } from "@voyager/shared";
+import { TripStatusValues } from "@travelplan/shared";
 import { attachTripMethods } from "./Trip.methods";
 
 export type { ITrip } from "./Trip.types";

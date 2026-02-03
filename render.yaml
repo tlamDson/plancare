@@ -8,9 +8,9 @@ services:
   # API SERVICE (Backend HTTP)
   # ============================================
   - type: web
-    name: voyager-api
+    name: travelplan-api
     runtime: docker
-    repo: https://github.com/YOUR_USERNAME/voyager.git
+    repo: https://github.com/YOUR_USERNAME/TravelPlan.git
     region: oregon
     plan: starter
     branch: main
@@ -18,7 +18,7 @@ services:
     dockerContext: ./backend
     healthCheckPath: /health
     autoDeploy: true
-    
+
     envVars:
       - key: NODE_ENV
         value: production
@@ -26,25 +26,25 @@ services:
         value: 3000
       - key: MONGO_URI
         fromDatabase:
-          name: voyager-mongodb
+          name: travelplan-mongodb
           property: connectionString
       - key: REDIS_HOST
         fromService:
-          name: voyager-redis
+          name: travelplan-redis
           type: redis
           property: host
       - key: REDIS_PORT
         fromService:
-          name: voyager-redis
+          name: travelplan-redis
           type: redis
           property: port
       - key: CLERK_SECRET_KEY
-        sync: false  # Set manually in Render dashboard
+        sync: false # Set manually in Render dashboard
       - key: CLERK_WEBHOOK_SIGNING_SECRET
         sync: false
       - key: OPENAI_API_KEY
         sync: false
-    
+
     scaling:
       minInstances: 1
       maxInstances: 3
@@ -54,9 +54,9 @@ services:
   # WORKER SERVICE (Background Jobs)
   # ============================================
   - type: worker
-    name: voyager-worker
+    name: travelplan-worker
     runtime: docker
-    repo: https://github.com/YOUR_USERNAME/voyager.git
+    repo: https://github.com/YOUR_USERNAME/TravelPlan.git
     region: oregon
     plan: starter
     branch: main
@@ -64,27 +64,27 @@ services:
     dockerContext: ./backend
     dockerCommand: node dist/worker.js
     autoDeploy: true
-    
+
     envVars:
       - key: NODE_ENV
         value: production
       - key: MONGO_URI
         fromDatabase:
-          name: voyager-mongodb
+          name: travelplan-mongodb
           property: connectionString
       - key: REDIS_HOST
         fromService:
-          name: voyager-redis
+          name: travelplan-redis
           type: redis
           property: host
       - key: REDIS_PORT
         fromService:
-          name: voyager-redis
+          name: travelplan-redis
           type: redis
           property: port
       - key: OPENAI_API_KEY
         sync: false
-    
+
     scaling:
       minInstances: 1
       maxInstances: 5
@@ -94,23 +94,23 @@ services:
   # FRONTEND (Static Site)
   # ============================================
   - type: web
-    name: voyager-web
+    name: travelplan-web
     runtime: static
     buildCommand: npm install && npm run build
     staticPublishPath: ./frontend/web/dist
     pullRequestPreviewsEnabled: true
-    
+
     envVars:
       - key: VITE_API_URL
         fromService:
-          name: voyager-api
+          name: travelplan-api
           type: web
           property: url
       - key: VITE_CLERK_PUBLISHABLE_KEY
         sync: false
       - key: VITE_MAPBOX_ACCESS_TOKEN
         sync: false
-    
+
     routes:
       - type: rewrite
         source: /*
@@ -120,13 +120,13 @@ services:
 # DATABASES
 # ============================================
 databases:
-  - name: voyager-mongodb
-    databaseName: voyager_db
-    user: voyager_admin
+  - name: travelplan-mongodb
+    databaseName: travel_plan_db
+    user: travelplan_admin
     plan: starter
     region: oregon
 
-  - name: voyager-redis
+  - name: travelplan-redis
     plan: starter
     region: oregon
     maxmemoryPolicy: allkeys-lru

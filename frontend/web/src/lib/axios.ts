@@ -3,7 +3,7 @@
  *
  * Section 4.2: Secrets Management
  * - Uses import.meta.env (NOT process.env)
- * - Frontend only talks to Voyager Backend
+ * - Frontend only talks to TravelPlan Backend
  */
 
 import axios, { AxiosError, type AxiosResponse } from "axios";

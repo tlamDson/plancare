@@ -48,8 +48,14 @@ const app: Express = express();
 // ============================================
 
 //1. CORS - Allow cross-origin request
-app.use(cors());
-
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Must match your frontend EXACTLY
+    credentials: true, // Required for Clerk / Auth headers
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  }),
+);
 //2. Webhook routes - BEFORE express.json() for signature verification
 app.use(
   "/api/webhooks",
@@ -69,7 +75,7 @@ app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 5.5 Welcome root endpoint
 app.get("/", (req: Request, res: Response) => {
-  res.json({ message: "Voyager API is live and connected to Atlas!" });
+  res.json({ message: "TravelPlan API is live and connected to Atlas!" });
 });
 
 // 6. API Routes
@@ -86,12 +92,13 @@ app.get("/health", (req: Request, res: Response) => {
 app.get("/ready", async (req: Request, res: Response) => {
   try {
     // Check MongoDB
-    const mongoStatus = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
-    
+    const mongoStatus =
+      mongoose.connection.readyState === 1 ? "connected" : "disconnected";
+
     // Check Redis (import redisConnection from queue.ts)
     const { redisConnection } = await import("./lib/queue");
     await redisConnection.ping();
-    
+
     if (mongoStatus !== "connected") {
       return res.status(503).json({
         status: "not_ready",
@@ -100,7 +107,7 @@ app.get("/ready", async (req: Request, res: Response) => {
         timestamp: new Date(),
       });
     }
-    
+
     res.json({
       status: "ready",
       mongodb: mongoStatus,

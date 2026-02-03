@@ -1,1 +1,1 @@
-export type { TripPreferences } from "../schemas/trip.schema";
+export type { TripPreferences } from "../schemas/trip.schema.js";

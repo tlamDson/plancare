@@ -23,7 +23,9 @@ export const createSession = async (
     res.status(201).json(session);
   } catch (error: any) {
     logger.error({ error }, "Failed to create AI session");
-    res.status(400).json({ message: error.message || "Failed to create session" });
+    res
+      .status(400)
+      .json({ message: error.message || "Failed to create session" });
   }
 };
 
@@ -38,9 +40,15 @@ export const getSession = async (
       return;
     }
 
+    const sessionId = req.params.sessionId;
+    if (!sessionId) {
+      res.status(400).json({ message: "Session ID is required" });
+      return;
+    }
+
     const session = await assistantService.getSession({
       clerkUserId,
-      sessionId: req.params.sessionId,
+      sessionId,
     });
 
     if (!session) {
@@ -51,7 +59,9 @@ export const getSession = async (
     res.json(session);
   } catch (error: any) {
     logger.error({ error }, "Failed to fetch AI session");
-    res.status(500).json({ message: error.message || "Failed to fetch session" });
+    res
+      .status(500)
+      .json({ message: error.message || "Failed to fetch session" });
   }
 };
 
@@ -72,16 +82,24 @@ export const sendMessage = async (
       return;
     }
 
+    const sessionId = req.params.sessionId;
+    if (!sessionId) {
+      res.status(400).json({ message: "Session ID is required" });
+      return;
+    }
+
     const message = await assistantService.addMessage({
       clerkUserId,
-      sessionId: req.params.sessionId,
+      sessionId,
       content,
     });
 
     res.json(message);
   } catch (error: any) {
     logger.error({ error }, "Failed to send AI message");
-    res.status(400).json({ message: error.message || "Failed to send message" });
+    res
+      .status(400)
+      .json({ message: error.message || "Failed to send message" });
   }
 };
 
@@ -102,9 +120,15 @@ export const streamMessage = async (
       return;
     }
 
+    const sessionId = req.params.sessionId;
+    if (!sessionId) {
+      res.status(400).json({ message: "Session ID is required" });
+      return;
+    }
+
     const responseText = await assistantService.streamMessage({
       clerkUserId,
-      sessionId: req.params.sessionId,
+      sessionId,
       content,
     });
 
@@ -114,7 +138,9 @@ export const streamMessage = async (
     res.end();
   } catch (error: any) {
     logger.error({ error }, "Failed to stream AI response");
-    res.status(500).json({ message: error.message || "Failed to stream response" });
+    res
+      .status(500)
+      .json({ message: error.message || "Failed to stream response" });
   }
 };
 
@@ -129,17 +155,25 @@ export const getTripSuggestions = async (
       return;
     }
 
+    const tripId = req.params.tripId;
+    if (!tripId) {
+      res.status(400).json({ message: "Trip ID is required" });
+      return;
+    }
+
     const { type } = req.query;
     const suggestions = await assistantService.getTripSuggestions({
       clerkUserId,
-      tripId: req.params.tripId,
-      type: typeof type === "string" ? type : undefined,
+      tripId,
+      ...(typeof type === "string" ? { type } : {}),
     });
 
     res.json(suggestions);
   } catch (error: any) {
     logger.error({ error }, "Failed to get AI suggestions");
-    res.status(500).json({ message: error.message || "Failed to get suggestions" });
+    res
+      .status(500)
+      .json({ message: error.message || "Failed to get suggestions" });
   }
 };
 
@@ -154,14 +188,22 @@ export const deleteSession = async (
       return;
     }
 
+    const sessionId = req.params.sessionId;
+    if (!sessionId) {
+      res.status(400).json({ message: "Session ID is required" });
+      return;
+    }
+
     await assistantService.deleteSession({
       clerkUserId,
-      sessionId: req.params.sessionId,
+      sessionId,
     });
 
     res.status(204).send();
   } catch (error: any) {
     logger.error({ error }, "Failed to delete AI session");
-    res.status(500).json({ message: error.message || "Failed to delete session" });
+    res
+      .status(500)
+      .json({ message: error.message || "Failed to delete session" });
   }
 };

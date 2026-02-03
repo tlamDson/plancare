@@ -80,7 +80,7 @@ export const getTripById = async (
     }
 
     // Verify ownership
-    if (trip.userId.toString() !== userId) {
+    if (trip.userId !== userId) {
       res.status(403).json({ message: "Forbidden" });
       return;
     }

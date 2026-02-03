@@ -53,10 +53,11 @@ export class AssistantService {
     }
 
     const session = await AISession.create({
-      userId: user._id,
-      tripId: tripId && Types.ObjectId.isValid(tripId)
-        ? new Types.ObjectId(tripId)
-        : undefined,
+      userId: user._id as Types.ObjectId,
+      tripId:
+        tripId && Types.ObjectId.isValid(tripId)
+          ? new Types.ObjectId(tripId)
+          : undefined,
       messages: [],
     });
 
@@ -79,7 +80,7 @@ export class AssistantService {
 
     const session = await AISession.findOne({
       _id: sessionId,
-      userId: user._id,
+      userId: user._id as Types.ObjectId,
     });
 
     return session ? mapSession(session) : null;
@@ -102,7 +103,7 @@ export class AssistantService {
 
     const session = await AISession.findOne({
       _id: sessionId,
-      userId: user._id,
+      userId: user._id as Types.ObjectId,
     });
 
     if (!session) {
@@ -170,7 +171,10 @@ export class AssistantService {
       return;
     }
 
-    await AISession.deleteOne({ _id: sessionId, userId: user._id });
+    await AISession.deleteOne({
+      _id: sessionId,
+      userId: user._id as Types.ObjectId,
+    });
   }
 }
 

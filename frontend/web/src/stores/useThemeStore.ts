@@ -34,7 +34,7 @@ export const useThemeStore = create<ThemeStore>()(
       },
     }),
     {
-      name: "voyager-theme",
+      name: "travelplan-theme",
       onRehydrateStorage: () => (state) => {
         // Apply theme on rehydration
         if (state?.theme) {
