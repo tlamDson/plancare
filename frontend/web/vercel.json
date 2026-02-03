@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd ../.. && npm install && npm run build -w packages/shared && cd frontend/web && npx vite build",
+  "outputDirectory": "dist",
+  "installCommand": "cd ../.. && npm install",
+  "framework": "vite"
+}
