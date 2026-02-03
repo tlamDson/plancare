@@ -51,15 +51,25 @@ export class AssistantService {
     if (!user) {
       throw new Error("User not found");
     }
-
-    const session = await AISession.create({
-      userId: user._id as Types.ObjectId,
-      tripId:
-        tripId && Types.ObjectId.isValid(tripId)
-          ? new Types.ObjectId(tripId)
-          : undefined,
+    // Build session data - only include tripId if valid (avoids exactOptionalPropertyTypes issue)
+    const sessionData: {
+      userId: typeof user._id;
+      messages: {
+        role: "user" | "assistant";
+        content: string;
+        createdAt: Date;
+      }[];
+      tripId?: Types.ObjectId;
+    } = {
+      userId: user._id,
       messages: [],
-    });
+    };
+
+    if (tripId && Types.ObjectId.isValid(tripId)) {
+      sessionData.tripId = new Types.ObjectId(tripId);
+    }
+
+    const session = await AISession.create(sessionData);
 
     return mapSession(session);
   }
@@ -151,8 +161,10 @@ export class AssistantService {
       hotels: ["Boutique stay", "City center hotel", "Cozy guesthouse"],
     };
 
+    const defaultSuggestions = suggestionsByType.activities;
+    const lookupKey = type ?? "activities";
     const suggestions =
-      suggestionsByType[type || "activities"] || suggestionsByType.activities;
+      suggestionsByType[lookupKey] ?? defaultSuggestions ?? [];
 
     return { suggestions };
   }

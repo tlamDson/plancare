@@ -71,7 +71,12 @@ export const getTripById = async (
       return;
     }
 
-    const { tripId } = req.params;
+    const tripId = req.params.tripId;
+    if (!tripId) {
+      res.status(400).json({ message: "Trip ID is required" });
+      return;
+    }
+
     const trip = await plannerService.getTripById(tripId);
 
     if (!trip) {
