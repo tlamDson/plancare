@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd packages/shared && npm install && npm run build && cd ../../frontend/web && npm install && npx vite build",
+  "buildCommand": "cd frontend/web && npx vite build",
   "outputDirectory": "frontend/web/dist",
-  "installCommand": "echo 'Install handled in build'",
+  "installCommand": "npm install",
   "framework": "vite"
 }
