@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,13 +46,13 @@ export function SignUpForm({
     register,
     handleSubmit,
     formState: { errors },
-    watch,
+    control,
   } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpFormSchema),
   });
 
   // Real-time password strength check
-  const watchedPassword = watch("password");
+  const watchedPassword = useWatch({ control, name: "password" });
   useEffect(() => {
     if (watchedPassword) {
       setPasswordStrength(checkPasswordStrength(watchedPassword));

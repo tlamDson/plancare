@@ -3,3 +3,4 @@
  */
 
 export * from "./planner.api";
+export * from "./trips.api";

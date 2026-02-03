@@ -65,11 +65,11 @@ export default function SignInPage() {
   // Redirect if already signed in
   useEffect(() => {
     console.log("[SignIn] Auth state changed:", { isSignedIn, isLoaded });
-    if (isSignedIn) {
+    if (isLoaded && isSignedIn) {
       console.log("[SignIn] User already signed in, redirecting to dashboard");
       navigate("/dashboard");
     }
-  }, [isSignedIn, navigate]);
+  }, [isLoaded, isSignedIn, navigate]);
 
   // Log Clerk loading state
   useEffect(() => {

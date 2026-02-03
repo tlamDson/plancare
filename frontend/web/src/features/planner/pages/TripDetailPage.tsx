@@ -5,7 +5,7 @@
  */
 
 import { useParams } from "react-router-dom";
-import { useTrip } from "@/features/trips/hooks";
+import { useTrip } from "@/features/planner/hooks";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AgentLockBanner } from "../components/AgentLockBanner";
 import { DataError } from "@/components/DataError";

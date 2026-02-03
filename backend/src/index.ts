@@ -8,7 +8,7 @@ import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import connectDB from "./config/db";
-import webhookRoutes from "./routes/webhook.routes";
+import webhookRoutes from "./features/auth/routes";
 import { clerkMiddleware } from "@clerk/express";
 import { logger } from "./lib/logger";
 
@@ -16,6 +16,7 @@ import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
 
 // Feature Routes
+import assistantRoutes from "./features/assistant/routes";
 import plannerRoutes from "./features/planner/routes";
 import userRoutes from "./features/user/routes";
 
@@ -72,6 +73,7 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 // 6. API Routes
+app.use("/api/ai", assistantRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api", plannerRoutes);
 

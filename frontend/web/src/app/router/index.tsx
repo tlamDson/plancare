@@ -32,7 +32,7 @@ const OnBoardingPage = lazy(
 const DashboardPage = lazy(
   () => import("@/features/dashboard/pages/DashboardPage"),
 );
-const TripsPage = lazy(() => import("@/features/trips/pages/TripsPage"));
+const TripsPage = lazy(() => import("@/features/planner/pages/TripsPage"));
 const TripDetailPage = lazy(
   () => import("@/features/planner/pages/TripDetailPage"),
 );

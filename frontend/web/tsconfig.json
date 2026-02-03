@@ -8,7 +8,9 @@
     "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@voyager/shared": ["../../packages/shared/src/index.ts"],
+      "@voyager/shared/*": ["../../packages/shared/src/*"]
     }
   }
 }

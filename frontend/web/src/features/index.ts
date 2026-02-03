@@ -12,11 +12,10 @@
 
 // Re-export feature modules
 export * from "./auth";
-export * from "./trips";
 export * from "./planner";
 export * from "./map";
 export * from "./assistant";
-export * from "./ui";
+export * from "./user";
 
 // Page exports for router (default exports can't be re-exported)
 // Use lazy() imports in router instead

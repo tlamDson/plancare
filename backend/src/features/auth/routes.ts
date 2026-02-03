@@ -1,5 +1,5 @@
 import express, { Router } from "express";
-import { handleClerkWebhook } from "../features/auth/controllers/webhook.controller";
+import { handleClerkWebhook } from "./controllers/webhook.controller";
 
 const router: Router = express.Router();
 //Routes call the sign up function from the controllers

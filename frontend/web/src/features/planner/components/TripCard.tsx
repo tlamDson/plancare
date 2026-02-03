@@ -2,7 +2,7 @@
  * Trip Card Component
  *
  * Feature-specific component (Section 1.1)
- * Lives in features/trips/components, NOT in src/components
+ * Lives in features/planner/components, NOT in src/components
  */
 
 import { Link } from "react-router-dom";

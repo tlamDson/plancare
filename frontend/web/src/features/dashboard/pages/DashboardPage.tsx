@@ -10,8 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { WidgetError } from "@/components/WidgetError";
-import { useTrips } from "@/features/trips/hooks/useTrips";
-import { TripCard } from "@/features/trips/components/TripCard";
+import { useTrips } from "@/features/planner/hooks/useTrips";
+import { TripCard } from "@/features/planner/components/TripCard";
 import { Plus, Plane, Calendar, Map, Loader2 } from "lucide-react";
 
 export default function DashboardPage() {

@@ -7,6 +7,7 @@
  * FAILURE: If safeParse fails, log error and render DataError component
  */
 
+import { TripPreferencesSchema, TripStatusValues } from "@voyager/shared";
 import { z } from "zod";
 
 // ============================================
@@ -89,15 +90,9 @@ export type User = z.infer<typeof userSchema>;
 // TRIP SCHEMAS
 // ============================================
 
-export const tripStatusSchema = z.enum([
-  "DRAFT",
-  "QUEUED",
-  "PROCESSING",
-  "PROCESSING_STEP_1",
-  "PROCESSING_STEP_2",
-  "COMPLETED",
-  "FAILED",
-]);
+export { TripPreferencesSchema };
+
+export const tripStatusSchema = z.enum(TripStatusValues);
 
 export const tripTypeSchema = z.enum(["solo", "family", "friends", "business"]);
 

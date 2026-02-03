@@ -18,8 +18,8 @@ import {
 } from "@/components/ui/select";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { DataError } from "@/components/DataError";
-import { useTrips } from "@/features/trips/hooks/useTrips";
-import { TripCard } from "@/features/trips/components/TripCard";
+import { useTrips } from "@/features/planner/hooks/useTrips";
+import { TripCard } from "@/features/planner/components/TripCard";
 import { Plus, Search, Loader2 } from "lucide-react";
 
 type FilterStatus =
