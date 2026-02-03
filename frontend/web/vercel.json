@@ -2,6 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npx vite build",
   "outputDirectory": "dist",
-  "installCommand": "rm -rf node_modules package-lock.json && npm install",
+  "installCommand": "rm -rf node_modules package-lock.json && npm install --include=dev",
   "framework": "vite"
 }
