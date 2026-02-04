@@ -1,0 +1,211 @@
+﻿
+> web@0.0.0 build
+> npm run build -w @travelplan/shared && tsc -b && vite build
+
+
+> @travelplan/shared@1.0.0 build
+> tsup src/index.ts --format cjs,esm --dts
+
+[34mCLI[39m Building entry: src/index.ts
+[34mCLI[39m Using tsconfig: tsconfig.json
+[34mCLI[39m tsup v8.5.1
+[34mCLI[39m Target: es2020
+[34mCJS[39m Build start
+[34mESM[39m Build start
+node.exe : 
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (:Stri  
+  ng) [], RemoteException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+[43m[30m WARN [39m[49m 
+[33mΓû▓ [43;33m[[43;30mWA
+RNING[43;33m][0m [1mThe 
+condition "types" here will 
+never be used as it comes 
+after both "import" and 
+"require"[0m [package.json]
+
+    package.json:12:6:
+[37m      12 Γöé       
+[32m"types"[37m: 
+"./dist/index.d.ts"
+         Γò╡       
+[32m~~~~~~~[0m
+
+  The "import" condition 
+comes earlier and will be 
+used for all "import" 
+statements:
+
+    package.json:10:6:
+[37m      10 Γöé       
+[32m"import"[37m: 
+"./dist/index.js",
+         Γò╡       
+[32m~~~~~~~~[0m
+
+  The "require" condition 
+comes earlier and will be 
+used for all "require" 
+calls:
+
+    package.json:11:6:
+[37m      11 Γöé       
+[32m"require"[37m: 
+"./dist/index.cjs",
+         Γò╡       
+[32m~~~~~~~~~[0m
+
+
+
+
+[43m[30m WARN [39m[49m 
+[33mΓû▓ [43;33m[[43;30mWA
+RNING[43;33m][0m [1mThe 
+condition "types" here will 
+never be used as it comes 
+after both "import" and 
+"require"[0m [package.json]
+
+    package.json:12:6:
+[37m      12 Γöé       
+[32m"types"[37m: 
+"./dist/index.d.ts"
+         Γò╡       
+[32m~~~~~~~[0m
+
+  The "import" condition 
+comes earlier and will be 
+used for all "import" 
+statements:
+
+    package.json:10:6:
+[37m      10 Γöé       
+[32m"import"[37m: 
+"./dist/index.js",
+         Γò╡       
+[32m~~~~~~~~[0m
+
+  The "require" condition 
+comes earlier and will be 
+used for all "require" 
+calls:
+
+    package.json:11:6:
+[37m      11 Γöé       
+[32m"require"[37m: 
+"./dist/index.cjs",
+         Γò╡       
+[32m~~~~~~~~~[0m
+
+
+
+[32mCJS[39m [1mdist\index.js [22m[32m2.44 KB[39m
+[32mCJS[39m ΓÜí∩╕Å Build success in 23ms
+[32mESM[39m [1mdist\index.mjs [22m[32m1.15 KB[39m
+[32mESM[39m ΓÜí∩╕Å Build success in 23ms
+[34mDTS[39m Build start
+[32mDTS[39m ΓÜí∩╕Å Build success in 471ms
+[32mDTS[39m [1mdist\index.d.ts  [22m[32m1.58 KB[39m
+[32mDTS[39m [1mdist\index.d.mts [22m[32m1.58 KB[39m
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 2993 modules transformed.
+[31mΓ£ù[39m Build failed 
+in 3.18s
+[31merror during build:
+[31msrc/utils/schemas.ts 
+(10:32): "TripStatusValues" 
+is not exported by "../../pa
+ckages/shared/dist/index.js"
+, imported by 
+"src/utils/schemas.ts".[31m
+file: [36mD:/Desktop/Travel
+Plan/frontend/web/src/utils/
+schemas.ts:10:32[31m
+[33m
+ 8:  */
+ 9: 
+10: import { 
+TripPreferencesSchema, 
+TripStatusValues } from 
+"@travelplan/shared";
+                            
+        ^
+11: import { z } from "zod";
+12: // =====================
+=======================
+[31m
+    at getRollupError (file:
+///D:/Desktop/TravelPlan/nod
+e_modules/rollup/dist/es/sha
+red/parseAst.js:402:41)
+    at error (file:///D:/Des
+ktop/TravelPlan/node_modules
+/rollup/dist/es/shared/parse
+Ast.js:398:42)
+    at Module.error (file://
+/D:/Desktop/TravelPlan/node_
+modules/rollup/dist/es/share
+d/node-entry.js:17040:16)
+    at Module.traceVariable 
+(file:///D:/Desktop/TravelPl
+an/node_modules/rollup/dist/
+es/shared/node-entry.js:1745
+2:29)
+    at 
+ModuleScope.findVariable (fi
+le:///D:/Desktop/TravelPlan/
+node_modules/rollup/dist/es/
+shared/node-entry.js:15070:3
+9)
+    at Identifier.bind (file
+:///D:/Desktop/TravelPlan/no
+de_modules/rollup/dist/es/sh
+ared/node-entry.js:5447:40)
+    at CallExpression.bind (
+file:///D:/Desktop/TravelPla
+n/node_modules/rollup/dist/e
+s/shared/node-entry.js:2825:
+28)
+    at CallExpression.bind (
+file:///D:/Desktop/TravelPla
+n/node_modules/rollup/dist/e
+s/shared/node-entry.js:12179
+:15)
+    at 
+VariableDeclarator.bind (fil
+e:///D:/Desktop/TravelPlan/n
+ode_modules/rollup/dist/es/s
+hared/node-entry.js:2829:23)
+    at 
+VariableDeclaration.bind (fi
+le:///D:/Desktop/TravelPlan/
+node_modules/rollup/dist/es/
+shared/node-entry.js:2825:28
+)[39m
+npm error Lifecycle script 
+`build` failed with error:
+npm error code 1
+npm error path D:\Desktop\Tr
+avelPlan\frontend\web
+npm error workspace 
+web@0.0.0
+npm error location D:\Deskto
+p\TravelPlan\frontend\web
+npm error command failed
+npm error command 
+C:\WINDOWS\system32\cmd.exe 
+/d /s /c npm run build -w 
+@travelplan/shared && tsc 
+-b && vite build

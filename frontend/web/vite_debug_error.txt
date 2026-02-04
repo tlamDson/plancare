@@ -1,0 +1,92 @@
+﻿[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 2993 modules transformed.
+node.exe : [31mΓ£ù[39m 
+Build failed in 3.08s
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: ([31m  
+  Γ£ù[39m Build failed i   
+ n 3.08s:String) [], Rem    
+oteException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+[31merror during build:
+[31msrc/utils/schemas.ts 
+(10:32): "TripStatusValues" 
+is not exported by "../../pa
+ckages/shared/dist/index.js"
+, imported by 
+"src/utils/schemas.ts".[31m
+file: [36mD:/Desktop/Travel
+Plan/frontend/web/src/utils/
+schemas.ts:10:32[31m
+[33m
+ 8:  */
+ 9: 
+10: import { 
+TripPreferencesSchema, 
+TripStatusValues } from 
+"@travelplan/shared";
+                            
+        ^
+11: import { z } from "zod";
+12: // =====================
+=======================
+[31m
+    at getRollupError (file:
+///D:/Desktop/TravelPlan/nod
+e_modules/rollup/dist/es/sha
+red/parseAst.js:402:41)
+    at error (file:///D:/Des
+ktop/TravelPlan/node_modules
+/rollup/dist/es/shared/parse
+Ast.js:398:42)
+    at Module.error (file://
+/D:/Desktop/TravelPlan/node_
+modules/rollup/dist/es/share
+d/node-entry.js:17040:16)
+    at Module.traceVariable 
+(file:///D:/Desktop/TravelPl
+an/node_modules/rollup/dist/
+es/shared/node-entry.js:1745
+2:29)
+    at 
+ModuleScope.findVariable (fi
+le:///D:/Desktop/TravelPlan/
+node_modules/rollup/dist/es/
+shared/node-entry.js:15070:3
+9)
+    at Identifier.bind (file
+:///D:/Desktop/TravelPlan/no
+de_modules/rollup/dist/es/sh
+ared/node-entry.js:5447:40)
+    at CallExpression.bind (
+file:///D:/Desktop/TravelPla
+n/node_modules/rollup/dist/e
+s/shared/node-entry.js:2825:
+28)
+    at CallExpression.bind (
+file:///D:/Desktop/TravelPla
+n/node_modules/rollup/dist/e
+s/shared/node-entry.js:12179
+:15)
+    at 
+VariableDeclarator.bind (fil
+e:///D:/Desktop/TravelPlan/n
+ode_modules/rollup/dist/es/s
+hared/node-entry.js:2829:23)
+    at 
+VariableDeclaration.bind (fi
+le:///D:/Desktop/TravelPlan/
+node_modules/rollup/dist/es/
+shared/node-entry.js:2825:28
+)[39m
