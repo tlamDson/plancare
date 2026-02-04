@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "worker": "ts-node-dev --respawn --transpile-only src/worker.ts",
-    "build": "tsc",
+    "build": "npm run build -w @travelplan/shared && tsc",
     "start": "node dist/backend/src/index.js",
     "start:worker": "node dist/backend/src/worker.js",
     "typecheck": "tsc --noEmit",
