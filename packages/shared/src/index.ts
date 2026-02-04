@@ -1,5 +1,5 @@
 // Schemas
-export * from "./schemas/trip.schema.js";
+export * from "./schemas";
 
 // Constants
-export * from "./constants/status.js";
+export * from "./constants";

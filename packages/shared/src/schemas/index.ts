@@ -1,1 +1,1 @@
-export * from "./trip.schema.js";
+export * from "./trip.schema";
