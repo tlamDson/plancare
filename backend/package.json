@@ -14,10 +14,9 @@
     "lint": "echo 'Lint not configured yet'"
   },
   "dependencies": {
-    "@travelplan/shared": "*",
     "@clerk/clerk-react": "^5.59.2",
-    "@clerk/clerk-sdk-node": "^5.1.6",
-    "@clerk/express": "^1.7.60",
+    "@clerk/express": "^1.7.68",
+    "@travelplan/shared": "*",
     "bullmq": "^5.67.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
