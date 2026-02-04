@@ -1,5 +1,5 @@
 // Schemas
-export * from "./schemas";
+export * from "./schemas/index.js";
 
 // Constants
-export * from "./constants";
+export * from "./constants/index.js";
