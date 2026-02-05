@@ -30,6 +30,7 @@ COPY backend/src ./backend/src
 COPY backend/tsconfig.json ./backend/
 COPY packages/shared/src ./packages/shared/src
 COPY packages/shared/tsconfig.json ./packages/shared/
+COPY packages/shared/tsup.config.ts ./packages/shared/
 
 # Build shared package first
 RUN npm run build -w packages/shared
@@ -62,6 +63,7 @@ COPY backend/src ./backend/src
 COPY backend/tsconfig.json ./backend/
 COPY packages/shared/src ./packages/shared/src
 COPY packages/shared/tsconfig.json ./packages/shared/
+COPY packages/shared/tsup.config.ts ./packages/shared/
 
 # Build shared package (required for @travelplan/shared imports)
 RUN npm run build -w packages/shared
