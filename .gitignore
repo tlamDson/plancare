@@ -96,3 +96,5 @@ pino-*.log
 temp/
 tmp/
 *.tmp
+frontend/web/lint_unix.txt
+frontend/web/lint.txt
