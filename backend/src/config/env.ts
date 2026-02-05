@@ -18,4 +18,8 @@ export const env = cleanEnv(process.env, {
   OPENAI_API_KEY: str({ desc: "OpenAI API Key", default: "" }), // Optional for API, required for Worker
   MAPBOX_ACCESS_TOKEN: str({ desc: "Mapbox Access Token", default: "" }), // Week 3
   GOOGLE_PLACES_API_KEY: str({ desc: "Google Places API Key", default: "" }), // Week 3
+  FRONTEND_URL: str({
+    desc: "Frontend URL for CORS",
+    default: "http://localhost:5173",
+  }),
 });

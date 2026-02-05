@@ -11,6 +11,7 @@ import connectDB from "./config/db";
 import webhookRoutes from "./features/auth/routes";
 import { clerkMiddleware } from "@clerk/express";
 import { logger } from "./lib/logger";
+import { env } from "./config/env";
 
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
@@ -50,7 +51,11 @@ const app: Express = express();
 //1. CORS - Allow cross-origin request
 app.use(
   cors({
-    origin: "http://localhost:5173", // Must match your frontend EXACTLY
+    origin: [
+      "http://localhost:5173",
+      "https://plancare-web-omega.vercel.app",
+      env.FRONTEND_URL,
+    ],
     credentials: true, // Required for Clerk / Auth headers
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
