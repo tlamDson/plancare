@@ -62,6 +62,7 @@ export function SignUpForm({
     } else {
       setPasswordStrength(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedPassword, signUpError?.field, onClearError]);
 
   return (
