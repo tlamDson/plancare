@@ -63,7 +63,7 @@ COPY backend/tsconfig.json ./backend/
 COPY packages/shared/src ./packages/shared/src
 COPY packages/shared/tsconfig.json ./packages/shared/
 
-# Build shared package (required for @voyager/shared imports)
+# Build shared package (required for @travelplan/shared imports)
 RUN npm run build -w packages/shared
 
 # Expose port

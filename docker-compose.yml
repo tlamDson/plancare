@@ -1,5 +1,5 @@
 # ============================================
-# Voyager Local Development Environment
+# TravelPlan Local Development Environment
 # Services: MongoDB, Redis, API, Worker
 # ============================================
 
@@ -9,19 +9,19 @@ services:
   # ============================================
   mongodb:
     image: mongo:7.0
-    container_name: voyager-mongodb
+    container_name: travelplan-mongodb
     restart: unless-stopped
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: voyager_admin
+      MONGO_INITDB_ROOT_USERNAME: travelplan_admin
       MONGO_INITDB_ROOT_PASSWORD: dev_password_change_in_prod
-      MONGO_INITDB_DATABASE: voyager_db
+      MONGO_INITDB_DATABASE: travelplan_db
     volumes:
       - mongodb_data:/data/db
       - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     networks:
-      - voyager-network
+      - travelplan-network
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -33,7 +33,7 @@ services:
   # ============================================
   redis:
     image: redis:7-alpine
-    container_name: voyager-redis
+    container_name: travelplan-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -41,7 +41,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - voyager-network
+      - travelplan-network
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "dev_redis_password", "ping"]
       interval: 10s
@@ -56,7 +56,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
       target: development
-    container_name: voyager-api
+    container_name: travelplan-api
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -83,7 +83,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - voyager-network
+      - travelplan-network
     command: sh -c "npm run build -w packages/shared && npm run dev -w backend"
 
   # ============================================
@@ -94,7 +94,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
       target: development
-    container_name: voyager-worker
+    container_name: travelplan-worker
     restart: unless-stopped
     env_file:
       - .env.docker
@@ -118,7 +118,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - voyager-network
+      - travelplan-network
     command: sh -c "npm run build -w packages/shared && npm run worker -w backend"
 
 # ============================================
@@ -134,5 +134,5 @@ volumes:
 # NETWORKS
 # ============================================
 networks:
-  voyager-network:
+  travelplan-network:
     driver: bridge
