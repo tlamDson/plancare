@@ -2,11 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTripWizardStore } from "@/stores/trip-wizard.store";
-useTripWizardStore
+useTripWizardStore;
 const MIN_DESTINATION = 2;
 
 export function StepBasics() {
-  const { data, setData, setTravelers } = ();
+  const { data, setData, setTravelers } = useTripWizardStore();
 
   const destinationError =
     data.destination.trim().length > 0 &&
