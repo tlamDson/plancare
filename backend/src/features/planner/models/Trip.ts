@@ -12,10 +12,6 @@ import { attachTripMethods } from "./Trip.methods";
 
 export type { ITrip } from "./Trip.types";
 
-// ============================================
-// SCHEMA DEFINITIONS
-// ============================================
-
 const BudgetCategorySchema = new Schema<IBudgetCategory>(
   {
     name: { type: String, required: true },
@@ -111,11 +107,6 @@ const CityStopSchema = new Schema<ICityStop>(
   },
   { _id: false },
 );
-
-// ============================================
-// MAIN TRIP SCHEMA
-// ============================================
-
 const TripSchema = new Schema<ITrip>(
   {
     userId: {
@@ -128,7 +119,25 @@ const TripSchema = new Schema<ITrip>(
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
 
-    // Embedded Budget
+    purpose: {
+      type: String,
+      enum: ["leisure", "business", "bleisure", "family_visit", "event"],
+    },
+    groupType: {
+      type: String,
+      enum: ["solo", "couple", "family_kids", "friends", "work"],
+    },
+    priorities: {
+      money: { type: Number, min: 1, max: 10 },
+      comfort: { type: Number, min: 1, max: 10 },
+      unique: { type: Number, min: 1, max: 10 },
+    },
+    mood: {
+      type: String,
+      enum: ["city_break", "beach", "hiking", "foodie", "romantic", "adventure"],
+    },
+    dealBreakers: [String],
+
     budget: {
       type: EmbeddedBudgetSchema,
       required: true,
@@ -140,24 +149,19 @@ const TripSchema = new Schema<ITrip>(
       }),
     },
 
-    // Embedded Itinerary
     itinerary: {
       type: [ItineraryDaySchema],
       default: [],
     },
 
-    // City stops
     cities: [CityStopSchema],
 
-    // Agent Locking
     isAgentProcessing: { type: Boolean, default: false, index: true },
     agentJobId: String,
     agentLockedAt: Date,
 
-    // Optimistic Concurrency Control
     version: { type: Number, default: 1 },
 
-    // Metadata
     status: {
       type: String,
       enum: TripStatusValues as unknown as string[],
@@ -173,35 +177,16 @@ const TripSchema = new Schema<ITrip>(
     optimisticConcurrency: true,
   },
 );
-
-// ============================================
-// INDEXES
-// ============================================
-
-// Compound index for user's trips sorted by date
 TripSchema.index({ userId: 1, startDate: -1 });
 
-// Index for finding trips by status
 TripSchema.index({ userId: 1, status: 1 });
 
-// Index for agent job lookups
 TripSchema.index({ agentJobId: 1 }, { sparse: true });
-
-// ============================================
-// MIDDLEWARE
-// ============================================
-
-// Auto-increment version on save
 TripSchema.pre("save", function () {
   if (this.isModified() && !this.isNew) {
     this.version += 1;
   }
 });
-
-// ============================================
-// STATIC METHODS
-// ============================================
-
 attachTripMethods(TripSchema);
 
 export default mongoose.model<ITrip>("Trip", TripSchema);

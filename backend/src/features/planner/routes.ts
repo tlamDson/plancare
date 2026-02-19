@@ -1,10 +1,14 @@
 import { Router } from "express";
 import {
   generateTrip,
+  getJobStatus,
   getTripById,
   getUserTrips,
+  retryJob,
+  deleteTripById,
 } from "./controllers/planner.controller";
 import { requireUserAuth } from "../../middlewares/auth";
+import { tripCreationLimiter } from "../../middlewares/rate-limiter";
 
 const router = Router();
 
@@ -35,7 +39,7 @@ const router = Router();
  *       401:
  *         description: Unauthorized
  */
-router.post("/trips", requireUserAuth, generateTrip);
+router.post("/trips", requireUserAuth, tripCreationLimiter, generateTrip);
 
 /**
  * @swagger
@@ -86,5 +90,81 @@ router.get("/trips/:tripId", requireUserAuth, getTripById);
  *         description: List of trips
  */
 router.get("/trips", requireUserAuth, getUserTrips);
+
+/**
+ * @swagger
+ * /api/jobs/{jobId}:
+ *   get:
+ *     summary: Get job status
+ *     description: Retrieve job status/progress for polling
+ *     tags: [Jobs]
+ *     security:
+ *       - ClerkAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job status
+ *       404:
+ *         description: Job not found
+ *       403:
+ *         description: Forbidden (not owner)
+ */
+router.get("/jobs/:jobId", requireUserAuth, getJobStatus);
+
+/**
+ * @swagger
+ * /api/jobs/{jobId}/retry:
+ *   post:
+ *     summary: Retry a failed job
+ *     description: Re-queues a failed trip generation job
+ *     tags: [Jobs]
+ *     security:
+ *       - ClerkAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       202:
+ *         description: Retry queued
+ *       400:
+ *         description: Job not failed
+ *       404:
+ *         description: Job not found
+ *       409:
+ *         description: Trip locked
+ */
+router.post("/jobs/:jobId/retry", requireUserAuth, retryJob);
+
+/**
+ * @swagger
+ * /api/trips/{tripId}:
+ *   delete:
+ *     summary: Delete a trip
+ *     tags: [Trips]
+ *     security:
+ *       - ClerkAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: tripId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Trip deleted
+ *       403:
+ *         description: Forbidden (not owner)
+ *       404:
+ *         description: Trip not found
+ */
+router.delete("/trips/:tripId", requireUserAuth, deleteTripById);
 
 export default router;

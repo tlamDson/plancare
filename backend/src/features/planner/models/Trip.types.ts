@@ -76,6 +76,17 @@ export interface ITrip extends Document {
   startDate: Date;
   endDate: Date;
 
+  // Preferences (Wizard inputs)
+  purpose?: "leisure" | "business" | "bleisure" | "family_visit" | "event";
+  groupType?: "solo" | "couple" | "family_kids" | "friends" | "work";
+  priorities?: {
+    money: number;
+    comfort: number;
+    unique: number;
+  };
+  mood?: "city_break" | "beach" | "hiking" | "foodie" | "romantic" | "adventure";
+  dealBreakers?: string[];
+
   // 1. EMBEDDED BUDGET (No separate collection)
   budget: IEmbeddedBudget;
 

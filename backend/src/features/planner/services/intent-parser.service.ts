@@ -1,0 +1,227 @@
+import { z } from "zod";
+import { logger } from "../../../lib/logger";
+
+const TimeSlotSchema = z.object({
+  morning: z.string(),
+  afternoon: z.string(),
+  evening: z.string(),
+});
+
+export const TripIntentsSchema = z.record(z.string(), TimeSlotSchema);
+
+export type TripIntents = z.infer<typeof TripIntentsSchema>;
+
+export class IntentParserService {
+  private extractJson(aiResponse: string): string {
+    const trimmed = aiResponse.trim();
+
+    const fencedJson = trimmed.match(/```json\s*([\s\S]*?)```/i);
+    if (fencedJson?.[1]) {
+      return fencedJson[1].trim();
+    }
+
+    const fenced = trimmed.match(/```([\s\S]*?)```/);
+    if (fenced?.[1]) {
+      return fenced[1].trim();
+    }
+
+    const firstBrace = trimmed.indexOf("{");
+    const lastBrace = trimmed.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      return trimmed.slice(firstBrace, lastBrace + 1);
+    }
+
+    return trimmed;
+  }
+
+  private coerceRoot(raw: unknown): Record<string, unknown> {
+    if (Array.isArray(raw)) {
+      return raw.reduce<Record<string, unknown>>((acc, day, index) => {
+        acc[`day${index + 1}`] = day;
+        return acc;
+      }, {});
+    }
+
+    if (raw && typeof raw === "object") {
+      const obj = raw as Record<string, unknown>;
+      if (obj.itinerary && typeof obj.itinerary === "object") {
+        return obj.itinerary as Record<string, unknown>;
+      }
+      if (obj.days && typeof obj.days === "object") {
+        return obj.days as Record<string, unknown>;
+      }
+      return obj;
+    }
+
+    return {};
+  }
+
+  private normalizeDayKey(key: string): string | null {
+    const normalized = key.trim().toLowerCase();
+    const dayMatch = normalized.match(/^day\s*0*(\d+)$/);
+    if (dayMatch?.[1]) {
+      return `day${Number(dayMatch[1])}`;
+    }
+
+    const numericMatch = normalized.match(/^0*(\d+)$/);
+    if (numericMatch?.[1]) {
+      return `day${Number(numericMatch[1])}`;
+    }
+
+    return null;
+  }
+
+  private normalizeSlotKey(
+    key: string,
+  ): "morning" | "afternoon" | "evening" | null {
+    const normalized = key.trim().toLowerCase();
+
+    if (["morning", "am", "a.m.", "morn"].includes(normalized)) {
+      return "morning";
+    }
+
+    if (["afternoon", "noon", "midday", "pm", "p.m."].includes(normalized)) {
+      return "afternoon";
+    }
+
+    if (["evening", "night", "dinner"].includes(normalized)) {
+      return "evening";
+    }
+
+    return null;
+  }
+
+  private normalizeSlotValue(value: unknown): string | null {
+    if (typeof value === "string") return value.trim();
+
+    if (value && typeof value === "object") {
+      const maybeQuery = (value as { query?: unknown }).query;
+      if (typeof maybeQuery === "string") {
+        return maybeQuery.trim();
+      }
+    }
+
+    if (value === null || value === undefined) return null;
+
+    return String(value);
+  }
+
+  private normalizeSlots(raw: unknown): {
+    morning: string;
+    afternoon: string;
+    evening: string;
+  } {
+    const slots = { morning: "", afternoon: "", evening: "" };
+
+    if (!raw || typeof raw !== "object") return slots;
+
+    for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+      const slotKey = this.normalizeSlotKey(key);
+      if (!slotKey) continue;
+      const slotValue = this.normalizeSlotValue(value);
+      if (slotValue) {
+        slots[slotKey] = slotValue;
+      }
+    }
+
+    return slots;
+  }
+
+  private normalizeIntents(raw: unknown): Record<
+    string,
+    {
+      morning: string;
+      afternoon: string;
+      evening: string;
+    }
+  > {
+    const root = this.coerceRoot(raw);
+    const normalized: Record<
+      string,
+      { morning: string; afternoon: string; evening: string }
+    > = {};
+
+    for (const [key, value] of Object.entries(root)) {
+      const dayKey = this.normalizeDayKey(key);
+      if (!dayKey) continue;
+      const slots = this.normalizeSlots(value);
+      if (slots.morning || slots.afternoon || slots.evening) {
+        normalized[dayKey] = slots;
+      }
+    }
+
+    return normalized;
+  }
+
+  parseIntents(aiResponse: string): TripIntents {
+    const cleaned = this.extractJson(aiResponse);
+    const responsePreview = aiResponse.slice(0, 2000);
+    const responseLength = aiResponse.length;
+
+    logger.info(
+      { responseLength, fullResponse: aiResponse },
+      "📄 Raw AI response received",
+    );
+
+    try {
+      const parsed = JSON.parse(cleaned);
+      logger.info({ parsed }, "✅ JSON parsed successfully");
+
+      const normalized = this.normalizeIntents(parsed);
+      logger.info({ normalized }, "✅ Intents normalized");
+
+      const result = TripIntentsSchema.safeParse(normalized);
+      if (!result.success) {
+        logger.error(
+          {
+            responseLength,
+            responsePreview,
+            zodError: result.error.flatten(),
+            normalized,
+          },
+          "❌ Zod validation failed on normalized intents",
+        );
+        throw new Error("AI returned invalid JSON format");
+      }
+
+      return result.data;
+    } catch (error: any) {
+      logger.error(
+        {
+          responseLength,
+          responsePreview,
+          cleaned,
+          error: error.message,
+          stack: error.stack,
+        },
+        "❌ Failed to parse AI intents",
+      );
+      throw new Error("AI returned invalid JSON format");
+    }
+  }
+
+  flattenIntents(intents: TripIntents): string[] {
+    const all: string[] = [];
+
+    for (const day of Object.keys(intents)) {
+      const slots = intents[day];
+      if (!slots) continue;
+      if (slots.morning) all.push(slots.morning);
+      if (slots.afternoon) all.push(slots.afternoon);
+      if (slots.evening) all.push(slots.evening);
+    }
+
+    return all;
+  }
+
+  isValidIntentFormat(intents: unknown): boolean {
+    try {
+      TripIntentsSchema.parse(intents);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+export const intentParserService = new IntentParserService();

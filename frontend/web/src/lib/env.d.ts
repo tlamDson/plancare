@@ -42,7 +42,7 @@ interface ImportMetaEnv {
 
   // ============================================
   // FORBIDDEN - NEVER ADD THESE:
-  // - VITE_OPENAI_API_KEY
+  // - VITE_GEMINI_API_KEY
   // - VITE_AWS_SECRET_KEY
   // - Any private/secret keys
   // Backend should handle all secret operations

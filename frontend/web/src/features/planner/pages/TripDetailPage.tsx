@@ -4,16 +4,57 @@
  * Main planner view for a single trip
  */
 
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useTrip } from "@/features/planner/hooks";
+import { useJobPoller, useTrip } from "@/features/planner/hooks";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AgentLockBanner } from "../components/AgentLockBanner";
 import { DataError } from "@/components/DataError";
 import { PageLoader } from "@/components/PageLoader";
+import { retryJob } from "../api/jobs.api";
+import { toast } from "sonner";
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const { data: trip, isLoading, error } = useTrip(tripId);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [jobError, setJobError] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  useEffect(() => {
+    if (trip?.isAgentProcessing && trip.agentJobId) {
+      setActiveJobId(trip.agentJobId);
+      setJobError(null);
+    }
+  }, [trip?.agentJobId, trip?.isAgentProcessing]);
+
+  const jobState = useJobPoller({
+    jobId: activeJobId,
+    onComplete: () => {
+      setActiveJobId(null);
+    },
+    onError: (errorMessage) => {
+      setJobError(errorMessage);
+    },
+  });
+
+  const handleRetry = useCallback(async () => {
+    if (!activeJobId) return;
+    setIsRetrying(true);
+    try {
+      const result = await retryJob(activeJobId);
+      setActiveJobId(result.jobId);
+      setJobError(null);
+      toast.success("Retry queued. The agent is working again.");
+    } catch (retryError: any) {
+      const message =
+        retryError?.message || "Failed to retry trip generation";
+      setJobError(message);
+      toast.error(message);
+    } finally {
+      setIsRetrying(false);
+    }
+  }, [activeJobId]);
 
   if (isLoading) {
     return <PageLoader />;
@@ -36,7 +77,17 @@ export default function TripDetailPage() {
         {/* Agent Lock Banner */}
         <AgentLockBanner
           isLocked={trip.isAgentProcessing}
-          currentStep={null} // Would come from job status in real app
+          currentStep={jobState.currentStep}
+          status={
+            trip.isAgentProcessing && jobState.status === "IDLE"
+              ? "PROCESSING"
+              : jobState.status
+          }
+          progress={jobState.progress}
+          error={jobError || jobState.error}
+          jobId={activeJobId}
+          onRetry={activeJobId ? handleRetry : undefined}
+          isRetrying={isRetrying}
         />
 
         {/* Trip Header */}

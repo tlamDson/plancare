@@ -44,37 +44,41 @@ export class TripRepository {
       limit?: number;
       skip?: number;
       sortBy?: string;
-    }
+    },
   ): Promise<ITrip[]> {
     const query: any = { userId };
-    
+
     if (options?.status) {
       query.status = options.status;
     }
-    
+
     let queryBuilder = Trip.find(query);
-    
+
     if (options?.sortBy) {
       queryBuilder = queryBuilder.sort(options.sortBy);
     } else {
       queryBuilder = queryBuilder.sort({ startDate: -1 });
     }
-    
+
     if (options?.skip) {
       queryBuilder = queryBuilder.skip(options.skip);
     }
-    
+
     if (options?.limit) {
       queryBuilder = queryBuilder.limit(options.limit);
     }
-    
+
     return queryBuilder.exec();
   }
 
   /**
    * Acquire agent lock (prevents concurrent modifications)
+   * Only succeeds if the trip is not currently locked.
    */
-  async acquireLock(tripId: string | Types.ObjectId, jobId: string): Promise<ITrip | null> {
+  async acquireLock(
+    tripId: string | Types.ObjectId,
+    jobId: string,
+  ): Promise<ITrip | null> {
     return Trip.findOneAndUpdate(
       { _id: tripId, isAgentProcessing: false },
       {
@@ -82,21 +86,43 @@ export class TripRepository {
         agentJobId: jobId,
         agentLockedAt: new Date(),
       },
-      { new: true }
+      { new: true },
+    ).exec();
+  }
+
+  /**
+   * Force-acquire agent lock — unconditionally overwrites any existing lock.
+   * Use ONLY on the retry path, after confirming the previous job is in 'failed' state.
+   */
+  async forceAcquireLock(
+    tripId: string | Types.ObjectId,
+    jobId: string,
+  ): Promise<ITrip | null> {
+    return Trip.findOneAndUpdate(
+      { _id: tripId }, // no isAgentProcessing guard
+      {
+        isAgentProcessing: true,
+        agentJobId: jobId,
+        agentLockedAt: new Date(),
+      },
+      { new: true },
     ).exec();
   }
 
   /**
    * Release agent lock
    */
-  async releaseLock(tripId: string | Types.ObjectId, jobId: string): Promise<ITrip | null> {
+  async releaseLock(
+    tripId: string | Types.ObjectId,
+    jobId: string,
+  ): Promise<ITrip | null> {
     return Trip.findOneAndUpdate(
       { _id: tripId, agentJobId: jobId },
       {
         isAgentProcessing: false,
         $unset: { agentJobId: 1, agentLockedAt: 1 },
       },
-      { new: true }
+      { new: true },
     ).exec();
   }
 
@@ -105,13 +131,9 @@ export class TripRepository {
    */
   async updateStatus(
     tripId: string | Types.ObjectId,
-    status: ITrip["status"]
+    status: ITrip["status"],
   ): Promise<ITrip | null> {
-    return Trip.findByIdAndUpdate(
-      tripId,
-      { status },
-      { new: true }
-    ).exec();
+    return Trip.findByIdAndUpdate(tripId, { status }, { new: true }).exec();
   }
 
   /**
@@ -120,19 +142,19 @@ export class TripRepository {
   async update(
     tripId: string | Types.ObjectId,
     updateData: Partial<ITrip>,
-    currentVersion?: number
+    currentVersion?: number,
   ): Promise<ITrip | null> {
     const query: any = { _id: tripId };
-    
+
     // Optimistic concurrency control
     if (currentVersion !== undefined) {
       query.version = currentVersion;
     }
-    
+
     return Trip.findOneAndUpdate(
       query,
       { $set: updateData },
-      { new: true }
+      { new: true },
     ).exec();
   }
 
@@ -156,12 +178,22 @@ export class TripRepository {
   }
 
   /**
+   * Count trips by user since a given date
+   */
+  async countByUserIdSince(userId: string, since: Date): Promise<number> {
+    return Trip.countDocuments({
+      userId,
+      createdAt: { $gte: since },
+    }).exec();
+  }
+
+  /**
    * Find stale locked trips (locked for >10 minutes)
    */
   async findStaleLocks(minutes: number = 10): Promise<ITrip[]> {
     const cutoffTime = new Date();
     cutoffTime.setMinutes(cutoffTime.getMinutes() - minutes);
-    
+
     return Trip.find({
       isAgentProcessing: true,
       agentLockedAt: { $lt: cutoffTime },
@@ -174,7 +206,7 @@ export class TripRepository {
   async releaseStaleLocks(minutes: number = 10): Promise<number> {
     const cutoffTime = new Date();
     cutoffTime.setMinutes(cutoffTime.getMinutes() - minutes);
-    
+
     const result = await Trip.updateMany(
       {
         isAgentProcessing: true,
@@ -183,9 +215,9 @@ export class TripRepository {
       {
         isAgentProcessing: false,
         $unset: { agentJobId: 1, agentLockedAt: 1 },
-      }
+      },
     ).exec();
-    
+
     return result.modifiedCount;
   }
 }

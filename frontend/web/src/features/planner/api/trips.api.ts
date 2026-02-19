@@ -52,9 +52,13 @@ export async function getTrips(params?: {
   limit?: number;
 }): Promise<Trip[]> {
   const response = await apiClient.get("/trips", { params });
+  const payload = response.data?.data ?? response.data?.trips ?? response.data;
+  if (!Array.isArray(payload)) {
+    throw new Error("Invalid trips response");
+  }
   return validateArrayPartial(
     tripSchema,
-    response.data.data || response.data,
+    payload,
     "getTrips",
   );
 }
@@ -64,9 +68,13 @@ export async function getTrips(params?: {
  */
 export async function getTrip(tripId: string): Promise<Trip> {
   const response = await apiClient.get(`/trips/${tripId}`);
+  const payload =
+    response.data?.data ??
+    response.data?.trip ??
+    response.data;
   return validateAPI(
     tripSchema,
-    response.data.data || response.data,
+    payload,
     "getTrip",
   );
 }

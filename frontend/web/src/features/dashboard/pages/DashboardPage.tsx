@@ -13,6 +13,7 @@ import { WidgetError } from "@/components/WidgetError";
 import { useTrips } from "@/features/planner/hooks/useTrips";
 import { TripCard } from "@/features/planner/components/TripCard";
 import { Plus, Plane, Calendar, Map, Loader2 } from "lucide-react";
+import { CreateTripDialog } from "@/features/planner/components";
 
 export default function DashboardPage() {
   const { data: trips, isLoading, error } = useTrips();
@@ -36,12 +37,14 @@ export default function DashboardPage() {
               Here's what's happening with your trips
             </p>
           </div>
-          <Button asChild>
-            <Link to="/trips/new">
-              <Plus className="h-4 w-4 mr-2" />
-              Plan New Trip
-            </Link>
-          </Button>
+          <CreateTripDialog
+            trigger={
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Plan New Trip
+              </Button>
+            }
+          />
         </div>
 
         {/* Stats */}
@@ -111,12 +114,14 @@ export default function DashboardPage() {
                   <p className="text-sm text-muted-foreground mb-4">
                     Start planning your first adventure!
                   </p>
-                  <Button asChild>
-                    <Link to="/trips/new">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Trip
-                    </Link>
-                  </Button>
+                  <CreateTripDialog
+                    trigger={
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Trip
+                      </Button>
+                    }
+                  />
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

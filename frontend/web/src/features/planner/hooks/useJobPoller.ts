@@ -54,11 +54,17 @@ export interface JobPollerState {
 
 async function fetchJobStatus(jobId: string): Promise<Job> {
   const response = await apiClient.get(`/jobs/${jobId}`);
-  return validateAPI(
+  const job = validateAPI(
     jobSchema,
     response.data.data || response.data,
     "fetchJobStatus",
   );
+  // 📌 LOG POINT D — every poll tick visible in browser console
+  console.log(
+    `📡 [POLL] jobId=${jobId} | status=${job.status} | progress=${job.progress}% | step=${job.currentStep ?? "-"}`,
+    job,
+  );
+  return job;
 }
 
 // ============================================
@@ -120,10 +126,16 @@ export function useJobPoller({
     if (isMockMode || !job) return;
 
     if (job.status === "COMPLETED") {
+      // 📌 LOG POINT E — final result that becomes the itinerary on the page
+      console.log(
+        "🎉 [JOB COMPLETE] Final result from AI pipeline:",
+        job.result,
+      );
       onComplete?.(job.result);
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.trips.all });
     } else if (job.status === "FAILED") {
+      console.error("❌ [JOB FAILED] Error:", job.error);
       onError?.(job.error || "Job failed");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

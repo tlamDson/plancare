@@ -5,7 +5,6 @@
  */
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +20,7 @@ import { DataError } from "@/components/DataError";
 import { useTrips } from "@/features/planner/hooks/useTrips";
 import { TripCard } from "@/features/planner/components/TripCard";
 import { Plus, Search, Loader2 } from "lucide-react";
+import { CreateTripDialog } from "@/features/planner/components";
 
 type FilterStatus =
   | "all"
@@ -59,12 +59,14 @@ export default function TripsPage() {
               Manage and plan all your adventures
             </p>
           </div>
-          <Button asChild>
-            <Link to="/trips/new">
-              <Plus className="h-4 w-4 mr-2" />
-              New Trip
-            </Link>
-          </Button>
+          <CreateTripDialog
+            trigger={
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Trip
+              </Button>
+            }
+          />
         </div>
 
         {/* Filters */}
@@ -116,12 +118,14 @@ export default function TripsPage() {
                   : "You haven't created any trips yet"}
               </p>
               {!search && statusFilter === "all" && (
-                <Button asChild>
-                  <Link to="/trips/new">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Your First Trip
-                  </Link>
-                </Button>
+                <CreateTripDialog
+                  trigger={
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Your First Trip
+                    </Button>
+                  }
+                />
               )}
             </div>
           ) : (

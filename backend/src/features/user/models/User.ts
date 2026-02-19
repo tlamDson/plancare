@@ -12,6 +12,16 @@ export interface IUser extends Document {
     currency: string;
     budgetRange?: number;
     travelStyle?: string[];
+    travelDNA?: {
+      travelFrequency?: "rarely" | "1-2_trips" | "3-5_trips" | "6+_trips";
+      archetype?: "backpacker" | "luxury" | "digital_nomad" | "family" | "adventure";
+      pacing?: "relaxed" | "balanced" | "packed";
+      constraints?: {
+        accessibility?: string[];
+        dietary?: string[];
+        avoidances?: string[];
+      };
+    };
   };
   notificationPreferences: {
     tripReminders: { type: Boolean; default: true };
@@ -68,6 +78,25 @@ const UserSchema = new Schema<IUser>(
       },
       budgetRange: Number,
       travelStyle: [String],
+      travelDNA: {
+        travelFrequency: {
+          type: String,
+          enum: ["rarely", "1-2_trips", "3-5_trips", "6+_trips"],
+        },
+        archetype: {
+          type: String,
+          enum: ["backpacker", "luxury", "digital_nomad", "family", "adventure"],
+        },
+        pacing: {
+          type: String,
+          enum: ["relaxed", "balanced", "packed"],
+        },
+        constraints: {
+          accessibility: [String],
+          dietary: [String],
+          avoidances: [String],
+        },
+      },
     },
   },
   {

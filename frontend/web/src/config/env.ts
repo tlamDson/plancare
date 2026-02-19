@@ -2,7 +2,7 @@
  * Environment Configuration
  *
  * Section 4.2: Secrets Management
- * - No private keys in frontend (VITE_OPENAI_KEY must NEVER exist)
+ * - No private keys in frontend (VITE_GEMINI_API_KEY must NEVER exist)
  * - Mapbox tokens are public but URL-restricted in dashboard
  */
 

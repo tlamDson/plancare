@@ -35,7 +35,7 @@ export const createQueue = (name: string, options?: QueueOptions) => {
 export const createWorker = (
   name: string,
   processor: any,
-  options?: WorkerOptions,
+  options?: Omit<WorkerOptions, "connection">,
 ) => {
   return new Worker(name, processor, {
     connection,
