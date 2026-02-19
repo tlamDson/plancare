@@ -9,7 +9,9 @@ const startWorker = async () => {
     await mongoose.connect(env.MONGO_URI);
     logger.info("Worker connected to MongoDB");
 
-    const worker = createWorker("trip-generation", tripGeneratorProcessor);
+    const worker = createWorker("trip-generation", tripGeneratorProcessor, {
+      concurrency: 5, // Tier 1: 300 RPM → safely handle 5 simultaneous trips
+    });
     // Logs a success mesesage with the jobId when a job is completed
     worker.on("completed", (job) => {
       logger.info({ jobId: job.id }, "Job completed");
