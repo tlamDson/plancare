@@ -1,18 +1,21 @@
 /**
  * Trip Detail Page
  *
- * Main planner view for a single trip
+ * Main planner view for a single trip — shows a rich itinerary timeline.
  */
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { format } from "date-fns";
 import { useJobPoller, useTrip } from "@/features/planner/hooks";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AgentLockBanner } from "../components/AgentLockBanner";
+import { ItineraryDayCard } from "../components/ItineraryDayCard";
 import { DataError } from "@/components/DataError";
 import { PageLoader } from "@/components/PageLoader";
 import { retryJob } from "../api/jobs.api";
 import { toast } from "sonner";
+import { CalendarDays } from "lucide-react";
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -30,12 +33,8 @@ export default function TripDetailPage() {
 
   const jobState = useJobPoller({
     jobId: activeJobId,
-    onComplete: () => {
-      setActiveJobId(null);
-    },
-    onError: (errorMessage) => {
-      setJobError(errorMessage);
-    },
+    onComplete: () => setActiveJobId(null),
+    onError: (errorMessage) => setJobError(errorMessage),
   });
 
   const handleRetry = useCallback(async () => {
@@ -47,8 +46,7 @@ export default function TripDetailPage() {
       setJobError(null);
       toast.success("Retry queued. The agent is working again.");
     } catch (retryError: any) {
-      const message =
-        retryError?.message || "Failed to retry trip generation";
+      const message = retryError?.message || "Failed to retry trip generation";
       setJobError(message);
       toast.error(message);
     } finally {
@@ -56,9 +54,7 @@ export default function TripDetailPage() {
     }
   }, [activeJobId]);
 
-  if (isLoading) {
-    return <PageLoader />;
-  }
+  if (isLoading) return <PageLoader />;
 
   if (error || !trip) {
     return (
@@ -71,9 +67,22 @@ export default function TripDetailPage() {
     );
   }
 
+  // ── Date range label ──────────────────────────────────────
+  const dateRange = (() => {
+    try {
+      const s = format(new Date(trip.startDate), "MMM d");
+      const e = format(new Date(trip.endDate), "MMM d, yyyy");
+      return `${s} – ${e}`;
+    } catch {
+      return "";
+    }
+  })();
+
+  const totalDays = trip.itinerary.length;
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-3xl">
         {/* Agent Lock Banner */}
         <AgentLockBanner
           isLocked={trip.isAgentProcessing}
@@ -94,53 +103,45 @@ export default function TripDetailPage() {
         <div>
           <h1 className="text-3xl font-bold">{trip.title}</h1>
           {trip.description && (
-            <p className="text-muted-foreground mt-2">{trip.description}</p>
+            <p className="text-muted-foreground mt-1">{trip.description}</p>
+          )}
+          {dateRange && (
+            <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
+              <CalendarDays className="h-4 w-4" aria-hidden="true" />
+              <span>
+                {dateRange}
+                {totalDays > 0 && ` · ${totalDays}-day trip`}
+              </span>
+            </div>
           )}
         </div>
 
-        {/* Trip content would go here */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Itinerary</h2>
-            {trip.itinerary.length === 0 ? (
-              <p className="text-muted-foreground">
-                No itinerary yet. Use AI to generate one!
-              </p>
-            ) : (
-              trip.itinerary.map((day) => (
-                <div key={day.day} className="p-4 border rounded-lg">
-                  <h3 className="font-medium">Day {day.day}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {day.activities.length} activities
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
+        {/* Itinerary */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Itinerary</h2>
 
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Budget</h2>
-            <div className="p-4 border rounded-lg">
-              <div className="flex justify-between mb-2">
-                <span>Total</span>
-                <span className="font-medium">
-                  {trip.budget.currency} {trip.budget.totalSpent} /{" "}
-                  {trip.budget.totalLimit}
-                </span>
-              </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full"
-                  style={{
-                    width: `${Math.min(
-                      (trip.budget.totalSpent / trip.budget.totalLimit) * 100,
-                      100,
-                    )}%`,
-                  }}
-                />
-              </div>
+          {trip.itinerary.length === 0 ? (
+            <div className="rounded-xl border bg-muted/30 p-8 text-center">
+              <CalendarDays className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+              <p className="font-medium mb-1">No itinerary yet</p>
+              <p className="text-sm text-muted-foreground">
+                Use the AI Assistant to generate your trip plan.
+              </p>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              {trip.itinerary
+                .slice()
+                .sort((a, b) => a.day - b.day)
+                .map((day) => (
+                  <ItineraryDayCard
+                    key={day._id ?? day.day}
+                    day={day}
+                    currency={trip.budget.currency}
+                  />
+                ))}
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>
