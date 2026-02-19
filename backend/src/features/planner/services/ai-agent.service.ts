@@ -2,7 +2,10 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { env } from "../../../config/env";
 import { logger } from "../../../lib/logger";
 import type { TripPreferences } from "@travelplan/shared";
-import { buildTripPrompt } from "../prompts/trip-generation.prompt";
+import {
+  buildTripPrompt,
+  TRIP_PLANNER_SYSTEM_INSTRUCTION,
+} from "../prompts/trip-generation.prompt";
 import { intentParserService, type TripIntents } from "./intent-parser.service";
 
 export class AIAgentService {
@@ -16,7 +19,11 @@ export class AIAgentService {
 
     try {
       const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
-      this.model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      this.model = genAI.getGenerativeModel({
+        model: "gemini-2.0-flash",
+        // System instruction = persona + rules (higher compliance than user turn)
+        systemInstruction: TRIP_PLANNER_SYSTEM_INSTRUCTION,
+      });
     } catch (error: any) {
       logger.error(
         { error: error.message },

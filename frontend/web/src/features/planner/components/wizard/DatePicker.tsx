@@ -76,7 +76,11 @@ export function DatePicker({
 
   const handleSelect = (day: Date | undefined) => {
     if (!day) return;
-    onChange(format(day, "yyyy-MM-dd"));
+    const isoDate = format(day, "yyyy-MM-dd");
+    console.log(
+      `[DatePicker] 📅 Date selected — field: "${ariaLabel ?? placeholder}" | value: ${isoDate} (${format(day, "EEEE, MMMM d yyyy")})`,
+    );
+    onChange(isoDate);
     setOpen(false);
   };
 

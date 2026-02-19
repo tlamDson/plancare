@@ -204,53 +204,65 @@ function buildItinerary(
   preferences: TripPreferences,
 ): any[] {
   const itinerary: any[] = [];
-  const startDate = new Date(preferences.startDate);
   let validatedIndex = 0;
 
-  const days = Object.keys(intents).sort();
+  // Compute expected day count from dates (inclusive both ends), same formula as prompt.
+  const startDateStr = new Date(preferences.startDate)
+    .toISOString()
+    .slice(0, 10);
+  const endDateStr = new Date(preferences.endDate).toISOString().slice(0, 10);
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const expectedDays =
+    Math.round(
+      (new Date(endDateStr).getTime() - new Date(startDateStr).getTime()) /
+        msPerDay,
+    ) + 1;
 
-  for (let dayNum = 0; dayNum < days.length; dayNum++) {
-    const dayKey = days[dayNum];
-    if (!dayKey) continue;
+  // Collect what the AI actually returned (sorted: day1, day2, day3…)
+  const aiDayKeys = Object.keys(intents).sort();
 
+  for (let dayNum = 0; dayNum < expectedDays; dayNum++) {
+    const dayKey = aiDayKeys[dayNum] ?? `day${dayNum + 1}`;
     const slots = intents[dayKey];
 
     const activities: IActivity[] = [];
     let order = 0;
 
-    if (!slots) continue;
+    if (slots) {
+      for (const slot of ["morning", "afternoon", "evening"] as const) {
+        const query = slots[slot as keyof typeof slots];
+        if (!query) continue;
 
-    for (const slot of ["morning", "afternoon", "evening"] as const) {
-      const query = slots[slot as keyof typeof slots];
-      if (!query) continue;
+        const place = validated[validatedIndex];
+        validatedIndex = (validatedIndex + 1) % Math.max(validated.length, 1);
 
-      const place = validated[validatedIndex];
-      validatedIndex = (validatedIndex + 1) % validated.length;
-
-      if (place) {
-        activities.push({
-          type: "poi",
-          name: place.name,
-          location: {
-            type: "Point",
-            coordinates: place.coordinates,
-          },
-          time:
-            slot === "morning"
-              ? "09:00"
-              : slot === "afternoon"
-                ? "14:00"
-                : "19:00",
-          status: "planned",
-          order,
-        } as IActivity);
-
-        order++;
+        if (place) {
+          activities.push({
+            type: "poi",
+            name: place.name,
+            location: {
+              type: "Point",
+              coordinates: place.coordinates,
+            },
+            time:
+              slot === "morning"
+                ? "09:00"
+                : slot === "afternoon"
+                  ? "14:00"
+                  : "19:00",
+            status: "planned",
+            order,
+          } as IActivity);
+          order++;
+        }
       }
     }
+    // If slots was undefined (AI skipped this day), activities stays empty [] — a valid day.
 
-    const dayDate = new Date(startDate);
-    dayDate.setDate(startDate.getDate() + dayNum);
+    // UTC date arithmetic — immune to server timezone.
+    const dayDate = new Date(
+      new Date(startDateStr).getTime() + dayNum * msPerDay,
+    );
 
     itinerary.push({
       day: dayNum + 1,

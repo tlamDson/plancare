@@ -31,6 +31,57 @@ export default function TripDetailPage() {
     }
   }, [trip?.agentJobId, trip?.isAgentProcessing]);
 
+  // ── Debug: log trip data whenever it loads or is refreshed ──
+  useEffect(() => {
+    if (!trip) return;
+    console.groupCollapsed(
+      `[TripDetailPage] 🗺️ Trip loaded — "${trip.title}" (${trip._id})`,
+    );
+    console.log(
+      "Status:",
+      trip.status,
+      "| isAgentProcessing:",
+      trip.isAgentProcessing,
+    );
+    console.log("Dates:", trip.startDate, "→", trip.endDate);
+    console.log("Itinerary days:", trip.itinerary.length);
+    trip.itinerary.forEach((day) => {
+      console.groupCollapsed(`  Day ${day.day} — ${day.date}`);
+      day.activities.forEach((a, i) =>
+        console.log(
+          `    [${i + 1}] ${a.time ?? "?:??"} | ${a.type} | ${a.name}`,
+        ),
+      );
+      console.groupEnd();
+    });
+    console.log("Full trip object:", trip);
+    console.groupEnd();
+  }, [trip]);
+
+  // ── Debug: log when AI job finishes and itinerary is ready to render ──
+  useEffect(() => {
+    if (!trip || trip.isAgentProcessing || trip.itinerary.length === 0) return;
+    console.group(
+      `[TripDetailPage] ✅ Itinerary READY — "${trip.title}" | ${trip.itinerary.length} day(s)`,
+    );
+    trip.itinerary.forEach((day) => {
+      const dateOnly = day.date.slice(0, 10);
+      console.log(
+        `\n  ── Day ${day.day}  (${dateOnly}) ──────────────────────`,
+      );
+      day.activities.forEach((a) => {
+        const time = a.time ?? "--:--";
+        const end = a.endTime ?? "";
+        const range = end ? `${time} – ${end}` : time;
+        const cost = a.cost ? ` | $${a.cost}` : "";
+        console.log(`    ${range}  [${a.type}]  ${a.name}${cost}`);
+      });
+    });
+    console.groupEnd();
+    // Only fire when processing finishes (isAgentProcessing changes to false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip?.isAgentProcessing]);
+
   const jobState = useJobPoller({
     jobId: activeJobId,
     onComplete: () => setActiveJobId(null),

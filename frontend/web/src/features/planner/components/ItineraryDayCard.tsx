@@ -208,7 +208,12 @@ function ActivityRow({
 export function ItineraryDayCard({ day, currency }: ItineraryDayCardProps) {
   const dateLabel = (() => {
     try {
-      return format(new Date(day.date), "EEEE, MMM d");
+      // Parse only the calendar date (YYYY-MM-DD) to avoid UTC→local timezone
+      // shifting: "2026-02-19T00:00:00.000Z" → Feb 18 in UTC-5 without this fix.
+      const dateOnly = day.date.slice(0, 10); // "YYYY-MM-DD"
+      const [year, month, dayOfMonth] = dateOnly.split("-").map(Number);
+      const localDate = new Date(year!, month! - 1, dayOfMonth!);
+      return format(localDate, "EEEE, MMM d");
     } catch {
       return `Day ${day.day}`;
     }

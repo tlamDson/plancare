@@ -1,12 +1,37 @@
 import type { TripPreferences } from "@travelplan/shared";
 
 function daysBetween(startDate: string | Date, endDate: string | Date): number {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const diffTime = end.getTime() - start.getTime();
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  // Strip time component — compare calendar days only (inclusive both ends).
+  // e.g. startDate=Feb 19, endDate=Feb 21 → 3 travel days (19, 20, 21)
+  const startStr = new Date(startDate).toISOString().slice(0, 10);
+  const endStr = new Date(endDate).toISOString().slice(0, 10);
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const diffDays =
+    (new Date(endStr).getTime() - new Date(startStr).getTime()) / msPerDay;
+  return Math.round(diffDays) + 1; // +1: both start AND end are travel days
 }
 
+/**
+ * Static system instruction — defines the AI's persona, rules, and output schema.
+ * Passed as `systemInstruction` to getGenerativeModel so the model treats it
+ * with higher priority than the user turn.
+ */
+export const TRIP_PLANNER_SYSTEM_INSTRUCTION = `
+You are a travel planner agent. Your ONLY job is to output a JSON object of location search queries.
+
+RULES (follow exactly):
+- Return ONLY a valid JSON object — no markdown, no code fences, no explanations, no comments.
+- Keys must be exactly "day1", "day2", etc. (lowercase, no spaces).
+- Each day must have exactly three slots: "morning", "afternoon", "evening".
+- Every query must be actionable and location-specific (e.g., "best rooftop bar Midtown Manhattan New York").
+- Never use vague queries like "visit a museum" — always include a city, district, or landmark.
+- You MUST include every day key the user requests. Do NOT stop early.
+`.trim();
+
+/**
+ * Dynamic user message — contains only the trip-specific variables.
+ * Kept intentionally short since the system instruction carries the heavy rules.
+ */
 export function buildTripPrompt(preferences: TripPreferences): string {
   const {
     destination,
@@ -24,62 +49,44 @@ export function buildTripPrompt(preferences: TripPreferences): string {
   const budgetPerDay = budget.total / days / totalTravelers;
 
   const moodContext = mood
-    ? `The trip mood is "${mood}". Focus on activities that match this vibe.`
+    ? `Mood: "${mood}" — prioritise activities that match this vibe.`
     : "";
 
   const prioritiesContext = priorities
-    ? `Priorities: Money (${priorities.money}/10), Comfort (${priorities.comfort}/10), Unique Experiences (${priorities.unique}/10).`
+    ? `Priorities: Money (${priorities.money}/10), Comfort (${priorities.comfort}/10), Unique (${priorities.unique}/10).`
     : "";
 
   const dealBreakersContext =
     dealBreakers && dealBreakers.length > 0
-      ? `IMPORTANT: Avoid these: ${dealBreakers.join(", ")}.`
+      ? `Avoid: ${dealBreakers.join(", ")}.`
       : "";
 
-  return `
-You are a travel planner agent. Generate SEARCH QUERIES ONLY (not final facts).
+  // Expand all N day keys explicitly — never use "// repeat for N days"
+  // because the AI stops at whatever example it sees.
+  const daySkeletonLines = Array.from({ length: days }, (_, i) => {
+    const n = i + 1;
+    return `  "day${n}": {
+    "morning": "search query for day ${n} morning activity in ${destination}",
+    "afternoon": "search query for day ${n} afternoon activity in ${destination}",
+    "evening": "search query for day ${n} evening activity in ${destination}"
+  }`;
+  }).join(",\n");
 
-**User Profile:**
+  return `
+Trip details:
 - Destination: ${destination}
-- Duration: ${days} days (${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()})
-- Budget: $${budgetPerDay.toFixed(0)}/person/day
-- Group: ${travelers.adults} adults${travelers.children > 0 ? `, ${travelers.children} children` : ""}
+- Dates: ${new Date(startDate).toLocaleDateString()} → ${new Date(endDate).toLocaleDateString()} (${days} days)
+- Budget: $${budgetPerDay.toFixed(0)}/person/day — factor this into query types (e.g. "free", "budget-friendly", "luxury")
+- Group: ${travelers.adults} adult${travelers.adults !== 1 ? "s" : ""}${travelers.children > 0 ? `, ${travelers.children} child${travelers.children !== 1 ? "ren" : ""}` : ""}
 ${moodContext}
 ${prioritiesContext}
 ${dealBreakersContext}
 
-**Instructions:**
-1. Create a day-by-day plan with SEARCH QUERIES for each time slot (morning, afternoon, evening)
-2. Each query should be actionable and location-specific (e.g., "museum in Paris city center", NOT "visit a museum")
-3. Respect the budget (if budget is low, suggest free or affordable activities)
-4. Match the mood (romantic → cafes/sunset spots, adventure → hiking/water sports, foodie → local restaurants)
-5. Consider the group composition (families need kid-friendly activities, couples need romantic spots)
+CRITICAL: You MUST output exactly ${days} day entries (day1 through day${days}). Do NOT stop early.
 
-**Output Format (JSON ONLY):**
-\`\`\`json
+Replace every placeholder with a real query. Return ALL ${days} keys:
 {
-  "day1": {
-    "morning": "search query for morning activity",
-    "afternoon": "search query for afternoon activity",
-    "evening": "search query for evening activity"
-  },
-  "day2": {
-    "morning": "search query",
-    "afternoon": "search query",
-    "evening": "search query"
-  }
-  // ... repeat for ${days} days
+${daySkeletonLines}
 }
-\`\`\`
-
-**Important Rules:**
-- Return ONLY the JSON object, no markdown code blocks, no explanations
-- Use keys exactly as "day1", "day2", ... (lowercase, no spaces)
-- Use time slots exactly as "morning", "afternoon", "evening"
-- Each query must include the destination name or nearby landmark
-- Queries should be specific enough to geocode (include neighborhood/district if possible)
-- Prioritize activities that match the user's budget and mood
-
-Generate the itinerary now:
 `.trim();
 }
