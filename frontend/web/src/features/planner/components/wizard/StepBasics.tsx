@@ -2,7 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTripWizardStore } from "@/stores/trip-wizard.store";
-useTripWizardStore;
+import { DatePicker } from "./DatePicker";
+import { addDays } from "date-fns";
+
 const MIN_DESTINATION = 2;
 
 export function StepBasics() {
@@ -31,41 +33,49 @@ export function StepBasics() {
 
   return (
     <div className="space-y-6">
+      {/* Destination */}
       <div className="space-y-2">
         <Label htmlFor="destination">Destination</Label>
         <Input
           id="destination"
           placeholder="e.g., Kyoto, Japan"
           value={data.destination}
-          onChange={(event) => setData({ destination: event.target.value })}
+          onChange={(e) => setData({ destination: e.target.value })}
         />
         {destinationError && (
           <p className="text-sm text-destructive">{destinationError}</p>
         )}
       </div>
 
+      {/* Travel Dates — two side-by-side pickers */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="startDate">Start Date</Label>
-          <Input
-            id="startDate"
-            type="date"
+          <DatePicker
             value={data.startDate}
-            onChange={(event) => setData({ startDate: event.target.value })}
+            onChange={(date) => setData({ startDate: date })}
+            placeholder="Pick start date"
+            ariaLabel="Start date"
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="endDate">End Date</Label>
-          <Input
-            id="endDate"
-            type="date"
+          <DatePicker
             value={data.endDate}
-            onChange={(event) => setData({ endDate: event.target.value })}
+            onChange={(date) => setData({ endDate: date })}
+            placeholder="Pick end date"
+            ariaLabel="End date"
+            minDate={
+              data.startDate
+                ? addDays(new Date(data.startDate + "T00:00:00"), 1)
+                : undefined
+            }
           />
         </div>
       </div>
       {dateError && <p className="text-sm text-destructive">{dateError}</p>}
 
+      {/* Travelers */}
       <div className="space-y-2">
         <Label>Travelers</Label>
         <div className="grid gap-3 sm:grid-cols-2">
