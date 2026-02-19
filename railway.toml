@@ -93,4 +93,4 @@ cpu = 0.25
 # REDIS_URL=<auto_injected>
 # CLERK_SECRET_KEY=<from_vault>
 # CLERK_WEBHOOK_SIGNING_SECRET=<from_vault>
-# OPENAI_API_KEY=<from_vault>
+# GEMINI_API_KEY=<from_vault>

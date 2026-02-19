@@ -42,7 +42,7 @@ services:
         sync: false # Set manually in Render dashboard
       - key: CLERK_WEBHOOK_SIGNING_SECRET
         sync: false
-      - key: OPENAI_API_KEY
+      - key: GEMINI_API_KEY
         sync: false
 
     scaling:
@@ -82,7 +82,7 @@ services:
           name: travelplan-redis
           type: redis
           property: port
-      - key: OPENAI_API_KEY
+      - key: GEMINI_API_KEY
         sync: false
 
     scaling:

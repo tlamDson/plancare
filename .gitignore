@@ -36,6 +36,8 @@ lerna-debug.log*
 # Private documentation
 docs/
 docs/**/*
+.agent/
+.agent/**/*
 
 # Private UI/UX data and prompts
 .shared/
