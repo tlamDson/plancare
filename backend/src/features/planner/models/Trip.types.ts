@@ -36,6 +36,10 @@ export interface IActivity {
   status: "planned" | "confirmed" | "completed" | "cancelled";
   notes?: string;
   order: number;
+  /** Rich place data from Mapbox + Google Places */
+  rating?: number;
+  photoUrl?: string;
+  openingHours?: string;
 }
 
 /** Single day in the itinerary */
@@ -84,7 +88,13 @@ export interface ITrip extends Document {
     comfort: number;
     unique: number;
   };
-  mood?: "city_break" | "beach" | "hiking" | "foodie" | "romantic" | "adventure";
+  mood?:
+    | "city_break"
+    | "beach"
+    | "hiking"
+    | "foodie"
+    | "romantic"
+    | "adventure";
   dealBreakers?: string[];
 
   // 1. EMBEDDED BUDGET (No separate collection)

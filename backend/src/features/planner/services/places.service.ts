@@ -9,7 +9,8 @@ export interface PlaceDetails {
   reviewCount?: number;
   priceLevel?: number;
   isOpen?: boolean;
-  photos?: string[];
+  photoUrl?: string; // resolved CDN URL (no API key)
+  openingHours?: string;
   categories?: string[];
   location?: {
     lat: number;
@@ -18,135 +19,209 @@ export interface PlaceDetails {
 }
 
 export class PlacesService {
-  private readonly baseUrl = "https://places.googleapis.com/v1/places";
+  /**
+   * Resolve a Google Places photo_reference to a public CDN URL.
+   * Follows the redirect from the photo endpoint → gets the final
+   * lh3.googleusercontent.com URL which doesn't expose the API key.
+   */
+  private async resolvePhotoUrl(
+    photoReference: string,
+  ): Promise<string | undefined> {
+    if (!env.GOOGLE_PLACES_API_KEY) return undefined;
+    try {
+      const response = await axios.get(
+        "https://maps.googleapis.com/maps/api/place/photo",
+        {
+          params: {
+            maxwidth: 600,
+            photo_reference: photoReference,
+            key: env.GOOGLE_PLACES_API_KEY,
+          },
+          // Follow redirects but capture the final URL
+          maxRedirects: 5,
+          timeout: 5000,
+        },
+      );
+      // After following redirects, the final URL is the CDN URL
+      const finalUrl =
+        response.request?.res?.responseUrl ?? response.request?.responseURL;
+      if (typeof finalUrl === "string" && finalUrl.startsWith("http")) {
+        return finalUrl;
+      }
+      return undefined;
+    } catch {
+      return undefined;
+    }
+  }
 
-  async verifyPlace(lat: number, lng: number, radius = 100): Promise<PlaceDetails | null> {
+  /**
+   * Text Search using classic Places API (maps.googleapis.com).
+   * Accepts descriptive queries → returns real venues with coordinates, rating, photos.
+   */
+  async searchByText(query: string): Promise<PlaceDetails | null> {
     if (!env.GOOGLE_PLACES_API_KEY) {
-      logger.warn("Google Places API key not configured");
+      logger.warn(
+        "Google Places API key not configured — skipping Text Search",
+      );
       return null;
     }
 
     try {
-      const response = await axios.post(
-        `${this.baseUrl}:searchNearby`,
+      logger.debug({ query }, "📍 [PLACES] Calling Google Places Text Search");
+
+      const response = await axios.get(
+        "https://maps.googleapis.com/maps/api/place/textsearch/json",
         {
-          locationRestriction: {
-            circle: {
-              center: { latitude: lat, longitude: lng },
-              radius,
-            },
-          },
-          maxResultCount: 1,
-          rankPreference: "POPULARITY",
-        },
-        {
-          headers: {
-            "X-Goog-Api-Key": env.GOOGLE_PLACES_API_KEY,
-            "X-Goog-FieldMask":
-              "places.id,places.displayName,places.rating,places.userRatingCount,places.priceLevel,places.currentOpeningHours,places.photos,places.types,places.location",
-          },
-          timeout: 5000,
+          params: { query, key: env.GOOGLE_PLACES_API_KEY },
+          timeout: 6000,
         },
       );
 
-      const place = response.data?.places?.[0];
-      if (!place) {
-        logger.debug({ lat, lng }, "Google Places: No results");
+      const responseBody = response.data;
+      const status: string = responseBody?.status;
+      const results = responseBody?.results;
+
+      logger.info(
+        { query, status, resultCount: results?.length ?? 0 },
+        "📍 [PLACES] Text Search response",
+      );
+
+      if (status !== "OK" && status !== "ZERO_RESULTS") {
+        logger.error(
+          { query, status, errorMessage: responseBody?.error_message },
+          "📍 [PLACES] Text Search non-OK status — check API key restrictions",
+        );
         return null;
       }
 
+      const result = results?.[0];
+      if (!result) {
+        logger.debug({ query }, "📍 [PLACES] No results found");
+        return null;
+      }
+
+      logger.info(
+        {
+          query,
+          name: result.name,
+          lat: result.geometry?.location?.lat,
+          lng: result.geometry?.location?.lng,
+          rating: result.rating,
+        },
+        "📍 [PLACES] Text Search matched place",
+      );
+
       const details: PlaceDetails = {
-        placeId: place.id,
-        name: place.displayName?.text || "Unknown",
+        placeId: result.place_id,
+        name: result.name,
       };
 
-      if (place.rating !== undefined) details.rating = place.rating;
-      if (place.userRatingCount !== undefined) details.reviewCount = place.userRatingCount;
-      const parsedPriceLevel = this.parsePriceLevel(place.priceLevel);
-      if (parsedPriceLevel !== undefined) details.priceLevel = parsedPriceLevel;
-      if (place.currentOpeningHours?.openNow !== undefined) {
-        details.isOpen = place.currentOpeningHours.openNow;
+      if (result.rating !== undefined) details.rating = result.rating;
+      if (result.user_ratings_total !== undefined)
+        details.reviewCount = result.user_ratings_total;
+      if (result.price_level !== undefined)
+        details.priceLevel = result.price_level;
+      if (result.opening_hours?.open_now !== undefined)
+        details.isOpen = result.opening_hours.open_now;
+      if (result.types) details.categories = result.types;
+      if (result.geometry?.location) {
+        details.location = {
+          lat: result.geometry.location.lat,
+          lng: result.geometry.location.lng,
+        };
       }
-      if (place.photos) details.photos = place.photos.slice(0, 3).map((p: any) => p.name);
-      if (place.types) details.categories = place.types;
-      if (place.location) {
-        details.location = { lat: place.location.latitude, lng: place.location.longitude };
+
+      // Resolve photo: follow redirect to get CDN URL (no API key exposed)
+      if (result.photos?.[0]?.photo_reference) {
+        const cdnUrl = await this.resolvePhotoUrl(
+          result.photos[0].photo_reference,
+        );
+        if (cdnUrl) {
+          details.photoUrl = cdnUrl;
+          logger.debug(
+            { name: result.name },
+            "📍 [PLACES] Photo CDN URL resolved",
+          );
+        }
       }
 
       return details;
     } catch (error: any) {
-      if (error.response?.status === 429) {
-        logger.error({ lat, lng }, "Google Places rate limit exceeded");
-      } else {
-        logger.error({ lat, lng, error: error.message }, "Google Places verification failed");
-      }
+      logger.error(
+        {
+          query,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          error: error.message,
+        },
+        "📍 [PLACES] Text Search HTTP error",
+      );
       return null;
     }
   }
 
-  async searchByCategory(
-    category: string,
-    coords: [number, number],
-    radius: number,
-  ): Promise<PlaceDetails[]> {
-    if (!env.GOOGLE_PLACES_API_KEY) {
-      return [];
-    }
+  /**
+   * Get full place details (opening hours) via Place Details API.
+   */
+  async getPlaceDetails(
+    placeId: string,
+  ): Promise<{ openingHours?: string; photoUrl?: string } | null> {
+    if (!env.GOOGLE_PLACES_API_KEY) return null;
 
     try {
-      const response = await axios.post(
-        `${this.baseUrl}:searchNearby`,
+      const response = await axios.get(
+        "https://maps.googleapis.com/maps/api/place/details/json",
         {
-          includedTypes: [category],
-          locationRestriction: {
-            circle: {
-              center: { latitude: coords[1], longitude: coords[0] },
-              radius,
-            },
-          },
-          maxResultCount: 5,
-          rankPreference: "POPULARITY",
-        },
-        {
-          headers: {
-            "X-Goog-Api-Key": env.GOOGLE_PLACES_API_KEY,
-            "X-Goog-FieldMask":
-              "places.id,places.displayName,places.rating,places.userRatingCount,places.priceLevel,places.photos,places.types,places.location",
+          params: {
+            place_id: placeId,
+            fields: "opening_hours,photos",
+            key: env.GOOGLE_PLACES_API_KEY,
           },
           timeout: 5000,
         },
       );
 
-      const places = response.data?.places || [];
+      const place = response.data?.result;
+      if (!place) return null;
 
-      return places.map((place: any) => {
-        const details: PlaceDetails = {
-          placeId: place.id,
-          name: place.displayName?.text || "Unknown",
-        };
+      const result: { openingHours?: string; photoUrl?: string } = {};
 
-        if (place.rating !== undefined) details.rating = place.rating;
-        if (place.userRatingCount !== undefined) details.reviewCount = place.userRatingCount;
-        const parsedPriceLevel = this.parsePriceLevel(place.priceLevel);
-        if (parsedPriceLevel !== undefined) details.priceLevel = parsedPriceLevel;
-        if (place.photos) details.photos = place.photos.slice(0, 3).map((p: any) => p.name);
-        if (place.types) details.categories = place.types;
-        if (place.location) {
-          details.location = { lat: place.location.latitude, lng: place.location.longitude };
-        }
+      if (place.opening_hours?.weekday_text) {
+        const todayHours = this.getTodayHours(place.opening_hours.weekday_text);
+        if (todayHours) result.openingHours = todayHours;
+      }
 
-        return details;
-      });
-    } catch (error: any) {
-      logger.error({ category, coords, error: error.message }, "Google Places search failed");
-      return [];
+      // Resolve photo CDN URL (no API key exposed)
+      if (place.photos?.[0]?.photo_reference) {
+        const cdnUrl = await this.resolvePhotoUrl(
+          place.photos[0].photo_reference,
+        );
+        if (cdnUrl) result.photoUrl = cdnUrl;
+      }
+
+      return result;
+    } catch {
+      return null;
     }
   }
 
-  private parsePriceLevel(priceLevel: string | undefined): number | undefined {
-    if (!priceLevel || typeof priceLevel !== 'string') return undefined;
-    const match = priceLevel.match(/PRICE_LEVEL_(\d)/);
-    return match && match[1] ? parseInt(match[1]) : undefined;
+  private getTodayHours(weekdayText: string[]): string | undefined {
+    if (!weekdayText || weekdayText.length === 0) return undefined;
+    const dayJs = new Date().getDay();
+    const googleIdx = dayJs === 0 ? 6 : dayJs - 1;
+    const entry = weekdayText[googleIdx];
+    if (!entry) return undefined;
+    const colonIdx = entry.indexOf(":");
+    return colonIdx !== -1 ? entry.slice(colonIdx + 1).trim() : entry;
+  }
+
+  /** Legacy — kept for circuit breaker compatibility */
+  async verifyPlace(
+    _lat: number,
+    _lng: number,
+    _radius = 100,
+  ): Promise<PlaceDetails | null> {
+    return null;
   }
 }
 

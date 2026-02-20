@@ -74,10 +74,18 @@ export default function TripDetailPage() {
         const end = a.endTime ?? "";
         const range = end ? `${time} – ${end}` : time;
         const cost = a.cost ? ` | $${a.cost}` : "";
-        console.log(`    ${range}  [${a.type}]  ${a.name}${cost}`);
+        const rating = a.rating != null ? ` | ⭐ ${a.rating}` : " | ⭐ none";
+        const photo = a.photoUrl
+          ? ` | 📸 ${a.photoUrl.slice(0, 60)}…`
+          : " | 📸 none";
+        const hours = a.openingHours ? ` | 🕐 ${a.openingHours}` : " | 🕐 none";
+        console.log(
+          `    ${range}  [${a.type}]  ${a.name}${cost}${rating}${photo}${hours}`,
+        );
       });
     });
     console.groupEnd();
+
     // Only fire when processing finishes (isAgentProcessing changes to false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.isAgentProcessing]);

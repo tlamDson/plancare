@@ -237,7 +237,7 @@ function buildItinerary(
         validatedIndex = (validatedIndex + 1) % Math.max(validated.length, 1);
 
         if (place) {
-          activities.push({
+          const activity: IActivity = {
             type: "poi",
             name: place.name,
             location: {
@@ -252,7 +252,13 @@ function buildItinerary(
                   : "19:00",
             status: "planned",
             order,
-          } as IActivity);
+          };
+          // Thread rich place data from validation pipeline
+          if (place.rating !== undefined) activity.rating = place.rating;
+          if (place.photoUrl) activity.photoUrl = place.photoUrl;
+          if (place.openingHours) activity.openingHours = place.openingHours;
+
+          activities.push(activity);
           order++;
         }
       }

@@ -2,14 +2,8 @@
  * ItineraryDayCard
  *
  * Displays one day of a trip itinerary as a timeline of activity cards.
- * Each activity shows: type icon, time slot, name, cost, status badge.
- *
- * Design (UI/UX Pro Max — Bento Box / Timeline):
- *  - Vertical timeline with time connector line on the left
- *  - Activity type → distinct icon + accent color
- *  - Cost shown inline when present
- *  - Status badge (planned / confirmed / completed / cancelled)
- *  - Responsive: full-width on mobile, comfortable padding on desktop
+ * Each activity shows: photo hero (if available), type icon, time slot,
+ * name, star rating, opening hours, cost, status badge.
  */
 
 import { format } from "date-fns";
@@ -20,6 +14,7 @@ import {
   Pencil,
   Clock,
   DollarSign,
+  Star,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { ItineraryDay, Activity } from "@/utils/schemas";
@@ -80,9 +75,9 @@ const STATUS_VARIANT: Record<
 /** Default activity duration in minutes when no endTime + no next activity */
 const DEFAULT_DURATION: Record<Activity["type"], number> = {
   poi: 180, // 3 hours
-  accommodation: 60, // check-in ~1 hour
-  transport: 90, // 1.5 hours
-  custom: 120, // 2 hours
+  accommodation: 60,
+  transport: 90,
+  custom: 120,
 };
 
 /** Add minutes to an "HH:MM" string → "HH:MM" */
@@ -112,7 +107,6 @@ function deriveEndTime(
 
 function formatTimeRange(time?: string, endTime?: string): string {
   if (!time) return "";
-  // "09:00" → "9:00 AM"
   const fmt = (t: string) => {
     const [h, m] = t.split(":");
     const hour = parseInt(h, 10);
@@ -121,6 +115,39 @@ function formatTimeRange(time?: string, endTime?: string): string {
     return `${h12}:${m} ${ampm}`;
   };
   return endTime ? `${fmt(time)} – ${fmt(endTime)}` : fmt(time);
+}
+
+// ─── Star rating component ─────────────────────────────────
+
+function StarRating({ value }: { value: number }) {
+  const full = Math.floor(value);
+  const half = value - full >= 0.5;
+  const empty = 5 - full - (half ? 1 : 0);
+
+  return (
+    <span
+      className="flex items-center gap-0.5"
+      aria-label={`Rating: ${value} out of 5`}
+    >
+      {Array.from({ length: full }).map((_, i) => (
+        <Star key={`f${i}`} className="h-3 w-3 fill-amber-400 text-amber-400" />
+      ))}
+      {half && (
+        <span className="relative inline-flex h-3 w-3">
+          <Star className="absolute inset-0 h-3 w-3 text-muted-foreground/30" />
+          <span className="absolute inset-0 overflow-hidden w-[50%]">
+            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+          </span>
+        </span>
+      )}
+      {Array.from({ length: empty }).map((_, i) => (
+        <Star key={`e${i}`} className="h-3 w-3 text-muted-foreground/30" />
+      ))}
+      <span className="ml-1 text-xs text-muted-foreground">
+        {value.toFixed(1)}
+      </span>
+    </span>
+  );
 }
 
 // ─── Sub-component: single activity row ───────────────────
@@ -155,49 +182,78 @@ function ActivityRow({
       </div>
 
       {/* Card body */}
-      <div className="flex-1 min-w-0 rounded-lg border bg-card p-3 shadow-sm">
-        {/* Top row: time + status */}
-        <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
-          {timeLabel ? (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3" aria-hidden="true" />
-              {timeLabel}
-            </span>
-          ) : (
-            <span />
-          )}
-          <Badge
-            variant={STATUS_VARIANT[activity.status]}
-            className="text-xs capitalize h-5"
-          >
-            {activity.status}
-          </Badge>
-        </div>
-
-        {/* Activity name */}
-        <p className="font-medium text-sm leading-snug line-clamp-2">
-          {activity.name}
-        </p>
-
-        {/* Bottom row: type label + cost */}
-        <div className="flex items-center justify-between mt-1.5 flex-wrap gap-1">
-          <span className={`text-xs font-medium ${meta.color}`}>
-            {meta.label}
-          </span>
-          {activity.cost != null && activity.cost > 0 && (
-            <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
-              <DollarSign className="h-3 w-3" aria-hidden="true" />
-              {activity.cost.toLocaleString()} {currency}
-            </span>
-          )}
-        </div>
-
-        {/* Notes */}
-        {activity.notes && (
-          <p className="mt-1.5 text-xs text-muted-foreground italic line-clamp-2">
-            {activity.notes}
-          </p>
+      <div className="flex-1 min-w-0 rounded-lg border bg-card shadow-sm overflow-hidden">
+        {/* Photo hero */}
+        {activity.photoUrl && (
+          <div className="w-full h-36 overflow-hidden">
+            <img
+              src={activity.photoUrl}
+              alt={activity.name}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </div>
         )}
+
+        <div className="p-3">
+          {/* Top row: time + status */}
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+            {timeLabel ? (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" aria-hidden="true" />
+                {timeLabel}
+              </span>
+            ) : (
+              <span />
+            )}
+            <Badge
+              variant={STATUS_VARIANT[activity.status]}
+              className="text-xs capitalize h-5"
+            >
+              {activity.status}
+            </Badge>
+          </div>
+
+          {/* Activity name */}
+          <p className="font-medium text-sm leading-snug line-clamp-2">
+            {activity.name}
+          </p>
+
+          {/* Rating */}
+          {activity.rating !== undefined && activity.rating > 0 && (
+            <div className="mt-1.5">
+              <StarRating value={activity.rating} />
+            </div>
+          )}
+
+          {/* Opening hours */}
+          {activity.openingHours && (
+            <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3 shrink-0" aria-hidden="true" />
+              <span className="truncate">{activity.openingHours}</span>
+            </div>
+          )}
+
+          {/* Bottom row: type label + cost */}
+          <div className="flex items-center justify-between mt-1.5 flex-wrap gap-1">
+            <span className={`text-xs font-medium ${meta.color}`}>
+              {meta.label}
+            </span>
+            {activity.cost != null && activity.cost > 0 && (
+              <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                <DollarSign className="h-3 w-3" aria-hidden="true" />
+                {activity.cost.toLocaleString()} {currency}
+              </span>
+            )}
+          </div>
+
+          {/* Notes */}
+          {activity.notes && (
+            <p className="mt-1.5 text-xs text-muted-foreground italic line-clamp-2">
+              {activity.notes}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

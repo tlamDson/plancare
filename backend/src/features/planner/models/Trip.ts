@@ -57,6 +57,10 @@ const ActivitySchema = new Schema<IActivity>(
     },
     notes: String,
     order: { type: Number, required: true },
+    // Rich place data from Mapbox + Google Places validation
+    rating: Number,
+    photoUrl: String,
+    openingHours: String,
   },
   { _id: true }, // Keep _id for individual activity updates
 );
@@ -134,7 +138,14 @@ const TripSchema = new Schema<ITrip>(
     },
     mood: {
       type: String,
-      enum: ["city_break", "beach", "hiking", "foodie", "romantic", "adventure"],
+      enum: [
+        "city_break",
+        "beach",
+        "hiking",
+        "foodie",
+        "romantic",
+        "adventure",
+      ],
     },
     dealBreakers: [String],
 

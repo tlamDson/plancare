@@ -33,6 +33,10 @@ export const activitySchema = z.object({
   status: z.enum(["planned", "confirmed", "completed", "cancelled"]),
   notes: z.string().optional(),
   order: z.number(),
+  // Rich place data from validation pipeline
+  rating: z.number().optional(),
+  photoUrl: z.string().optional(),
+  openingHours: z.string().optional(),
 });
 
 export const itineraryDaySchema = z.object({
@@ -72,7 +76,9 @@ export const tripSchema = z.object({
   purpose: z
     .enum(["leisure", "business", "bleisure", "family_visit", "event"])
     .optional(),
-  groupType: z.enum(["solo", "couple", "family_kids", "friends", "work"]).optional(),
+  groupType: z
+    .enum(["solo", "couple", "family_kids", "friends", "work"])
+    .optional(),
   priorities: z
     .object({
       money: z.number().min(1).max(10),

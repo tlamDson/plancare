@@ -1,5 +1,6 @@
 import { placeCacheRepository } from "../repositories/place-cache.repository";
-import { mapboxBreaker, placesBreaker } from "../tools/circuit-breaker";
+import { mapboxBreaker } from "../tools/circuit-breaker";
+import { placesService } from "./places.service";
 import { logger } from "../../../lib/logger";
 
 export interface ValidatedPlace {
@@ -12,11 +13,14 @@ export interface ValidatedPlace {
   confidence: number;
   source: "cache" | "mapbox" | "google" | "both";
   categories?: string[];
+  photoUrl?: string;
+  openingHours?: string;
 }
 
 export class ValidationService {
   async validateIntent(intent: string): Promise<ValidatedPlace | null> {
     try {
+      // 1. Cache check
       const cached = await placeCacheRepository.findByQuery(intent);
       if (cached) {
         logger.debug({ intent }, "Validation: Cache hit");
@@ -26,17 +30,87 @@ export class ValidationService {
           confidence: cached.confidence,
           source: "cache",
         };
-
         if (cached.rating !== undefined) result.rating = cached.rating;
-        if (cached.reviewCount !== undefined) result.reviewCount = cached.reviewCount;
-        if (cached.priceLevel !== undefined) result.priceLevel = cached.priceLevel;
+        if (cached.reviewCount !== undefined)
+          result.reviewCount = cached.reviewCount;
+        if (cached.priceLevel !== undefined)
+          result.priceLevel = cached.priceLevel;
         if (cached.googlePlaceId) result.googlePlaceId = cached.googlePlaceId;
         if (cached.categories) result.categories = cached.categories;
-
         return result;
       }
 
-      logger.debug({ intent }, "Validation: Cache miss, querying Mapbox");
+      // 2. PRIMARY: Google Places Text Search
+      //    Accepts descriptive AI queries directly, returns real venues
+      //    with coordinates, rating, photos, and opening hours.
+      logger.debug(
+        { intent },
+        "Validation: Querying Google Places Text Search",
+      );
+      const place = await placesService.searchByText(intent);
+
+      if (place && place.location) {
+        const [lat, lng] = [place.location.lat, place.location.lng];
+
+        // Optionally enrich with opening hours via Place Details
+        let openingHours: string | undefined;
+        let photoUrl = place.photoUrl;
+
+        if (place.placeId) {
+          const details = await placesService.getPlaceDetails(place.placeId);
+          if (details?.openingHours) openingHours = details.openingHours;
+          // Prefer details photo if available
+          if (details?.photoUrl) photoUrl = details.photoUrl;
+        }
+
+        const result: ValidatedPlace = {
+          name: place.name,
+          coordinates: [lng, lat],
+          googlePlaceId: place.placeId,
+          confidence: 0.95, // Text Search results are high-confidence matches
+          source: "google",
+        };
+        if (place.rating !== undefined) result.rating = place.rating;
+        if (place.reviewCount !== undefined)
+          result.reviewCount = place.reviewCount;
+        if (place.priceLevel !== undefined)
+          result.priceLevel = place.priceLevel;
+        if (place.categories) result.categories = place.categories;
+        if (photoUrl) result.photoUrl = photoUrl;
+        if (openingHours) result.openingHours = openingHours;
+
+        // Cache the result
+        const cacheData: any = {
+          query: intent,
+          coordinates: { type: "Point", coordinates: [lng, lat] },
+          placeName: place.name,
+          placeType: place.categories?.[0] ?? "poi",
+          confidence: 0.95,
+          googlePlaceId: place.placeId,
+          source: "google",
+          isVerified: true,
+        };
+        if (place.rating !== undefined) cacheData.rating = place.rating;
+        if (place.reviewCount !== undefined)
+          cacheData.reviewCount = place.reviewCount;
+        if (place.priceLevel !== undefined)
+          cacheData.priceLevel = place.priceLevel;
+        if (place.categories) cacheData.categories = place.categories;
+
+        await placeCacheRepository.create(cacheData);
+
+        logger.debug(
+          { intent, name: place.name, lat, lng, rating: place.rating },
+          "Validation: Google Places match found",
+        );
+        return result;
+      }
+
+      // 3. FALLBACK: Mapbox geocoding (when Google Places fails or key missing)
+      logger.debug(
+        { intent },
+        "Validation: Google Places failed, falling back to Mapbox",
+      );
       const geocode = await mapboxBreaker.fire(intent);
 
       if (!geocode) {
@@ -46,73 +120,24 @@ export class ValidationService {
 
       const [lng, lat] = geocode.coordinates;
 
-      if (geocode.confidence > 0.9) {
-        logger.debug({ intent, confidence: geocode.confidence }, "High confidence, using Mapbox only");
-
-        await placeCacheRepository.create({
-          query: intent,
-          coordinates: {
-            type: "Point",
-            coordinates: [lng, lat],
-          },
-          placeName: geocode.placeName,
-          placeType: geocode.placeType,
-          confidence: geocode.confidence,
-          source: "mapbox",
-          isVerified: true,
-        });
-
-        return {
-          name: geocode.placeName,
-          coordinates: [lng, lat],
-          confidence: geocode.confidence,
-          source: "mapbox",
-        };
-      }
-
-      logger.debug({ intent }, "Low confidence, verifying with Google Places");
-      const place = await placesBreaker.fire(lat, lng, 100);
-
-      if (!place || (place.rating && place.rating < 4.0)) {
-        logger.debug({ intent, rating: place?.rating }, "Place failed quality check");
-        return null;
-      }
-
-      const result: ValidatedPlace = {
-        name: place.name,
+      const mapboxResult: ValidatedPlace = {
+        name: geocode.placeName,
         coordinates: [lng, lat],
-        googlePlaceId: place.placeId,
         confidence: geocode.confidence,
-        source: "both",
+        source: "mapbox",
       };
 
-      if (place.rating !== undefined) result.rating = place.rating;
-      if (place.reviewCount !== undefined) result.reviewCount = place.reviewCount;
-      if (place.priceLevel !== undefined) result.priceLevel = place.priceLevel;
-      if (place.categories) result.categories = place.categories;
-
-      const cacheData: any = {
+      await placeCacheRepository.create({
         query: intent,
-        coordinates: {
-          type: "Point",
-          coordinates: [lng, lat],
-        },
-        placeName: place.name,
+        coordinates: { type: "Point", coordinates: [lng, lat] },
+        placeName: geocode.placeName,
         placeType: geocode.placeType,
         confidence: geocode.confidence,
-        googlePlaceId: place.placeId,
-        source: "both",
+        source: "mapbox",
         isVerified: true,
-      };
+      });
 
-      if (place.rating !== undefined) cacheData.rating = place.rating;
-      if (place.reviewCount !== undefined) cacheData.reviewCount = place.reviewCount;
-      if (place.priceLevel !== undefined) cacheData.priceLevel = place.priceLevel;
-      if (place.categories) cacheData.categories = place.categories;
-
-      await placeCacheRepository.create(cacheData);
-
-      return result;
+      return mapboxResult;
     } catch (error: any) {
       logger.error({ intent, error: error.message }, "Validation failed");
       return null;
