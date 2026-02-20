@@ -17,12 +17,31 @@ export interface ValidatedPlace {
   openingHours?: string;
 }
 
+const BROAD_MAPBOX_TYPES = new Set(["place", "region", "country"]);
+
 export class ValidationService {
+  private isBroadCachedPlace(place: any): boolean {
+    const type = place?.placeType?.toLowerCase?.() ?? "";
+    if (BROAD_MAPBOX_TYPES.has(type)) return true;
+
+    const name = place?.placeName?.toLowerCase?.() ?? "";
+    if (place?.source === "mapbox" && name.includes("united states"))
+      return true;
+
+    return false;
+  }
+
   async validateIntent(intent: string): Promise<ValidatedPlace | null> {
     try {
       // 1. Cache check
       const cached = await placeCacheRepository.findByQuery(intent);
       if (cached) {
+        if (this.isBroadCachedPlace(cached)) {
+          logger.info(
+            { intent, placeName: cached.placeName, placeType: cached.placeType },
+            "Validation: Ignoring broad cached location",
+          );
+        } else {
         logger.debug({ intent }, "Validation: Cache hit");
         const result: ValidatedPlace = {
           name: cached.placeName,
@@ -38,36 +57,25 @@ export class ValidationService {
         if (cached.googlePlaceId) result.googlePlaceId = cached.googlePlaceId;
         if (cached.categories) result.categories = cached.categories;
         return result;
+        }
       }
 
       // 2. PRIMARY: Google Places Text Search
-      //    Accepts descriptive AI queries directly, returns real venues
-      //    with coordinates, rating, photos, and opening hours.
-      logger.debug(
+      //    v1 single-call hydration: returns name, coords, rating, photos, hours in one request.
+      logger.info(
         { intent },
-        "Validation: Querying Google Places Text Search",
+        "Validation: Querying Google Places v1 Text Search",
       );
       const place = await placesService.searchByText(intent);
 
       if (place && place.location) {
         const [lat, lng] = [place.location.lat, place.location.lng];
 
-        // Optionally enrich with opening hours via Place Details
-        let openingHours: string | undefined;
-        let photoUrl = place.photoUrl;
-
-        if (place.placeId) {
-          const details = await placesService.getPlaceDetails(place.placeId);
-          if (details?.openingHours) openingHours = details.openingHours;
-          // Prefer details photo if available
-          if (details?.photoUrl) photoUrl = details.photoUrl;
-        }
-
         const result: ValidatedPlace = {
           name: place.name,
           coordinates: [lng, lat],
           googlePlaceId: place.placeId,
-          confidence: 0.95, // Text Search results are high-confidence matches
+          confidence: 0.95,
           source: "google",
         };
         if (place.rating !== undefined) result.rating = place.rating;
@@ -76,8 +84,8 @@ export class ValidationService {
         if (place.priceLevel !== undefined)
           result.priceLevel = place.priceLevel;
         if (place.categories) result.categories = place.categories;
-        if (photoUrl) result.photoUrl = photoUrl;
-        if (openingHours) result.openingHours = openingHours;
+        if (place.photoUrl) result.photoUrl = place.photoUrl;
+        if (place.openingHours) result.openingHours = place.openingHours;
 
         // Cache the result
         const cacheData: any = {
@@ -115,6 +123,14 @@ export class ValidationService {
 
       if (!geocode) {
         logger.debug({ intent }, "Validation: Mapbox returned no results");
+        return null;
+      }
+
+      if (BROAD_MAPBOX_TYPES.has(geocode.placeType)) {
+        logger.info(
+          { intent, placeName: geocode.placeName, placeType: geocode.placeType },
+          "Validation: Ignoring broad Mapbox location",
+        );
         return null;
       }
 
