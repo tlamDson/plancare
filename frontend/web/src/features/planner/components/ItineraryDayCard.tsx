@@ -248,6 +248,28 @@ function ActivityRow({
             </div>
           )}
 
+          {/* Price Level from Google Maps - UI UX Pro Max Design */}
+          {activity.priceLevel !== undefined && activity.priceLevel > 0 && (
+            <div
+              className="flex items-center gap-1.5 mt-1.5 text-xs font-medium bg-emerald-50/50 dark:bg-emerald-950/20 w-fit px-2 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+              aria-label={`Price level: ${activity.priceLevel} out of 4`}
+            >
+              <span>
+                {activity.priceLevel === 1 && "Under $25"}
+                {activity.priceLevel === 2 && "$25 - $50"}
+                {activity.priceLevel === 3 && "$50 - $100"}
+                {activity.priceLevel >= 4 && "$100+"}
+              </span>
+              <span className="w-1 h-1 rounded-full bg-emerald-600/30 dark:bg-emerald-400/30" />
+              <span>
+                {activity.priceLevel === 1 && "Budget"}
+                {activity.priceLevel === 2 && "Moderate"}
+                {activity.priceLevel === 3 && "Expensive"}
+                {activity.priceLevel >= 4 && "Luxury"}
+              </span>
+            </div>
+          )}
+
           {/* Bottom row: type label + cost */}
           <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-border/40 flex-wrap gap-1">
             <span className={`text-xs font-medium ${meta.color}`}>

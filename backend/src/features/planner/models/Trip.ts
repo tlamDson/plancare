@@ -60,6 +60,7 @@ const ActivitySchema = new Schema<IActivity>(
     order: { type: Number, required: true },
     // Rich place data from Mapbox + Google Places validation
     rating: Number,
+    priceLevel: Number,
     photoUrl: String,
     openingHours: String,
   },

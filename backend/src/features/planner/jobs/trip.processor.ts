@@ -267,6 +267,8 @@ function buildItinerary(
           }
           // Thread rich place data from validation pipeline
           if (place.rating !== undefined) activity.rating = place.rating;
+          if (place.priceLevel !== undefined)
+            activity.priceLevel = place.priceLevel;
           if (place.photoUrl) activity.photoUrl = place.photoUrl;
 
           // Compute opening hours for the exact day

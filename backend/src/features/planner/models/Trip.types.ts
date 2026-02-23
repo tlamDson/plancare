@@ -39,6 +39,7 @@ export interface IActivity {
   order: number;
   /** Rich place data from Mapbox + Google Places */
   rating?: number;
+  priceLevel?: number;
   photoUrl?: string;
   openingHours?: string;
 }

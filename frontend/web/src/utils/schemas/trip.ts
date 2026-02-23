@@ -35,6 +35,7 @@ export const activitySchema = z.object({
   order: z.number(),
   // Rich place data from validation pipeline
   rating: z.number().optional(),
+  priceLevel: z.number().optional(),
   photoUrl: z.string().optional(),
   openingHours: z.string().optional(),
 });
