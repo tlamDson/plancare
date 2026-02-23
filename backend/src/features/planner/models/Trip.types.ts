@@ -28,6 +28,7 @@ export interface IActivity {
   location?: {
     type: "Point";
     coordinates: [number, number]; // [lng, lat]
+    googlePlaceId?: string;
   };
   /** Dynamic trip-specific details */
   time?: string;

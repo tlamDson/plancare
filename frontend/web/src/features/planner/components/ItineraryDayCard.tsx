@@ -15,9 +15,11 @@ import {
   Clock,
   DollarSign,
   Star,
+  ExternalLink,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { ItineraryDay, Activity } from "@/utils/schemas";
+import { getGoogleMapsUrl } from "../utils/maps";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -219,9 +221,21 @@ function ActivityRow({
             {activity.name}
           </p>
 
+          <a
+            href={getGoogleMapsUrl(activity)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:text-primary/80 transition-colors focus:outline-none focus:underline"
+            aria-label={`View ${activity.name} on Google Maps`}
+          >
+            <MapPin className="h-3 w-3" aria-hidden="true" />
+            <span className="truncate hover:underline">View on map</span>
+            <ExternalLink className="h-3 w-3 ml-0.5" aria-hidden="true" />
+          </a>
+
           {/* Rating */}
           {activity.rating !== undefined && activity.rating > 0 && (
-            <div className="mt-1.5">
+            <div className="mt-1.5 border-t pt-1.5 border-border/40">
               <StarRating value={activity.rating} />
             </div>
           )}
@@ -235,7 +249,7 @@ function ActivityRow({
           )}
 
           {/* Bottom row: type label + cost */}
-          <div className="flex items-center justify-between mt-1.5 flex-wrap gap-1">
+          <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-border/40 flex-wrap gap-1">
             <span className={`text-xs font-medium ${meta.color}`}>
               {meta.label}
             </span>
@@ -249,7 +263,7 @@ function ActivityRow({
 
           {/* Notes */}
           {activity.notes && (
-            <p className="mt-1.5 text-xs text-muted-foreground italic line-clamp-2">
+            <p className="mt-1.5 pt-1.5 border-t border-border/40 text-xs text-muted-foreground italic line-clamp-2">
               {activity.notes}
             </p>
           )}

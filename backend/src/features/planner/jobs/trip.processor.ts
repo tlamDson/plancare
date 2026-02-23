@@ -9,6 +9,7 @@ import {
 } from "../services/validation.service";
 import type { TripPreferences } from "@travelplan/shared";
 import type { TripIntents } from "../services/intent-parser.service";
+import sanitizeHtml from "sanitize-html";
 import type { IActivity } from "../models/Trip.types";
 
 interface TripJobData {
@@ -239,7 +240,10 @@ function buildItinerary(
         if (place) {
           const activity: IActivity = {
             type: "poi",
-            name: place.name,
+            name: sanitizeHtml(place.name, {
+              allowedTags: [],
+              allowedAttributes: {},
+            }),
             location: {
               type: "Point",
               coordinates: place.coordinates,
@@ -253,6 +257,9 @@ function buildItinerary(
             status: "planned",
             order,
           };
+          if (place.googlePlaceId) {
+            activity.location!.googlePlaceId = place.googlePlaceId;
+          }
           // Thread rich place data from validation pipeline
           if (place.rating !== undefined) activity.rating = place.rating;
           if (place.photoUrl) activity.photoUrl = place.photoUrl;

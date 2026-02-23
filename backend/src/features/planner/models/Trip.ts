@@ -46,6 +46,7 @@ const ActivitySchema = new Schema<IActivity>(
         enum: ["Point"],
       },
       coordinates: [Number],
+      googlePlaceId: String,
     },
     time: String,
     endTime: String,

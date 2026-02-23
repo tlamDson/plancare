@@ -21,6 +21,7 @@ export const paginationSchema = z.object({
 export const geoPointSchema = z.object({
   type: z.literal("Point"),
   coordinates: z.tuple([z.number(), z.number()]),
+  googlePlaceId: z.string().optional(),
 });
 
 export const coordinatesSchema = z.object({
