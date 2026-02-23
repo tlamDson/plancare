@@ -15,6 +15,7 @@ export interface ValidatedPlace {
   categories?: string[];
   photoUrl?: string;
   openingHours?: string;
+  openingHoursArray?: string[];
 }
 
 const BROAD_MAPBOX_TYPES = new Set(["place", "region", "country"]);
@@ -38,25 +39,29 @@ export class ValidationService {
       if (cached) {
         if (this.isBroadCachedPlace(cached)) {
           logger.info(
-            { intent, placeName: cached.placeName, placeType: cached.placeType },
+            {
+              intent,
+              placeName: cached.placeName,
+              placeType: cached.placeType,
+            },
             "Validation: Ignoring broad cached location",
           );
         } else {
-        logger.debug({ intent }, "Validation: Cache hit");
-        const result: ValidatedPlace = {
-          name: cached.placeName,
-          coordinates: cached.coordinates.coordinates as [number, number],
-          confidence: cached.confidence,
-          source: "cache",
-        };
-        if (cached.rating !== undefined) result.rating = cached.rating;
-        if (cached.reviewCount !== undefined)
-          result.reviewCount = cached.reviewCount;
-        if (cached.priceLevel !== undefined)
-          result.priceLevel = cached.priceLevel;
-        if (cached.googlePlaceId) result.googlePlaceId = cached.googlePlaceId;
-        if (cached.categories) result.categories = cached.categories;
-        return result;
+          logger.debug({ intent }, "Validation: Cache hit");
+          const result: ValidatedPlace = {
+            name: cached.placeName,
+            coordinates: cached.coordinates.coordinates as [number, number],
+            confidence: cached.confidence,
+            source: "cache",
+          };
+          if (cached.rating !== undefined) result.rating = cached.rating;
+          if (cached.reviewCount !== undefined)
+            result.reviewCount = cached.reviewCount;
+          if (cached.priceLevel !== undefined)
+            result.priceLevel = cached.priceLevel;
+          if (cached.googlePlaceId) result.googlePlaceId = cached.googlePlaceId;
+          if (cached.categories) result.categories = cached.categories;
+          return result;
         }
       }
 
@@ -85,7 +90,9 @@ export class ValidationService {
           result.priceLevel = place.priceLevel;
         if (place.categories) result.categories = place.categories;
         if (place.photoUrl) result.photoUrl = place.photoUrl;
-        if (place.openingHours) result.openingHours = place.openingHours;
+        if (place.openingHoursArray)
+          result.openingHoursArray = place.openingHoursArray;
+        if (place.openingHours) result.openingHours = place.openingHours; // legacy fallback
 
         // Cache the result
         const cacheData: any = {
@@ -128,7 +135,11 @@ export class ValidationService {
 
       if (BROAD_MAPBOX_TYPES.has(geocode.placeType)) {
         logger.info(
-          { intent, placeName: geocode.placeName, placeType: geocode.placeType },
+          {
+            intent,
+            placeName: geocode.placeName,
+            placeType: geocode.placeType,
+          },
           "Validation: Ignoring broad Mapbox location",
         );
         return null;

@@ -226,6 +226,11 @@ function buildItinerary(
     const dayKey = aiDayKeys[dayNum] ?? `day${dayNum + 1}`;
     const slots = intents[dayKey];
 
+    // UTC date arithmetic — immune to server timezone.
+    const dayDate = new Date(
+      new Date(startDateStr).getTime() + dayNum * msPerDay,
+    );
+
     const activities: IActivity[] = [];
     let order = 0;
 
@@ -263,20 +268,26 @@ function buildItinerary(
           // Thread rich place data from validation pipeline
           if (place.rating !== undefined) activity.rating = place.rating;
           if (place.photoUrl) activity.photoUrl = place.photoUrl;
-          if (place.openingHours) activity.openingHours = place.openingHours;
+
+          // Compute opening hours for the exact day
+          if (place.openingHoursArray && place.openingHoursArray.length > 0) {
+            const dayJs = dayDate.getDay(); // 0=Sun, 1=Mon ... 6=Sat
+            const googleIdx = dayJs === 0 ? 6 : dayJs - 1; // Google v1 format: Mon=0 .. Sun=6
+            const entry = place.openingHoursArray[googleIdx];
+            if (entry) {
+              const colonIdx = entry.indexOf(":");
+              activity.openingHours =
+                colonIdx !== -1 ? entry.slice(colonIdx + 1).trim() : entry;
+            }
+          } else if (place.openingHours) {
+            activity.openingHours = place.openingHours;
+          }
 
           activities.push(activity);
           order++;
         }
       }
     }
-    // If slots was undefined (AI skipped this day), activities stays empty [] — a valid day.
-
-    // UTC date arithmetic — immune to server timezone.
-    const dayDate = new Date(
-      new Date(startDateStr).getTime() + dayNum * msPerDay,
-    );
-
     itinerary.push({
       day: dayNum + 1,
       date: dayDate,

@@ -35,7 +35,7 @@ interface ImportMetaEnv {
   // ============================================
 
   /** Mapbox public access token */
-  readonly VITE_MAPBOX_TOKEN?: string;
+  readonly VITE_MAPBOX_ACCESS_TOKEN?: string;
 
   /** Clerk publishable key (public) */
   readonly VITE_CLERK_PUBLISHABLE_KEY?: string;

@@ -10,7 +10,8 @@ export interface PlaceDetails {
   priceLevel?: number;
   isOpen?: boolean;
   photoUrl?: string; // resolved CDN URL (no API key exposed)
-  openingHours?: string; // today's hours text
+  openingHours?: string; // today's hours text (legacy)
+  openingHoursArray?: string[]; // full week descriptions from Google v1
   categories?: string[];
   location?: {
     lat: number;
@@ -139,27 +140,10 @@ export class PlacesService {
     return undefined;
   }
 
-  /**
-   * Extract today's opening hours text from weekdayDescriptions array.
-   * v1 format: ["Monday: 9:00 AM – 10:00 PM", "Tuesday: ...", ...]
-   * Index 0 = Monday ... 6 = Sunday (different from JS getDay()).
-   */
-  private getTodayHours(weekdayDescriptions?: string[]): string | undefined {
-    if (!weekdayDescriptions || weekdayDescriptions.length === 0)
-      return undefined;
-    const dayJs = new Date().getDay(); // 0=Sun, 1=Mon ... 6=Sat
-    const googleIdx = dayJs === 0 ? 6 : dayJs - 1; // convert to Mon-first
-    const entry = weekdayDescriptions[googleIdx];
-    if (!entry) return undefined;
-    const colonIdx = entry.indexOf(":");
-    return colonIdx !== -1 ? entry.slice(colonIdx + 1).trim() : entry;
-  }
-
   private isBroadPlace(types?: string[]): boolean {
     if (!types || types.length === 0) return false;
     return types.some((type) => BROAD_PLACE_TYPES.has(type));
   }
-
 
   /**
    * PRIMARY: Text Search via Places API v1 (POST).
@@ -263,15 +247,15 @@ export class PlacesService {
         };
       }
 
-      // Opening hours — single-call hydration (no second Details call needed)
+      // Opening hours — full array passed to processor for date-matching
       if (place.currentOpeningHours) {
         if (place.currentOpeningHours.openNow !== undefined) {
           details.isOpen = place.currentOpeningHours.openNow;
         }
-        const todayHours = this.getTodayHours(
-          place.currentOpeningHours.weekdayDescriptions,
-        );
-        if (todayHours) details.openingHours = todayHours;
+        if (place.currentOpeningHours.weekdayDescriptions) {
+          details.openingHoursArray =
+            place.currentOpeningHours.weekdayDescriptions;
+        }
       }
 
       // Photo — resolve resource name to CDN URL (no API key in URL)

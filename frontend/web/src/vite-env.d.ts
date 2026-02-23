@@ -14,7 +14,7 @@ interface ImportMetaEnv {
   readonly VITE_CLERK_PUBLISHABLE_KEY: string;
 
   /** Mapbox Access Token */
-  readonly VITE_MAPBOX_TOKEN: string;
+  readonly VITE_MAPBOX_ACCESS_TOKEN: string;
 
   /** Environment name */
   readonly VITE_ENV: "development" | "staging" | "production";
