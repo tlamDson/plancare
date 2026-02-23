@@ -100,3 +100,5 @@ tmp/
 *.tmp
 frontend/web/lint_unix.txt
 frontend/web/lint.txt
+
+.design-docs/
