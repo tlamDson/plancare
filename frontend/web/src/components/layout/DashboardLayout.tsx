@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { SettingsModal } from "@/features/settings/components/SettingsModal";
 import {
   LayoutDashboard,
   Map,
@@ -48,6 +49,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -148,11 +150,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <DropdownMenuContent align="start" className="w-56">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/settings">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Settings
-                  </Link>
+                <DropdownMenuItem
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="cursor-pointer"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
@@ -175,6 +178,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Page content */}
         <div className="p-4 lg:p-6">{children}</div>
       </main>
+
+      {/* Global Modals */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </div>
   );
 }
