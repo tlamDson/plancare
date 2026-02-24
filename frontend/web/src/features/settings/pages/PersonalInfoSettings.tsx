@@ -20,8 +20,8 @@ export function PersonalInfoSettings() {
   const { user, isLoaded } = useUser();
   const { t } = useTranslationStore();
 
-  const isGoogleAuth = user?.externalAccounts?.some(
-    (acc) => String(acc.provider) === "oauth_google",
+  const isExternalAuth = Boolean(
+    user?.externalAccounts && user.externalAccounts.length > 0,
   );
 
   const [firstName, setFirstName] = useState("");
@@ -57,7 +57,7 @@ export function PersonalInfoSettings() {
     if (!user) return;
     setIsSaving(true);
     try {
-      if (!isGoogleAuth) {
+      if (!isExternalAuth) {
         await user.update({
           firstName,
           lastName,
@@ -134,7 +134,7 @@ export function PersonalInfoSettings() {
                 id="first-name"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                disabled={isGoogleAuth}
+                disabled={isExternalAuth}
               />
             </div>
             <div className="space-y-2">
@@ -143,7 +143,7 @@ export function PersonalInfoSettings() {
                 id="last-name"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                disabled={isGoogleAuth}
+                disabled={isExternalAuth}
               />
             </div>
             <div className="space-y-2 col-span-1 sm:col-span-2">
