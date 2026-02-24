@@ -1,9 +1,69 @@
+import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 export function LocalizationSettings() {
+  const [temperature, setTemperature] = useState<"C" | "F">("C");
+  const [distance, setDistance] = useState<"Miles" | "Km">("Miles");
+  const [currency, setCurrency] = useState("USD");
+  const [language, setLanguage] = useState("English (US)");
+  const [autoTranslate, setAutoTranslate] = useState(true);
+
+  useEffect(() => {
+    try {
+      const prefs = JSON.parse(
+        localStorage.getItem("user-preferences") || "{}",
+      );
+      if (prefs.currency) setCurrency(prefs.currency);
+      if (prefs.temperature) setTemperature(prefs.temperature);
+      if (prefs.distance) setDistance(prefs.distance);
+      if (prefs.language) setLanguage(prefs.language);
+      if (prefs.autoTranslate !== undefined)
+        setAutoTranslate(prefs.autoTranslate);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const handleSave = () => {
+    try {
+      const prefs = JSON.parse(
+        localStorage.getItem("user-preferences") || "{}",
+      );
+      localStorage.setItem(
+        "user-preferences",
+        JSON.stringify({
+          ...prefs,
+          currency,
+          temperature,
+          distance,
+          language,
+          autoTranslate,
+        }),
+      );
+      toast.success("Localization settings saved");
+    } catch (e) {
+      toast.error("Failed to save settings");
+    }
+  };
+
+  const handleDiscard = () => {
+    try {
+      const prefs = JSON.parse(
+        localStorage.getItem("user-preferences") || "{}",
+      );
+      if (prefs.currency) setCurrency(prefs.currency);
+      if (prefs.temperature) setTemperature(prefs.temperature);
+      if (prefs.distance) setDistance(prefs.distance);
+      if (prefs.language) setLanguage(prefs.language);
+      if (prefs.autoTranslate !== undefined)
+        setAutoTranslate(prefs.autoTranslate);
+    } catch (e) {}
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -33,16 +93,20 @@ export function LocalizationSettings() {
               </div>
               <div className="flex items-center bg-muted p-1 rounded-md">
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-7 px-4 bg-background shadow-sm"
+                  onClick={() => setTemperature("C")}
+                  className={`h-7 px-4 ${temperature === "C" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
                 >
                   °C
                 </Button>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-7 px-4 text-muted-foreground"
+                  onClick={() => setTemperature("F")}
+                  className={`h-7 px-4 ${temperature === "F" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
                 >
                   °F
                 </Button>
@@ -58,16 +122,20 @@ export function LocalizationSettings() {
               </div>
               <div className="flex items-center bg-muted p-1 rounded-md">
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-7 px-4 text-muted-foreground"
+                  onClick={() => setDistance("Miles")}
+                  className={`h-7 px-4 ${distance === "Miles" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
                 >
                   Miles
                 </Button>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-7 px-4 bg-background shadow-sm"
+                  onClick={() => setDistance("Km")}
+                  className={`h-7 px-4 ${distance === "Km" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
                 >
                   Km
                 </Button>
@@ -84,8 +152,21 @@ export function LocalizationSettings() {
                 </p>
               </div>
               <div className="flex items-center">
-                <Button variant="outline" className="w-32 justify-between">
-                  USD ($)
+                <Button
+                  variant="outline"
+                  className="w-32 justify-between"
+                  type="button"
+                  onClick={() => {
+                    const newCurrency =
+                      currency === "USD"
+                        ? "EUR"
+                        : currency === "EUR"
+                          ? "GBP"
+                          : "USD";
+                    setCurrency(newCurrency);
+                  }}
+                >
+                  {currency}
                 </Button>
               </div>
             </div>
@@ -108,8 +189,21 @@ export function LocalizationSettings() {
                 </p>
               </div>
               <div className="flex items-center">
-                <Button variant="outline" className="w-32 justify-between">
-                  English (US)
+                <Button
+                  variant="outline"
+                  className="w-32 justify-between"
+                  type="button"
+                  onClick={() => {
+                    const newLang =
+                      language === "English (US)"
+                        ? "French"
+                        : language === "French"
+                          ? "Spanish"
+                          : "English (US)";
+                    setLanguage(newLang);
+                  }}
+                >
+                  {language}
                 </Button>
               </div>
             </div>
@@ -127,16 +221,22 @@ export function LocalizationSettings() {
                   primary language.
                 </p>
               </div>
-              <Switch id="auto-translate" defaultChecked />
+              <Switch
+                id="auto-translate"
+                checked={autoTranslate}
+                onCheckedChange={setAutoTranslate}
+              />
             </div>
           </div>
         </section>
 
         <div className="flex justify-end gap-4 border-t pt-6">
-          <Button variant="outline" type="button">
+          <Button variant="outline" type="button" onClick={handleDiscard}>
             Discard
           </Button>
-          <Button type="button">Save Changes</Button>
+          <Button type="button" onClick={handleSave}>
+            Save Changes
+          </Button>
         </div>
       </form>
     </div>

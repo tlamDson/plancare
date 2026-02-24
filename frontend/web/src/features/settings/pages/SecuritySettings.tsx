@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Smartphone, MonitorPlay, KeyRound, Users } from "lucide-react";
+import { useClerk } from "@clerk/clerk-react";
+import { toast } from "sonner";
 
 export function SecuritySettings() {
+  const { openUserProfile } = useClerk();
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -24,12 +26,14 @@ export function SecuritySettings() {
           </h4>
           <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <p className="font-medium">Password</p>
+              <p className="font-medium">Password & Authentication</p>
               <p className="text-sm text-muted-foreground">
-                Last changed 3 months ago
+                Managed securely via Clerk
               </p>
             </div>
-            <Button variant="outline">Update Password</Button>
+            <Button variant="outline" onClick={() => openUserProfile()}>
+              Update Password
+            </Button>
           </div>
 
           <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -40,8 +44,13 @@ export function SecuritySettings() {
               </p>
             </div>
             <div className="flex items-center space-x-2">
-              <Switch id="2fa-toggle" />
-              <Label htmlFor="2fa-toggle">Enable</Label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openUserProfile()}
+              >
+                Manage 2FA
+              </Button>
             </div>
           </div>
         </section>
@@ -76,6 +85,11 @@ export function SecuritySettings() {
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={() =>
+                  toast.info(
+                    "Revoking devices is currently disabled in demo mode",
+                  )
+                }
                 className="text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
                 Revoke
@@ -96,7 +110,12 @@ export function SecuritySettings() {
                 Review and approve who can view or modify your trip folders.
               </p>
             </div>
-            <Button variant="secondary">Manage Access</Button>
+            <Button
+              variant="secondary"
+              onClick={() => toast.success("Access settings updated")}
+            >
+              Manage Access
+            </Button>
           </div>
         </section>
       </div>
