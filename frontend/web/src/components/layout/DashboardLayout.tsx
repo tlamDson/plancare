@@ -19,7 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { SettingsModal } from "@/features/settings/components/SettingsModal";
 import {
   LayoutDashboard,
@@ -74,7 +73,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <Link to="/dashboard" className="font-bold text-lg">
             TravelPlan
           </Link>
-          <ThemeToggle />
+          <div className="w-9" /> {/* Spacer for alignment */}
         </div>
       </header>
 
@@ -176,11 +175,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Main content */}
       <main className="lg:pl-64">
-        {/* Desktop header */}
-        <header className="hidden lg:flex sticky top-0 z-40 border-b bg-background/95 backdrop-blur h-14 items-center justify-end px-6 gap-4">
-          <ThemeToggle />
-        </header>
-
         {/* Page content */}
         <div className="p-4 lg:p-6">{children}</div>
       </main>
