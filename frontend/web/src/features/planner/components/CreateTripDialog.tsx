@@ -19,16 +19,17 @@ import { StepAccommodation } from "./wizard/StepAccommodation";
 import { StepActivities } from "./wizard/StepActivities";
 import { useTripWizard } from "../hooks/useTripWizard";
 import type { TripPreferences } from "@travelplan/shared";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 const TOTAL_STEPS = 4;
 const MIN_DAILY_BUDGET = 20;
 const MAX_TRIP_DAYS = 90;
 
 const steps = [
-  { title: "Trip Basics", description: "Where and when are you going?" },
-  { title: "Budget", description: "Set the total budget and priorities." },
-  { title: "Accommodation", description: "Choose the stay that fits you." },
-  { title: "Activities", description: "Mood and interests for the trip." },
+  { titleKey: "wizard.step1Title", descKey: "wizard.step1Desc" },
+  { titleKey: "wizard.step2Title", descKey: "wizard.step2Desc" },
+  { titleKey: "wizard.step3Title", descKey: "wizard.step3Desc" },
+  { titleKey: "wizard.step4Title", descKey: "wizard.step4Desc" },
 ];
 
 function getTripDays(startDate: string, endDate: string) {
@@ -70,6 +71,7 @@ function buildPreferences(data: TripWizardData) {
 export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
   const navigate = useNavigate();
   const { data, reset } = useTripWizardStore();
+  const { t } = useTranslationStore();
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
 
@@ -162,15 +164,15 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{stepMeta.title}</DialogTitle>
-          <DialogDescription>{stepMeta.description}</DialogDescription>
+          <DialogTitle>{t(stepMeta.titleKey)}</DialogTitle>
+          <DialogDescription>{t(stepMeta.descKey)}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
             <Progress value={progressValue} />
             <p className="mt-2 text-sm text-muted-foreground">
-              Step {stepIndex + 1} of {TOTAL_STEPS}
+              {t("wizard.step")} {stepIndex + 1} {t("wizard.of")} {TOTAL_STEPS}
             </p>
           </div>
           {renderStep()}
@@ -184,22 +186,22 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
               setStepIndex(0);
             }}
           >
-            Reset
+            {t("wizard.btnReset")}
           </Button>
           <Button
             variant="ghost"
             onClick={handleBack}
             disabled={stepIndex === 0}
           >
-            Back
+            {t("wizard.btnBack")}
           </Button>
           {stepIndex < TOTAL_STEPS - 1 ? (
             <Button onClick={handleNext} disabled={!stepValid}>
-              Next
+              {t("wizard.btnNext")}
             </Button>
           ) : (
             <Button onClick={handleSubmit} disabled={!stepValid || isPending}>
-              {isPending ? "Creating..." : "Create Trip"}
+              {isPending ? t("wizard.btnCreating") : t("wizard.btnCreate")}
             </Button>
           )}
         </DialogFooter>

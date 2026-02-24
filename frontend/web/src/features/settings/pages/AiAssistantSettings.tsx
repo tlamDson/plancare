@@ -1,17 +1,18 @@
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 export function AiAssistantSettings() {
+  const { t } = useTranslationStore();
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
         <h3 className="text-2xl font-bold tracking-tight">
-          AI Assistant Configurations
+          {t("ai.pageTitle")}
         </h3>
-        <p className="text-muted-foreground mt-1">
-          Tune the AI engine and manage your floating travel assistant.
-        </p>
+        <p className="text-muted-foreground mt-1">{t("ai.pageSubtitle")}</p>
       </div>
 
       <Separator />
@@ -20,17 +21,16 @@ export function AiAssistantSettings() {
         {/* Chatbot Settings */}
         <section className="space-y-4">
           <h4 className="text-sm font-semibold text-foreground">
-            Global Travel Assistant
+            {t("ai.globalTitle")}
           </h4>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 rounded-lg border bg-card shadow-sm">
               <div className="space-y-0.5 pr-4">
                 <Label htmlFor="ai-toggle" className="text-base font-medium">
-                  Enable Floating Assistant
+                  {t("ai.enableFloating")}
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Keep the AI chatbot accessible in the bottom right corner
-                  across all pages.
+                  {t("ai.enableFloatingDesc")}
                 </p>
               </div>
               <Switch id="ai-toggle" defaultChecked />
@@ -39,10 +39,10 @@ export function AiAssistantSettings() {
             <div className="flex items-center justify-between p-4 rounded-lg border bg-card shadow-sm opacity-100">
               <div className="space-y-0.5 pr-4">
                 <Label htmlFor="ai-logo" className="text-base font-medium">
-                  Display AI Logo
+                  {t("ai.displayLogo")}
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Show the animated AI orb on the floating button when closed.
+                  {t("ai.displayLogoDesc")}
                 </p>
               </div>
               <Switch id="ai-logo" defaultChecked />
@@ -53,7 +53,7 @@ export function AiAssistantSettings() {
         {/* Model Constraints */}
         <section className="space-y-4">
           <h4 className="text-sm font-semibold text-foreground">
-            Behavior Limits
+            {t("ai.limitsTitle")}
           </h4>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 rounded-lg border bg-card shadow-sm">
@@ -62,11 +62,10 @@ export function AiAssistantSettings() {
                   htmlFor="budget-strict"
                   className="text-base font-medium"
                 >
-                  Strict Budget Enforcement
+                  {t("ai.strictBudget")}
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Prevent the AI from ever suggesting activities that exceed
-                  your set tier limit.
+                  {t("ai.strictBudgetDesc")}
                 </p>
               </div>
               <Switch id="budget-strict" defaultChecked />

@@ -2,20 +2,19 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 export function AppearanceSettings() {
   const { theme, setTheme } = useThemeStore();
+  const { t } = useTranslationStore();
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
         <h3 className="text-2xl font-bold tracking-tight">
-          Aesthetics & Accessibility
+          {t("appr.pageTitle")}
         </h3>
-        <p className="text-muted-foreground mt-1">
-          Customize the appearance of the app and configure accessibility
-          options.
-        </p>
+        <p className="text-muted-foreground mt-1">{t("appr.pageSubtitle")}</p>
       </div>
 
       <Separator />
@@ -24,11 +23,9 @@ export function AppearanceSettings() {
         {/* Theme */}
         <section className="space-y-4">
           <h4 className="text-sm font-semibold text-foreground">
-            Theme Settings
+            {t("appr.themeTitle")}
           </h4>
-          <p className="text-sm text-muted-foreground">
-            Select or customize your interface color scheme.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("appr.themeDesc")}</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
             {/* Light Mode */}
             <button
@@ -46,7 +43,9 @@ export function AppearanceSettings() {
                   <div className="w-1/4 h-2 bg-emerald-500 rounded" />
                 </div>
               </div>
-              <span className="font-medium text-sm">Light</span>
+              <span className="font-medium text-sm">
+                {t("appr.themeLight")}
+              </span>
             </button>
 
             {/* Dark Mode */}
@@ -65,7 +64,7 @@ export function AppearanceSettings() {
                   <div className="w-1/4 h-2 bg-emerald-500 rounded" />
                 </div>
               </div>
-              <span className="font-medium text-sm">Dark</span>
+              <span className="font-medium text-sm">{t("appr.themeDark")}</span>
             </button>
 
             {/* System Mode */}
@@ -84,7 +83,9 @@ export function AppearanceSettings() {
                   <div className="w-1/4 h-2 bg-emerald-500 rounded" />
                 </div>
               </div>
-              <span className="font-medium text-sm">System</span>
+              <span className="font-medium text-sm">
+                {t("appr.themeSystem")}
+              </span>
             </button>
           </div>
         </section>
@@ -92,7 +93,7 @@ export function AppearanceSettings() {
         {/* Accessibility */}
         <section className="space-y-4">
           <h4 className="text-sm font-semibold text-foreground">
-            Accessibility
+            {t("appr.accTitle")}
           </h4>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 rounded-lg border bg-card shadow-sm">
@@ -101,11 +102,10 @@ export function AppearanceSettings() {
                   htmlFor="high-contrast"
                   className="text-base font-medium"
                 >
-                  High Contrast
+                  {t("appr.highContrast")}
                 </Label>
                 <p className="text-sm text-muted-foreground w-11/12">
-                  Increases color contrast across the interface for better
-                  readability.
+                  {t("appr.highContrastDesc")}
                 </p>
               </div>
               <Switch id="high-contrast" />
@@ -117,11 +117,10 @@ export function AppearanceSettings() {
                   htmlFor="infinite-scroll"
                   className="text-base font-medium"
                 >
-                  Infinite Scroll
+                  {t("appr.infiniteScroll")}
                 </Label>
                 <p className="text-sm text-muted-foreground w-11/12">
-                  Automatically load the next page of itineraries instead of
-                  using pagination.
+                  {t("appr.infiniteScrollDesc")}
                 </p>
               </div>
               <Switch id="infinite-scroll" defaultChecked />
@@ -130,10 +129,10 @@ export function AppearanceSettings() {
             <div className="flex items-center justify-between p-4 rounded-lg border bg-card shadow-sm">
               <div className="space-y-0.5 pr-4">
                 <Label htmlFor="map-controls" className="text-base font-medium">
-                  Persistent Map Controls
+                  {t("appr.mapControls")}
                 </Label>
                 <p className="text-sm text-muted-foreground w-11/12">
-                  Always display zoom and pan controls on interactive map views.
+                  {t("appr.mapControlsDesc")}
                 </p>
               </div>
               <Switch id="map-controls" defaultChecked />

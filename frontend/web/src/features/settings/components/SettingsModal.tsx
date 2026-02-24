@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   User,
   ShieldCheck,
@@ -16,36 +16,42 @@ import { LocalizationSettings } from "../pages/LocalizationSettings";
 import { AppearanceSettings } from "../pages/AppearanceSettings";
 import { AiAssistantSettings } from "../pages/AiAssistantSettings";
 import { TravelPreferencesSettings } from "../pages/TravelPreferencesSettings";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 const SETTINGS_TABS = [
   {
     id: "personal",
-    name: "Personal Information",
+    nameKey: "nav.personal",
     icon: User,
     Component: PersonalInfoSettings,
   },
   {
     id: "security",
-    name: "Security & Access",
+    nameKey: "nav.security",
     icon: ShieldCheck,
     Component: SecuritySettings,
   },
   {
     id: "localization",
-    name: "Localization",
+    nameKey: "nav.localization",
     icon: Globe,
     Component: LocalizationSettings,
   },
   {
     id: "appearance",
-    name: "Appearance",
+    nameKey: "nav.appearance",
     icon: Palette,
     Component: AppearanceSettings,
   },
-  { id: "ai", name: "AI Assistant", icon: Bot, Component: AiAssistantSettings },
+  {
+    id: "ai",
+    nameKey: "nav.ai",
+    icon: Bot,
+    Component: AiAssistantSettings,
+  },
   {
     id: "preferences",
-    name: "Travel Preferences",
+    nameKey: "nav.preferences",
     icon: PlaneTakeoff,
     Component: TravelPreferencesSettings,
   },
@@ -60,6 +66,7 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>("personal");
+  const { t } = useTranslationStore();
 
   const ActiveComponent =
     SETTINGS_TABS.find((tab) => tab.id === activeTab)?.Component ||
@@ -68,10 +75,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl p-0 overflow-hidden gap-0 bg-background h-[85vh] md:h-[700px] flex flex-col md:flex-row">
+        <DialogTitle className="sr-only">{t("settings.title")}</DialogTitle>
         {/* Sidebar Navigation */}
         <aside className="w-full md:w-64 bg-muted/30 border-r md:h-full flex flex-col shrink-0">
           <div className="p-6 pb-4">
-            <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
+            <h2 className="text-2xl font-bold tracking-tight">
+              {t("settings.title")}
+            </h2>
           </div>
           <nav className="flex-1 px-4 space-y-1 overflow-y-auto overflow-x-hidden md:py-2 flex flex-row md:flex-col pb-4 md:pb-0 gap-2 md:gap-0 border-b md:border-b-0 hide-scrollbar">
             {SETTINGS_TABS.map((tab) => {
@@ -89,7 +99,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <tab.icon
                     className={`w-4 h-4 ${isActive ? "text-primary-foreground" : ""}`}
                   />
-                  {tab.name}
+                  {t(tab.nameKey)}
                 </button>
               );
             })}

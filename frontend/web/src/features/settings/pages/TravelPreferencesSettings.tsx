@@ -5,8 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 export function TravelPreferencesSettings() {
+  const { t } = useTranslationStore();
+
   // From Onboarding
   const [travelStyle, setTravelStyle] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
@@ -122,12 +125,9 @@ export function TravelPreferencesSettings() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
         <h3 className="text-2xl font-bold tracking-tight">
-          Travel & Booking Preferences
+          {t("pref.pageTitle")}
         </h3>
-        <p className="text-muted-foreground mt-1">
-          Store your default settings to tailor the AI agent's itineraries
-          perfectly to your liking.
-        </p>
+        <p className="text-muted-foreground mt-1">{t("pref.pageSubtitle")}</p>
       </div>
 
       <Separator />
@@ -136,19 +136,19 @@ export function TravelPreferencesSettings() {
         {/* Onboarding Overview */}
         <section className="space-y-4">
           <h4 className="text-sm font-semibold text-foreground">
-            General Travel Profile
+            {t("pref.generalTitle")}
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6 border bg-card p-4 rounded-lg shadow-sm">
             <div className="space-y-2 col-span-full">
-              <Label>Travel Style (From Onboarding)</Label>
+              <Label>{t("pref.travelStyle")}</Label>
               <div className="flex gap-2 p-2 bg-muted/50 rounded-md">
                 <span className="text-sm font-medium">
-                  {travelStyle || "Not selected"}
+                  {travelStyle || t("pref.notSelected")}
                 </span>
               </div>
             </div>
             <div className="space-y-2 col-span-full">
-              <Label>Interests (From Onboarding)</Label>
+              <Label>{t("pref.interests")}</Label>
               <div className="flex flex-wrap gap-2">
                 {interests.length > 0 ? (
                   interests.map((i) => (
@@ -161,7 +161,7 @@ export function TravelPreferencesSettings() {
                   ))
                 ) : (
                   <span className="text-sm text-muted-foreground p-2">
-                    None selected
+                    {t("pref.noneSelected")}
                   </span>
                 )}
               </div>
@@ -172,11 +172,11 @@ export function TravelPreferencesSettings() {
         {/* Booking Specifics */}
         <section className="space-y-4">
           <h4 className="text-sm font-semibold text-foreground">
-            Booking Specifics
+            {t("pref.bookingTitle")}
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
             <div className="space-y-2">
-              <Label htmlFor="seat-choice">Air Travel: Seat Preference</Label>
+              <Label htmlFor="seat-choice">{t("pref.seatPref")}</Label>
               <div className="flex items-center gap-2">
                 <Button
                   type="button"
@@ -184,7 +184,7 @@ export function TravelPreferencesSettings() {
                   onClick={() => setSeatChoice("Aisle")}
                   className={`flex-1 ${seatChoice === "Aisle" ? "bg-zinc-100 dark:bg-zinc-800" : ""}`}
                 >
-                  Aisle
+                  {t("pref.aisle")}
                 </Button>
                 <Button
                   type="button"
@@ -192,7 +192,7 @@ export function TravelPreferencesSettings() {
                   className={`flex-1 ${seatChoice === "Window" ? "bg-zinc-100 dark:bg-zinc-800" : ""}`}
                   onClick={() => setSeatChoice("Window")}
                 >
-                  Window
+                  {t("pref.window")}
                 </Button>
                 <Button
                   type="button"
@@ -200,13 +200,15 @@ export function TravelPreferencesSettings() {
                   className={`flex-1 ${seatChoice === "Middle" ? "bg-zinc-100 dark:bg-zinc-800" : ""}`}
                   onClick={() => setSeatChoice("Middle")}
                 >
-                  Middle
+                  {t("pref.middle")}
                 </Button>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="default-airport">Default Departure Airport</Label>
+              <Label htmlFor="default-airport">
+                {t("pref.defaultAirport")}
+              </Label>
               <Input
                 id="default-airport"
                 placeholder="e.g., JFK, LHR, SFO"
@@ -216,7 +218,7 @@ export function TravelPreferencesSettings() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="meal">Special Meals</Label>
+              <Label htmlFor="meal">{t("pref.meals")}</Label>
               <Input
                 id="meal"
                 placeholder="e.g., Vegetarian, Halal, Gluten-Free"
@@ -226,7 +228,7 @@ export function TravelPreferencesSettings() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="hotel-room">Hotel Room Preference</Label>
+              <Label htmlFor="hotel-room">{t("pref.hotelRoom")}</Label>
               <div className="flex items-center gap-2">
                 <Button
                   type="button"
@@ -234,7 +236,7 @@ export function TravelPreferencesSettings() {
                   onClick={() => setHotelRoom("1 Bed")}
                   className={`flex-1 ${hotelRoom === "1 Bed" ? "bg-zinc-100 dark:bg-zinc-800" : ""}`}
                 >
-                  1 Bed
+                  {t("pref.1bed")}
                 </Button>
                 <Button
                   type="button"
@@ -242,7 +244,7 @@ export function TravelPreferencesSettings() {
                   className={`flex-1 ${hotelRoom === "2 Beds" ? "bg-zinc-100 dark:bg-zinc-800" : ""}`}
                   onClick={() => setHotelRoom("2 Beds")}
                 >
-                  2 Beds
+                  {t("pref.2beds")}
                 </Button>
               </div>
             </div>
@@ -250,10 +252,10 @@ export function TravelPreferencesSettings() {
             <div className="flex items-center justify-between p-4 rounded-lg border bg-card shadow-sm col-span-full">
               <div className="space-y-0.5 pr-4">
                 <Label htmlFor="smoking" className="text-base font-medium">
-                  Smoking Preference
+                  {t("pref.smoking")}
                 </Label>
                 <p className="text-sm text-muted-foreground mb-0">
-                  Allow booking smoking-friendly rooms.
+                  {t("pref.smokingDesc")}
                 </p>
               </div>
               <Switch
@@ -266,10 +268,10 @@ export function TravelPreferencesSettings() {
             <div className="flex items-center justify-between p-4 rounded-lg border bg-card shadow-sm col-span-full">
               <div className="space-y-0.5 pr-4">
                 <Label htmlFor="accessible" className="text-base font-medium">
-                  Accessibility Needs
+                  {t("pref.accessible")}
                 </Label>
                 <p className="text-sm text-muted-foreground mb-0">
-                  Prioritize wheelchair-accessible hotels and transportation.
+                  {t("pref.accessibleDesc")}
                 </p>
               </div>
               <Switch
@@ -284,7 +286,7 @@ export function TravelPreferencesSettings() {
         {/* Loyalty Programs */}
         <section className="space-y-4">
           <h4 className="text-sm font-semibold text-foreground">
-            Loyalty Programs
+            {t("pref.loyaltyTitle")}
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -325,18 +327,18 @@ export function TravelPreferencesSettings() {
             </div>
           </div>
           <Button variant="link" className="px-0" type="button">
-            Add another program...
+            {t("pref.addProgram")}
           </Button>
         </section>
 
         {/* Routing Preferences */}
         <section className="space-y-4">
           <h4 className="text-sm font-semibold text-foreground">
-            Routing Preferences
+            {t("pref.routingTitle")}
           </h4>
           <div className="space-y-4">
             <div className="space-y-3">
-              <Label>Default Travel Mode</Label>
+              <Label>{t("pref.travelMode")}</Label>
               <div className="flex items-center gap-2 flex-wrap">
                 <Button
                   type="button"
@@ -348,7 +350,7 @@ export function TravelPreferencesSettings() {
                       : ""
                   }
                 >
-                  Transit
+                  {t("pref.transit")}
                 </Button>
                 <Button
                   type="button"
@@ -360,7 +362,7 @@ export function TravelPreferencesSettings() {
                   }
                   onClick={() => setTravelMode("Driving")}
                 >
-                  Driving
+                  {t("pref.driving")}
                 </Button>
                 <Button
                   type="button"
@@ -372,7 +374,7 @@ export function TravelPreferencesSettings() {
                   }
                   onClick={() => setTravelMode("Walking")}
                 >
-                  Walking
+                  {t("pref.walking")}
                 </Button>
                 <Button
                   type="button"
@@ -384,7 +386,7 @@ export function TravelPreferencesSettings() {
                   }
                   onClick={() => setTravelMode("Cycling")}
                 >
-                  Cycling
+                  {t("pref.cycling")}
                 </Button>
               </div>
             </div>
@@ -392,10 +394,10 @@ export function TravelPreferencesSettings() {
             <div className="flex items-center justify-between p-4 rounded-lg border bg-card shadow-sm">
               <div className="space-y-0.5 pr-4">
                 <Label htmlFor="avoid-tolls" className="text-base font-medium">
-                  Avoid Tolls
+                  {t("pref.avoidTolls")}
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Default to routes without toll roads.
+                  {t("pref.avoidTollsDesc")}
                 </p>
               </div>
               <Switch
@@ -411,10 +413,10 @@ export function TravelPreferencesSettings() {
                   htmlFor="avoid-traffic"
                   className="text-base font-medium"
                 >
-                  Avoid Heavy Traffic
+                  {t("pref.avoidTraffic")}
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Reroute around known congestion.
+                  {t("pref.avoidTrafficDesc")}
                 </p>
               </div>
               <Switch
@@ -429,10 +431,10 @@ export function TravelPreferencesSettings() {
         {/* Footer Actions */}
         <div className="flex justify-end gap-4 border-t pt-6 pb-20">
           <Button variant="outline" type="button" onClick={handleDiscard}>
-            Discard
+            {t("loc.btnDiscard")}
           </Button>
           <Button type="button" onClick={handleSave}>
-            Save Preferences
+            {t("loc.btnSave")}
           </Button>
         </div>
       </form>

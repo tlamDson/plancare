@@ -1,10 +1,3 @@
-/**
- * Trip Card Component
- *
- * Feature-specific component (Section 1.1)
- * Lives in features/planner/components, NOT in src/components
- */
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, Loader2, MoreVertical, Trash2 } from "lucide-react";
@@ -26,9 +19,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { formatDateRange, getTripDuration } from "@/utils/format";
+import {
+  formatDateRange,
+  getTripDuration,
+  formatCurrency,
+} from "@/utils/format";
 import type { Trip } from "@/utils/schemas";
 import { useDeleteTrip } from "../hooks/useTrips";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 interface TripCardProps {
   trip: Trip;
@@ -52,6 +50,7 @@ export function TripCard({ trip }: TripCardProps) {
   const duration = getTripDuration(trip.startDate, trip.endDate);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { mutate: deleteTrip, isPending: isDeleting } = useDeleteTrip();
+  const { language } = useTranslationStore();
 
   const budgetPercentage =
     trip.budget.totalLimit > 0
@@ -67,7 +66,6 @@ export function TripCard({ trip }: TripCardProps) {
 
   return (
     <>
-      {/* Outer wrapper is NOT a Link so the dropdown doesn't trigger navigation */}
       <div className="relative">
         <Link to={`/trips/${trip._id}`}>
           <Card className="group hover:border-primary/50 transition-all duration-300 hover:shadow-md overflow-hidden cursor-pointer">
@@ -75,7 +73,7 @@ export function TripCard({ trip }: TripCardProps) {
               <img
                 src={
                   trip.coverImage ||
-                  "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400"
+                  "https://unsplash.com/photos/a-snow-capped-mountain-in-the-distance-behind-some-trees-uFwPTGf07Sg"
                 }
                 alt={trip.title}
                 className="w-full h-full object-cover"
@@ -83,7 +81,6 @@ export function TripCard({ trip }: TripCardProps) {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
 
-              {/* Status Badge */}
               <span
                 className={`absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-medium ${
                   statusColors[trip.status] || statusColors.DRAFT
@@ -92,7 +89,6 @@ export function TripCard({ trip }: TripCardProps) {
                 {formatStatusLabel(trip.status)}
               </span>
 
-              {/* Agent Processing Indicator */}
               {trip.isAgentProcessing && (
                 <span className="absolute top-10 left-3 px-2 py-1 rounded-full text-xs font-medium bg-primary text-primary-foreground flex items-center gap-1">
                   <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
@@ -115,20 +111,29 @@ export function TripCard({ trip }: TripCardProps) {
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <Calendar className="h-4 w-4" aria-hidden="true" />
-                  <span>{formatDateRange(trip.startDate, trip.endDate)}</span>
+                  <span>
+                    {formatDateRange(trip.startDate, trip.endDate, language)}
+                  </span>
                 </div>
                 <span className="text-muted-foreground">{duration} days</span>
               </div>
 
-              {/* Budget Progress */}
               {trip.budget.totalLimit > 0 && (
                 <div className="mt-3">
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-muted-foreground">Budget</span>
                     <span>
-                      {trip.budget.currency}{" "}
-                      {trip.budget.totalSpent.toLocaleString()} /{" "}
-                      {trip.budget.totalLimit.toLocaleString()}
+                      {formatCurrency(
+                        trip.budget.totalSpent,
+                        trip.budget.currency,
+                        language,
+                      )}{" "}
+                      /{" "}
+                      {formatCurrency(
+                        trip.budget.totalLimit,
+                        trip.budget.currency,
+                        language,
+                      )}
                     </span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">

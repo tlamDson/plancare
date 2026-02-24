@@ -21,6 +21,7 @@ import { useTrips } from "@/features/planner/hooks/useTrips";
 import { TripCard } from "@/features/planner/components/TripCard";
 import { Plus, Search, Loader2 } from "lucide-react";
 import { CreateTripDialog } from "@/features/planner/components";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 type FilterStatus =
   | "all"
@@ -32,6 +33,7 @@ type FilterStatus =
 
 export default function TripsPage() {
   const { data: trips, isLoading, error, refetch } = useTrips();
+  const { t } = useTranslationStore();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
 
@@ -54,16 +56,14 @@ export default function TripsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">My Trips</h1>
-            <p className="text-muted-foreground">
-              Manage and plan all your adventures
-            </p>
+            <h1 className="text-3xl font-bold">{t("trips.pageTitle")}</h1>
+            <p className="text-muted-foreground">{t("trips.pageSubtitle")}</p>
           </div>
           <CreateTripDialog
             trigger={
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                New Trip
+                {t("trips.newTrip")}
               </Button>
             }
           />
@@ -74,7 +74,7 @@ export default function TripsPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search trips..."
+              placeholder={t("trips.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -85,15 +85,19 @@ export default function TripsPage() {
             onValueChange={(v) => setStatusFilter(v as FilterStatus)}
           >
             <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filter by status" />
+              <SelectValue placeholder={t("trips.filterPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Trips</SelectItem>
-              <SelectItem value="DRAFT">Draft</SelectItem>
-              <SelectItem value="QUEUED">Queued</SelectItem>
-              <SelectItem value="PROCESSING">Processing</SelectItem>
-              <SelectItem value="COMPLETED">Completed</SelectItem>
-              <SelectItem value="FAILED">Failed</SelectItem>
+              <SelectItem value="all">{t("trips.filterAll")}</SelectItem>
+              <SelectItem value="DRAFT">{t("trips.filterDraft")}</SelectItem>
+              <SelectItem value="QUEUED">{t("trips.filterQueued")}</SelectItem>
+              <SelectItem value="PROCESSING">
+                {t("trips.filterProcessing")}
+              </SelectItem>
+              <SelectItem value="COMPLETED">
+                {t("trips.filterCompleted")}
+              </SelectItem>
+              <SelectItem value="FAILED">{t("trips.filterFailed")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -106,7 +110,7 @@ export default function TripsPage() {
             </div>
           ) : error ? (
             <DataError
-              title="Failed to load trips"
+              title={t("trips.errorLoad")}
               message={error.message}
               onRetry={() => refetch()}
             />
@@ -114,15 +118,15 @@ export default function TripsPage() {
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">
                 {search || statusFilter !== "all"
-                  ? "No trips match your filters"
-                  : "You haven't created any trips yet"}
+                  ? t("trips.emptyFilter")
+                  : t("trips.emptyAll")}
               </p>
               {!search && statusFilter === "all" && (
                 <CreateTripDialog
                   trigger={
                     <Button>
                       <Plus className="h-4 w-4 mr-2" />
-                      Create Your First Trip
+                      {t("trips.createFirst")}
                     </Button>
                   }
                 />

@@ -1,6 +1,7 @@
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { useTripWizardStore } from "@/stores/trip-wizard.store";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 const MIN_BUDGET = 500;
 const MAX_BUDGET = 10000;
@@ -18,6 +19,7 @@ function getTripDays(startDate: string, endDate: string) {
 
 export function StepBudget() {
   const { data, setBudget, setPriorities } = useTripWizardStore();
+  const { t } = useTranslationStore();
 
   const tripDays = getTripDays(data.startDate, data.endDate);
   const totalTravelers = data.travelers.adults + data.travelers.children * 0.5;
@@ -36,7 +38,7 @@ export function StepBudget() {
     <div className="space-y-6">
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label>Total Budget</Label>
+          <Label>{t("wizard.totalBudget")}</Label>
           <span className="text-sm font-medium">{formattedBudget}</span>
         </div>
         <Slider
@@ -56,14 +58,14 @@ export function StepBudget() {
                 : "text-muted-foreground"
             }`}
           >
-            {`~${budgetPerPersonDay.toFixed(0)} ${data.budget.currency}/person/day`}
+            {`~${budgetPerPersonDay.toFixed(0)} ${data.budget.currency}${t("wizard.personDay")}`}
           </p>
         )}
       </div>
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>Money Priority</Label>
+          <Label>{t("wizard.moneyPriority")}</Label>
           <Slider
             value={[data.priorities.money]}
             min={1}
@@ -75,7 +77,7 @@ export function StepBudget() {
           />
         </div>
         <div className="space-y-2">
-          <Label>Comfort Priority</Label>
+          <Label>{t("wizard.comfortPriority")}</Label>
           <Slider
             value={[data.priorities.comfort]}
             min={1}
@@ -87,7 +89,7 @@ export function StepBudget() {
           />
         </div>
         <div className="space-y-2">
-          <Label>Unique Priority</Label>
+          <Label>{t("wizard.uniquePriority")}</Label>
           <Slider
             value={[data.priorities.unique]}
             min={1}

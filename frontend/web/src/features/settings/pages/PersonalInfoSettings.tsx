@@ -5,14 +5,29 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 export function PersonalInfoSettings() {
   const { user, isLoaded } = useUser();
+  const { t } = useTranslationStore();
 
-  const [legalName, setLegalName] = useState("");
+  const isGoogleAuth = user?.externalAccounts?.some(
+    (acc) => String(acc.provider) === "oauth_google",
+  );
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [preferredName, setPreferredName] = useState("");
-  const [dob, setDob] = useState("");
+  const [dob, setDob] = useState<Date | undefined>();
   const [gender, setGender] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -21,12 +36,17 @@ export function PersonalInfoSettings() {
 
   useEffect(() => {
     if (user) {
-      setLegalName(user.fullName || "");
+      setFirstName(user.firstName || "");
+      setLastName(user.lastName || "");
       setEmail(user.primaryEmailAddress?.emailAddress || "");
 
       const meta = user.unsafeMetadata as Record<string, any>;
       setPreferredName(meta?.preferredName || "");
-      setDob(meta?.dob || "");
+      if (meta?.dob) {
+        setDob(new Date(meta.dob));
+      } else {
+        setDob(undefined);
+      }
       setGender(meta?.gender || "");
       setPhone(meta?.phone || "");
       setAddress(meta?.address || "");
@@ -37,19 +57,25 @@ export function PersonalInfoSettings() {
     if (!user) return;
     setIsSaving(true);
     try {
+      if (!isGoogleAuth) {
+        await user.update({
+          firstName,
+          lastName,
+        });
+      }
       await user.update({
         unsafeMetadata: {
           ...user.unsafeMetadata,
           preferredName,
-          dob,
+          dob: dob ? dob.toISOString() : null,
           gender,
           phone,
           address,
         },
       });
-      toast.success("Personal information updated");
+      toast.success(t("personal.toastSave"));
     } catch (error) {
-      toast.error("Failed to update information");
+      toast.error(t("personal.toastFail"));
       console.error(error);
     } finally {
       setIsSaving(false);
@@ -58,11 +84,16 @@ export function PersonalInfoSettings() {
 
   const handleDiscard = () => {
     if (user) {
-      setLegalName(user.fullName || "");
+      setFirstName(user.firstName || "");
+      setLastName(user.lastName || "");
       setEmail(user.primaryEmailAddress?.emailAddress || "");
       const meta = user.unsafeMetadata as Record<string, any>;
       setPreferredName(meta?.preferredName || "");
-      setDob(meta?.dob || "");
+      if (meta?.dob) {
+        setDob(new Date(meta.dob));
+      } else {
+        setDob(undefined);
+      }
       setGender(meta?.gender || "");
       setPhone(meta?.phone || "");
       setAddress(meta?.address || "");
@@ -81,10 +112,10 @@ export function PersonalInfoSettings() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
         <h3 className="text-2xl font-bold tracking-tight">
-          Personal Information
+          {t("personal.pageTitle")}
         </h3>
         <p className="text-muted-foreground mt-1">
-          Manage your legal identity and public profile details.
+          {t("personal.pageSubtitle")}
         </p>
       </div>
 
@@ -93,14 +124,32 @@ export function PersonalInfoSettings() {
       <form className="space-y-8">
         {/* Identity Section */}
         <section className="space-y-4">
-          <h4 className="text-sm font-semibold text-foreground">Identity</h4>
+          <h4 className="text-sm font-semibold text-foreground">
+            {t("personal.identityTitle")}
+          </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="legal-name">Legal Name (from Google)</Label>
-              <Input id="legal-name" value={legalName} disabled />
+              <Label htmlFor="first-name">{t("personal.firstName")}</Label>
+              <Input
+                id="first-name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                disabled={isGoogleAuth}
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="preferred-name">Preferred Name / Nickname</Label>
+              <Label htmlFor="last-name">{t("personal.lastName")}</Label>
+              <Input
+                id="last-name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                disabled={isGoogleAuth}
+              />
+            </div>
+            <div className="space-y-2 col-span-1 sm:col-span-2">
+              <Label htmlFor="preferred-name">
+                {t("personal.preferredName")}
+              </Label>
               <Input
                 id="preferred-name"
                 placeholder="Johnny"
@@ -108,17 +157,38 @@ export function PersonalInfoSettings() {
                 onChange={(e) => setPreferredName(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="dob">Date of Birth</Label>
-              <Input
-                id="dob"
-                type="date"
-                value={dob}
-                onChange={(e) => setDob(e.target.value)}
-              />
+            <div className="space-y-2 flex flex-col">
+              <Label htmlFor="dob">{t("personal.dob")}</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !dob && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dob ? (
+                      format(dob, "PPP")
+                    ) : (
+                      <span>{t("personal.pickDate")}</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dob}
+                    onSelect={setDob}
+                    initialFocus
+                    defaultMonth={dob || new Date(2000, 0, 1)}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="gender">Gender</Label>
+              <Label htmlFor="gender">{t("personal.gender")}</Label>
               <Input
                 id="gender"
                 placeholder="Optional"
@@ -132,15 +202,15 @@ export function PersonalInfoSettings() {
         {/* Contact Section */}
         <section className="space-y-4">
           <h4 className="text-sm font-semibold text-foreground">
-            Contact Information
+            {t("personal.contactTitle")}
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">{t("personal.email")}</Label>
               <Input id="email" type="email" value={email} disabled />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="phone">{t("personal.phone")}</Label>
               <Input
                 id="phone"
                 type="tel"
@@ -150,7 +220,7 @@ export function PersonalInfoSettings() {
               />
             </div>
             <div className="col-span-full space-y-2">
-              <Label htmlFor="address">Physical Address</Label>
+              <Label htmlFor="address">{t("personal.address")}</Label>
               <Input
                 id="address"
                 placeholder="123 Travel Lane, City, State, ZIP"
@@ -168,11 +238,11 @@ export function PersonalInfoSettings() {
             onClick={handleDiscard}
             disabled={isSaving}
           >
-            Discard
+            {t("personal.btnDiscard")}
           </Button>
           <Button type="button" onClick={handleSave} disabled={isSaving}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Changes
+            {t("personal.btnSave")}
           </Button>
         </div>
       </form>

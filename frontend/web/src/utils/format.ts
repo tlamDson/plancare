@@ -1,51 +1,99 @@
 /**
- * Date & Time Formatting Utilities
+ * Date, Time & Currency Formatting Utilities
+ * Using Native Browser Intl API for localization
  */
 
-import {
-  format,
-  formatDistanceToNow,
-  differenceInDays,
-  isPast,
-  isFuture,
-} from "date-fns";
+import { differenceInDays, isPast, isFuture } from "date-fns";
+import type { Language } from "@/stores/useTranslationStore";
 
 /**
- * Format a date for display
+ * Maps the app's Language type to standard BCP 47 locale codes.
  */
-export function formatDate(
-  date: string | Date,
-  formatStr = "MMM d, yyyy",
-): string {
-  return format(new Date(date), formatStr);
+export function getLocaleCode(lang?: Language): string {
+  switch (lang) {
+    case "French":
+      return "fr-FR";
+    case "Vietnamese":
+      return "vi-VN";
+    case "English (US)":
+    default:
+      return "en-US";
+  }
 }
 
 /**
- * Format a date range
+ * Format a date for display using native Intl API
+ * Example: "Feb 23, 2026" (EN), "23 févr. 2026" (FR)
+ */
+export function formatDate(
+  date: string | Date,
+  lang?: Language,
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  const defaultOptions: Intl.DateTimeFormatOptions = {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  };
+  return new Intl.DateTimeFormat(
+    getLocaleCode(lang),
+    options || defaultOptions,
+  ).format(new Date(date));
+}
+
+/**
+ * Format a date range natively
+ * Uses Intl.DateTimeFormat.formatRange to smartly collapse months/years
+ * Example: "Feb 23 - 25, 2026"
  */
 export function formatDateRange(
   start: string | Date,
   end: string | Date,
+  lang?: Language,
 ): string {
   const startDate = new Date(start);
   const endDate = new Date(end);
+  const locale = getLocaleCode(lang);
 
-  const sameMonth =
-    startDate.getMonth() === endDate.getMonth() &&
-    startDate.getFullYear() === endDate.getFullYear();
+  // Create a formatter that handles ranges intelligently
+  const formatter = new Intl.DateTimeFormat(locale, {
+    month: "short",
+    day: "numeric",
+    year:
+      startDate.getFullYear() !== endDate.getFullYear() ? "numeric" : undefined,
+  });
 
-  if (sameMonth) {
-    return `${format(startDate, "MMM d")} - ${format(endDate, "d, yyyy")}`;
+  try {
+    // Support modern browsers that have formatRange
+    return (formatter as any).formatRange(startDate, endDate);
+  } catch (e) {
+    // Fallback for older browsers
+    const startStr = new Intl.DateTimeFormat(locale, {
+      month: "short",
+      day: "numeric",
+    }).format(startDate);
+    const endStr = new Intl.DateTimeFormat(locale, {
+      month: "short",
+      day: "numeric",
+    }).format(endDate);
+    return `${startStr} - ${endStr}`;
   }
-
-  return `${format(startDate, "MMM d")} - ${format(endDate, "MMM d, yyyy")}`;
 }
 
 /**
- * Get relative time (e.g., "2 days ago")
+ * Format currency natively
+ * Example: "$1,250.00" (EN-USD), "1 250,00 €" (FR-EUR), "1.250.000 ₫" (VI-VND)
  */
-export function getRelativeTime(date: string | Date): string {
-  return formatDistanceToNow(new Date(date), { addSuffix: true });
+export function formatCurrency(
+  amount: number,
+  currencyCode: string,
+  lang?: Language,
+): string {
+  return new Intl.NumberFormat(getLocaleCode(lang), {
+    style: "currency",
+    currency: currencyCode || "USD",
+    maximumFractionDigits: currencyCode === "VND" ? 0 : 2, // VND doesn't typically display cents
+  }).format(amount);
 }
 
 /**

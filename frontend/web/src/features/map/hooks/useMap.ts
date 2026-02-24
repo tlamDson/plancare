@@ -10,6 +10,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import type { Map as MapboxMap } from "mapbox-gl";
 import type Supercluster from "supercluster";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 // ============================================
 // MAP INSTANCE HOOK
@@ -27,6 +28,7 @@ export function useMap({ containerId, center, zoom, style }: UseMapOptions) {
   const mapRef = useRef<MapboxMap | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslationStore();
 
   useEffect(() => {
     // Dynamically import mapbox-gl to enable tree-shaking
@@ -39,7 +41,7 @@ export function useMap({ containerId, center, zoom, style }: UseMapOptions) {
         // Get token from environment
         const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
         if (!token) {
-          throw new Error("Mapbox token not configured");
+          throw new Error(t("explore.mapboxTokenError"));
         }
 
         mapboxgl.accessToken = token;
@@ -63,16 +65,14 @@ export function useMap({ containerId, center, zoom, style }: UseMapOptions) {
         map.on("error", (e) => {
           console.error("Map error:", e);
           if (isMounted) {
-            setError(e.error?.message || "Map failed to load");
+            setError(e.error?.message || t("explore.mapError"));
           }
         });
 
         mapRef.current = map;
       } catch (err) {
         if (isMounted) {
-          setError(
-            err instanceof Error ? err.message : "Failed to initialize map",
-          );
+          setError(err instanceof Error ? err.message : t("explore.mapError"));
         }
       }
     }

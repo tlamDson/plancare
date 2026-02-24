@@ -1,9 +1,3 @@
-/**
- * Dashboard Page
- *
- * Main dashboard with trip overview and quick actions
- */
-
 import { Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,9 +8,11 @@ import { useTrips } from "@/features/planner/hooks/useTrips";
 import { TripCard } from "@/features/planner/components/TripCard";
 import { Plus, Plane, Calendar, Map, Loader2 } from "lucide-react";
 import { CreateTripDialog } from "@/features/planner/components";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 export default function DashboardPage() {
   const { data: trips, isLoading, error } = useTrips();
+  const { t } = useTranslationStore();
 
   // Filter trips
   const upcomingTrips =
@@ -32,16 +28,14 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Welcome back!</h1>
-            <p className="text-muted-foreground">
-              Here's what's happening with your trips
-            </p>
+            <h1 className="text-3xl font-bold">{t("dash.welcome")}</h1>
+            <p className="text-muted-foreground">{t("dash.subtitle")}</p>
           </div>
           <CreateTripDialog
             trigger={
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                Plan New Trip
+                {t("dash.planNew")}
               </Button>
             }
           />
@@ -51,7 +45,9 @@ export default function DashboardPage() {
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Trips</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {t("dash.totalTrips")}
+              </CardTitle>
               <Plane className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -61,7 +57,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
-                Upcoming Trips
+                {t("dash.upcomingTrips")}
               </CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -71,7 +67,9 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active Now</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {t("dash.activeNow")}
+              </CardTitle>
               <Map className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -91,9 +89,9 @@ export default function DashboardPage() {
         >
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Recent Trips</CardTitle>
+              <CardTitle>{t("dash.recentTrips")}</CardTitle>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/trips">View All</Link>
+                <Link to="/trips">{t("dash.viewAll")}</Link>
               </Button>
             </CardHeader>
             <CardContent>
@@ -110,15 +108,15 @@ export default function DashboardPage() {
               ) : trips?.length === 0 ? (
                 <div className="text-center py-8">
                   <Plane className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-medium mb-2">No trips yet</h3>
+                  <h3 className="font-medium mb-2">{t("dash.noTrips")}</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Start planning your first adventure!
+                    {t("dash.startPlanning")}
                   </p>
                   <CreateTripDialog
                     trigger={
                       <Button>
                         <Plus className="h-4 w-4 mr-2" />
-                        Create Trip
+                        {t("dash.createTrip")}
                       </Button>
                     }
                   />

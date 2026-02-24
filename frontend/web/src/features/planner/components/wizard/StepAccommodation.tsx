@@ -1,30 +1,31 @@
 import { Label } from "@/components/ui/label";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@/components/ui/radio-group";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { useTripWizardStore } from "@/stores/trip-wizard.store";
-
-const options = [
-  { value: "hotel", label: "Hotel" },
-  { value: "hostel", label: "Hostel" },
-  { value: "airbnb", label: "Airbnb" },
-  { value: "resort", label: "Resort" },
-  { value: "any", label: "Any" },
-] as const;
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 export function StepAccommodation() {
   const { data, setData } = useTripWizardStore();
+  const { t } = useTranslationStore();
+
+  const options = [
+    { value: "hotel", label: t("wizard.hotel") },
+    { value: "hostel", label: t("wizard.hostel") },
+    { value: "airbnb", label: t("wizard.airbnb") },
+    { value: "resort", label: t("wizard.resort") },
+    { value: "any", label: t("wizard.any") },
+  ] as const;
 
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <Label>Accommodation Type</Label>
+        <Label>{t("wizard.accType")}</Label>
         <RadioGroup
           value={data.accommodationType}
           onValueChange={(value) =>
-            setData({ accommodationType: value as typeof data.accommodationType })
+            setData({
+              accommodationType: value as typeof data.accommodationType,
+            })
           }
           className="grid gap-3 sm:grid-cols-2"
         >
@@ -39,9 +40,11 @@ export function StepAccommodation() {
 
       <div className="flex items-center justify-between rounded-lg border px-3 py-2">
         <div>
-          <Label className="text-sm font-medium">Flexibility</Label>
+          <Label className="text-sm font-medium">
+            {t("wizard.flexibility")}
+          </Label>
           <p className="text-xs text-muted-foreground">
-            Toggle if you already have a booking
+            {t("wizard.flexDesc")}
           </p>
         </div>
         <Switch

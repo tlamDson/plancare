@@ -32,22 +32,25 @@ import {
   Settings,
   User,
 } from "lucide-react";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "My Trips", href: "/trips", icon: Plane },
-  { label: "Explore", href: "/map", icon: Map },
-  { label: "AI Assistant", href: "/assistant", icon: Bot },
+  { labelKey: "sidebar.dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { labelKey: "sidebar.myTrips", href: "/trips", icon: Plane },
+  { labelKey: "sidebar.explore", href: "/map", icon: Map },
+  { labelKey: "sidebar.ai", href: "/assistant", icon: Bot },
 ];
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { t } = useTranslationStore();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -125,7 +128,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   onClick={() => setSidebarOpen(false)}
                 >
                   <Icon className="h-5 w-5" />
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               );
             })}
@@ -144,23 +147,26 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       <User className="h-4 w-4" />
                     </AvatarFallback>
                   </Avatar>
-                  <span className="truncate">Account</span>
+                  <span className="truncate">{t("menu.account")}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("menu.myAccount")}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => setIsSettingsOpen(true)}
                   className="cursor-pointer"
                 >
                   <Settings className="h-4 w-4 mr-2" />
-                  Settings
+                  {t("menu.settings")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
+                <DropdownMenuItem
+                  onClick={handleSignOut}
+                  className="cursor-pointer"
+                >
                   <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
+                  {t("menu.signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

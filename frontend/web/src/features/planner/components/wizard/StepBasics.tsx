@@ -4,24 +4,23 @@ import { Label } from "@/components/ui/label";
 import { useTripWizardStore } from "@/stores/trip-wizard.store";
 import { DatePicker } from "./DatePicker";
 import { addDays } from "date-fns";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 const MIN_DESTINATION = 2;
 
 export function StepBasics() {
   const { data, setData, setTravelers } = useTripWizardStore();
+  const { t } = useTranslationStore();
 
   const destinationError =
     data.destination.trim().length > 0 &&
     data.destination.trim().length < MIN_DESTINATION
-      ? "Destination must be at least 2 characters"
+      ? t("wizard.destError")
       : null;
 
   const start = data.startDate ? new Date(data.startDate) : null;
   const end = data.endDate ? new Date(data.endDate) : null;
-  const dateError =
-    start && end && end <= start
-      ? "End date must be after the start date"
-      : null;
+  const dateError = start && end && end <= start ? t("wizard.dateError") : null;
 
   const updateTravelers = (key: "adults" | "children", delta: number) => {
     const nextValue = Math.max(
@@ -35,10 +34,10 @@ export function StepBasics() {
     <div className="space-y-6">
       {/* Destination */}
       <div className="space-y-2">
-        <Label htmlFor="destination">Destination</Label>
+        <Label htmlFor="destination">{t("wizard.destination")}</Label>
         <Input
           id="destination"
-          placeholder="e.g., Kyoto, Japan"
+          placeholder={t("wizard.destPlaceholder")}
           value={data.destination}
           onChange={(e) => setData({ destination: e.target.value })}
         />
@@ -50,20 +49,20 @@ export function StepBasics() {
       {/* Travel Dates — two side-by-side pickers */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="startDate">Start Date</Label>
+          <Label htmlFor="startDate">{t("wizard.startDate")}</Label>
           <DatePicker
             value={data.startDate}
             onChange={(date) => setData({ startDate: date })}
-            placeholder="Pick start date"
+            placeholder={t("wizard.pickStartDate")}
             ariaLabel="Start date"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="endDate">End Date</Label>
+          <Label htmlFor="endDate">{t("wizard.endDate")}</Label>
           <DatePicker
             value={data.endDate}
             onChange={(date) => setData({ endDate: date })}
-            placeholder="Pick end date"
+            placeholder={t("wizard.pickEndDate")}
             ariaLabel="End date"
             minDate={
               data.startDate
@@ -77,12 +76,14 @@ export function StepBasics() {
 
       {/* Travelers */}
       <div className="space-y-2">
-        <Label>Travelers</Label>
+        <Label>{t("wizard.travelers")}</Label>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="flex items-center justify-between rounded-lg border px-3 py-2">
             <div>
-              <p className="font-medium">Adults</p>
-              <p className="text-xs text-muted-foreground">Ages 13+</p>
+              <p className="font-medium">{t("wizard.adults")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("wizard.adultsAge")}
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -109,8 +110,10 @@ export function StepBasics() {
 
           <div className="flex items-center justify-between rounded-lg border px-3 py-2">
             <div>
-              <p className="font-medium">Children</p>
-              <p className="text-xs text-muted-foreground">Ages 0-12</p>
+              <p className="font-medium">{t("wizard.children")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("wizard.childrenAge")}
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <Button

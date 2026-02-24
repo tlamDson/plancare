@@ -10,21 +10,21 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { MapContainer } from "../components/MapContainer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { WidgetError } from "@/components/WidgetError";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 export default function MapPage() {
   const { tripId } = useParams<{ tripId?: string }>();
+  const { t } = useTranslationStore();
 
   return (
     <DashboardLayout>
       <div className="space-y-4">
         <div>
           <h1 className="text-3xl font-bold">
-            {tripId ? "Trip Map" : "Explore"}
+            {tripId ? t("explore.tripMapTitle") : t("explore.pageTitle")}
           </h1>
           <p className="text-muted-foreground">
-            {tripId
-              ? "View your itinerary on the map"
-              : "Discover places around the world"}
+            {tripId ? t("explore.tripMapSubtitle") : t("explore.pageSubtitle")}
           </p>
         </div>
 
@@ -32,8 +32,8 @@ export default function MapPage() {
         <ErrorBoundary
           fallback={
             <WidgetError
-              title="Map Unavailable"
-              message="Failed to load the map. Please try again later."
+              title={t("explore.mapUnavailable")}
+              message={t("explore.mapError")}
               className="h-[600px]"
             />
           }

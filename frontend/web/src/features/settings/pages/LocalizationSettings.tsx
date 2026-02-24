@@ -4,8 +4,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 export function LocalizationSettings() {
+  const { t, setLanguage: setGlobalLanguage } = useTranslationStore();
+
   const [temperature, setTemperature] = useState<"C" | "F">("C");
   const [distance, setDistance] = useState<"Miles" | "Km">("Miles");
   const [currency, setCurrency] = useState("USD");
@@ -44,9 +47,11 @@ export function LocalizationSettings() {
           autoTranslate,
         }),
       );
-      toast.success("Localization settings saved");
+      // Immediately apply translation globally
+      setGlobalLanguage(language as "English (US)" | "French" | "Vietnamese");
+      toast.success(t("loc.toastSave"));
     } catch (e) {
-      toast.error("Failed to save settings");
+      toast.error(t("loc.toastFail"));
     }
   };
 
@@ -68,11 +73,9 @@ export function LocalizationSettings() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
         <h3 className="text-2xl font-bold tracking-tight">
-          Localization & Units
+          {t("loc.pageTitle")}
         </h3>
-        <p className="text-muted-foreground mt-1">
-          Customize measurement systems, currency, and language preferences.
-        </p>
+        <p className="text-muted-foreground mt-1">{t("loc.pageSubtitle")}</p>
       </div>
 
       <Separator />
@@ -81,14 +84,16 @@ export function LocalizationSettings() {
         {/* Measurement Systems */}
         <section className="space-y-4">
           <h4 className="text-sm font-semibold text-foreground">
-            Measurements & Units
+            {t("loc.measurementsTitle")}
           </h4>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 rounded-lg border bg-card shadow-sm">
               <div className="space-y-0.5">
-                <Label className="text-base font-medium">Temperature</Label>
+                <Label className="text-base font-medium">
+                  {t("loc.temperatureLabel")}
+                </Label>
                 <p className="text-sm text-muted-foreground">
-                  Choose your preferred temperature unit.
+                  {t("loc.temperatureDesc")}
                 </p>
               </div>
               <div className="flex items-center bg-muted p-1 rounded-md">
@@ -115,9 +120,11 @@ export function LocalizationSettings() {
 
             <div className="flex items-center justify-between p-4 rounded-lg border bg-card shadow-sm">
               <div className="space-y-0.5">
-                <Label className="text-base font-medium">Distance</Label>
+                <Label className="text-base font-medium">
+                  {t("loc.distanceLabel")}
+                </Label>
                 <p className="text-sm text-muted-foreground">
-                  Used for maps and driving directions.
+                  {t("loc.distanceDesc")}
                 </p>
               </div>
               <div className="flex items-center bg-muted p-1 rounded-md">
@@ -128,7 +135,7 @@ export function LocalizationSettings() {
                   onClick={() => setDistance("Miles")}
                   className={`h-7 px-4 ${distance === "Miles" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
                 >
-                  Miles
+                  {t("loc.miles")}
                 </Button>
                 <Button
                   type="button"
@@ -137,7 +144,7 @@ export function LocalizationSettings() {
                   onClick={() => setDistance("Km")}
                   className={`h-7 px-4 ${distance === "Km" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
                 >
-                  Km
+                  {t("loc.km")}
                 </Button>
               </div>
             </div>
@@ -145,10 +152,10 @@ export function LocalizationSettings() {
             <div className="flex items-center justify-between p-4 rounded-lg border bg-card shadow-sm">
               <div className="space-y-0.5">
                 <Label className="text-base font-medium">
-                  Default Currency
+                  {t("loc.currencyLabel")}
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Used for cost estimates and budgets.
+                  {t("loc.currencyDesc")}
                 </p>
               </div>
               <div className="flex items-center">
@@ -161,7 +168,7 @@ export function LocalizationSettings() {
                       currency === "USD"
                         ? "EUR"
                         : currency === "EUR"
-                          ? "GBP"
+                          ? "VND"
                           : "USD";
                     setCurrency(newCurrency);
                   }}
@@ -176,16 +183,16 @@ export function LocalizationSettings() {
         {/* Translation */}
         <section className="space-y-4">
           <h4 className="text-sm font-semibold text-foreground">
-            Languages & Translation
+            {t("loc.languageTitle")}
           </h4>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 rounded-lg border bg-card shadow-sm">
               <div className="space-y-0.5">
                 <Label className="text-base font-medium">
-                  Primary Language
+                  {t("loc.primaryLangLabel")}
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Your default interface language.
+                  {t("loc.primaryLangDesc")}
                 </p>
               </div>
               <div className="flex items-center">
@@ -198,12 +205,16 @@ export function LocalizationSettings() {
                       language === "English (US)"
                         ? "French"
                         : language === "French"
-                          ? "Spanish"
+                          ? "Vietnamese"
                           : "English (US)";
                     setLanguage(newLang);
                   }}
                 >
-                  {language}
+                  {language === "English (US)"
+                    ? t("loc.english")
+                    : language === "French"
+                      ? t("loc.french")
+                      : t("loc.vietnamese")}
                 </Button>
               </div>
             </div>
@@ -214,11 +225,10 @@ export function LocalizationSettings() {
                   htmlFor="auto-translate"
                   className="text-base font-medium"
                 >
-                  Auto-Translate Content
+                  {t("loc.autoTranslateLabel")}
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Automatically translate points of interest and reviews to your
-                  primary language.
+                  {t("loc.autoTranslateDesc")}
                 </p>
               </div>
               <Switch
@@ -232,10 +242,10 @@ export function LocalizationSettings() {
 
         <div className="flex justify-end gap-4 border-t pt-6">
           <Button variant="outline" type="button" onClick={handleDiscard}>
-            Discard
+            {t("loc.btnDiscard")}
           </Button>
           <Button type="button" onClick={handleSave}>
-            Save Changes
+            {t("loc.btnSave")}
           </Button>
         </div>
       </form>
