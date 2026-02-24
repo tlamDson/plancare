@@ -29,7 +29,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import "./date-range-picker.css";
+import "@/styles/calendar.css";
 
 // ─── Types ────────────────────────────────────────────────
 
