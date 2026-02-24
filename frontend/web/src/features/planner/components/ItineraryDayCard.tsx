@@ -6,7 +6,6 @@
  * name, star rating, opening hours, cost, status badge.
  */
 
-import { format } from "date-fns";
 import {
   Building2,
   MapPin,
@@ -20,6 +19,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { ItineraryDay, Activity } from "@/utils/schemas";
 import { getGoogleMapsUrl } from "../utils/maps";
+import { formatDate } from "@/utils/format";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -298,6 +299,8 @@ function ActivityRow({
 // ─── Main component ───────────────────────────────────────
 
 export function ItineraryDayCard({ day, currency }: ItineraryDayCardProps) {
+  const { language } = useTranslationStore();
+
   const dateLabel = (() => {
     try {
       // Parse only the calendar date (YYYY-MM-DD) to avoid UTC→local timezone
@@ -305,7 +308,11 @@ export function ItineraryDayCard({ day, currency }: ItineraryDayCardProps) {
       const dateOnly = day.date.slice(0, 10); // "YYYY-MM-DD"
       const [year, month, dayOfMonth] = dateOnly.split("-").map(Number);
       const localDate = new Date(year!, month! - 1, dayOfMonth!);
-      return format(localDate, "EEEE, MMM d");
+      return formatDate(localDate, language, {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+      });
     } catch {
       return `Day ${day.day}`;
     }

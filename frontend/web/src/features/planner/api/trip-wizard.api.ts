@@ -34,6 +34,8 @@ export type TripWizardResponse = z.infer<typeof tripWizardSuccessSchema>;
 
 export async function createTripFromWizard(
   preferences: TripPreferences,
+  language?: string,
+  title?: string,
 ): Promise<TripWizardResponse> {
   const validation = TripPreferencesSchema.safeParse(preferences);
   if (!validation.success) {
@@ -44,6 +46,8 @@ export async function createTripFromWizard(
 
   const response = await apiClient.post("/trips", {
     preferences: validation.data,
+    language,
+    title,
   });
 
   const parsed = validateAPI(

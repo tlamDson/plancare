@@ -6,8 +6,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { format } from "date-fns";
 import { useJobPoller, useTrip } from "@/features/planner/hooks";
+import { formatDateRange } from "@/utils/format";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AgentLockBanner } from "../components/AgentLockBanner";
 import { ItineraryDayCard } from "../components/ItineraryDayCard";
@@ -20,6 +21,7 @@ import { CalendarDays } from "lucide-react";
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const { data: trip, isLoading, error } = useTrip(tripId);
+  const { language } = useTranslationStore();
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [jobError, setJobError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -129,9 +131,7 @@ export default function TripDetailPage() {
   // ── Date range label ──────────────────────────────────────
   const dateRange = (() => {
     try {
-      const s = format(new Date(trip.startDate), "MMM d");
-      const e = format(new Date(trip.endDate), "MMM d, yyyy");
-      return `${s} – ${e}`;
+      return formatDateRange(trip.startDate, trip.endDate, language);
     } catch {
       return "";
     }

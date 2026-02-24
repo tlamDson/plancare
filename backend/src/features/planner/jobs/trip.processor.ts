@@ -16,6 +16,7 @@ interface TripJobData {
   tripId: string;
   userId: string;
   preferences: TripPreferences;
+  language?: string;
 }
 
 /**
@@ -24,7 +25,7 @@ interface TripJobData {
  * Week 3+ will add AI agent integration
  */
 export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
-  const { tripId, userId, preferences } = job.data;
+  const { tripId, userId, preferences, language } = job.data;
 
   logger.info(
     { jobId: job.id, tripId, userId, preferences },
@@ -76,7 +77,10 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
       "Step 1: Generating intents with Gemini...",
     );
 
-    const intents = await aiAgentService.generateIntentsWithRetry(preferences);
+    const intents = await aiAgentService.generateIntentsWithRetry(
+      preferences,
+      language,
+    );
     const intentList = intentParserService.flattenIntents(intents);
 
     logger.info(

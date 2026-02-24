@@ -45,11 +45,14 @@ export const generateTrip = async (
     }
 
     const preferences = validation.data;
+    const { language, title } = req.body;
 
     // Create job (with CFO validation)
     const result = await plannerService.createTripGenerationJob({
       userId,
       preferences,
+      language,
+      title,
     });
 
     res.status(202).json({

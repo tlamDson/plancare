@@ -32,7 +32,10 @@ RULES (follow exactly):
  * Dynamic user message — contains only the trip-specific variables.
  * Kept intentionally short since the system instruction carries the heavy rules.
  */
-export function buildTripPrompt(preferences: TripPreferences): string {
+export function buildTripPrompt(
+  preferences: TripPreferences,
+  language?: string,
+): string {
   const {
     destination,
     startDate,
@@ -72,6 +75,10 @@ export function buildTripPrompt(preferences: TripPreferences): string {
   }`;
   }).join(",\n");
 
+  const languageInstruction = language
+    ? `CRITICAL: You MUST write the location search queries entirely in ${language}.`
+    : "";
+
   return `
 Trip details:
 - Destination: ${destination}
@@ -83,6 +90,7 @@ ${prioritiesContext}
 ${dealBreakersContext}
 
 CRITICAL: You MUST output exactly ${days} day entries (day1 through day${days}). Do NOT stop early.
+${languageInstruction}
 
 Replace every placeholder with a real query. Return ALL ${days} keys:
 {

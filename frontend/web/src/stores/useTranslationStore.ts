@@ -256,6 +256,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trips.emptyFilter": "No trips match your filters",
     "trips.emptyAll": "You haven't created any trips yet",
     "trips.createFirst": "Create Your First Trip",
+    "trips.defaultTitle": "Trip to",
 
     // Map & Explore
     "explore.pageTitle": "Explore",
@@ -543,6 +544,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trips.emptyFilter": "Aucun voyage ne correspond à vos filtres",
     "trips.emptyAll": "Vous n'avez pas encore créé de voyage",
     "trips.createFirst": "Créer votre premier voyage",
+    "trips.defaultTitle": "Voyage à",
 
     // Map & Explore
     "explore.pageTitle": "Explorer",
@@ -828,6 +830,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trips.emptyFilter": "Không có chuyến đi nào phù hợp với bộ lọc",
     "trips.emptyAll": "Bạn chưa tạo chuyến đi nào",
     "trips.createFirst": "Tạo chuyến đi đầu tiên của bạn",
+    "trips.defaultTitle": "Chuyến đi tới",
 
     // Map & Explore
     "explore.pageTitle": "Khám phá",

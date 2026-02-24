@@ -71,7 +71,7 @@ function buildPreferences(data: TripWizardData) {
 export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
   const navigate = useNavigate();
   const { data, reset } = useTripWizardStore();
-  const { t } = useTranslationStore();
+  const { t, language } = useTranslationStore();
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
 
@@ -135,12 +135,16 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
 
   const handleSubmit = () => {
     const preferences = buildPreferences(data);
+    const title = `${t("trips.defaultTitle")} ${preferences.destination}`;
+
     console.log(
       "🚀 [CreateTripDialog] Submitting trip with preferences:",
       preferences,
+      "language:",
+      language,
     );
     console.log("📊 [CreateTripDialog] Wizard data before building:", data);
-    mutate(preferences);
+    mutate({ preferences, language, title });
   };
 
   const renderStep = () => {

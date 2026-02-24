@@ -32,7 +32,10 @@ export class AIAgentService {
     }
   }
 
-  async generateIntents(preferences: TripPreferences): Promise<TripIntents> {
+  async generateIntents(
+    preferences: TripPreferences,
+    language?: string,
+  ): Promise<TripIntents> {
     if (!this.model) {
       logger.error(
         { hasApiKey: !!env.GEMINI_API_KEY },
@@ -43,7 +46,7 @@ export class AIAgentService {
       );
     }
 
-    const prompt = buildTripPrompt(preferences);
+    const prompt = buildTripPrompt(preferences, language);
 
     logger.info(
       { destination: preferences.destination },
@@ -87,6 +90,7 @@ export class AIAgentService {
 
   async generateIntentsWithRetry(
     preferences: TripPreferences,
+    language?: string,
     maxRetries = 4,
   ): Promise<TripIntents> {
     for (let i = 0; i < maxRetries; i++) {
@@ -98,7 +102,7 @@ export class AIAgentService {
           await this.delay(waitMs);
         }
 
-        const intents = await this.generateIntents(preferences);
+        const intents = await this.generateIntents(preferences, language);
 
         if (intentParserService.isValidIntentFormat(intents)) {
           logger.info(

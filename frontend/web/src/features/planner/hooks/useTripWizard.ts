@@ -18,8 +18,15 @@ export function useTripWizard(options: UseTripWizardOptions = {}) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (preferences: TripPreferences) =>
-      createTripFromWizard(preferences),
+    mutationFn: ({
+      preferences,
+      language,
+      title,
+    }: {
+      preferences: TripPreferences;
+      language?: string;
+      title?: string;
+    }) => createTripFromWizard(preferences, language, title),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.trips.lists() });
       toast.success("Trip queued! Your agent is getting started.");

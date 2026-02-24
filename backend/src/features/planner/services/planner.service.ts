@@ -46,6 +46,8 @@ function normalizeProgress(progress: unknown): {
 interface GenerateTripParams {
   userId: string;
   preferences: TripPreferences;
+  language?: string;
+  title?: string;
 }
 
 export class PlannerService {
@@ -92,7 +94,7 @@ export class PlannerService {
       // 4. DB-FIRST PATTERN: Create trip record BEFORE queueing
       const tripData: any = {
         userId,
-        title: `Trip to ${preferences.destination}`,
+        title: params.title || `Trip to ${preferences.destination}`,
         description: `${tripDays}-day trip`,
         startDate,
         endDate,
@@ -121,6 +123,7 @@ export class PlannerService {
         userId,
         tripId: trip._id.toString(),
         preferences,
+        language: params.language,
       });
 
       // 6. Lock the trip with the job ID
@@ -196,9 +199,10 @@ export class PlannerService {
       throw new Error("JOB_NOT_FAILED");
     }
 
-    const { tripId, preferences } = job.data as {
+    const { tripId, preferences, language } = job.data as {
       tripId?: string;
       preferences?: TripPreferences;
+      language?: string;
     };
 
     if (!tripId || !preferences) {
@@ -214,6 +218,7 @@ export class PlannerService {
       userId,
       tripId,
       preferences,
+      language,
     });
 
     // forceAcquireLock: the failed job may have left isAgentProcessing=true,
