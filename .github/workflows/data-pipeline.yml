@@ -1,0 +1,36 @@
+name: Monthly City Budget ETL Pipeline
+
+on:
+  schedule:
+    # Run at 02:00 UTC on the 1st and 15th of every month
+    - cron: "0 2 1,15 * *"
+  # Allow manual triggering from the GitHub Actions UI
+  workflow_dispatch:
+
+jobs:
+  scrape-city-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "./backend/package-lock.json"
+
+      - name: Install Dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Execute City Cost Scraper Script
+        working-directory: ./backend
+        run: npx tsx scripts/city-cost-scraper.ts
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          YELP_API_KEY: ${{ secrets.YELP_API_KEY }}
+          AMADEUS_API_KEY: ${{ secrets.AMADEUS_API_KEY }}
+          AMADEUS_API_SECRET: ${{ secrets.AMADEUS_API_SECRET }}

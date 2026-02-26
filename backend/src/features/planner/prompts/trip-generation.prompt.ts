@@ -35,6 +35,7 @@ RULES (follow exactly):
 export function buildTripPrompt(
   preferences: TripPreferences,
   language?: string,
+  cityCost?: any,
 ): string {
   const {
     destination,
@@ -64,6 +65,10 @@ export function buildTripPrompt(
       ? `Avoid: ${dealBreakers.join(", ")}.`
       : "";
 
+  const baseCostContext = cityCost
+    ? `\nBase Costs for ${cityCost.cityName}: Minimum ~$${cityCost.minHotelUSD}/night for budget hotels and ~$${cityCost.minFoodUSD}/meal. Balance the itinerary budget around these localized floor prices.`
+    : "";
+
   // Expand all N day keys explicitly — never use "// repeat for N days"
   // because the AI stops at whatever example it sees.
   const daySkeletonLines = Array.from({ length: days }, (_, i) => {
@@ -87,7 +92,7 @@ Trip details:
 - Group: ${travelers.adults} adult${travelers.adults !== 1 ? "s" : ""}${travelers.children > 0 ? `, ${travelers.children} child${travelers.children !== 1 ? "ren" : ""}` : ""}
 ${moodContext}
 ${prioritiesContext}
-${dealBreakersContext}
+${dealBreakersContext}${baseCostContext}
 
 CRITICAL: You MUST output exactly ${days} day entries (day1 through day${days}). Do NOT stop early.
 ${languageInstruction}

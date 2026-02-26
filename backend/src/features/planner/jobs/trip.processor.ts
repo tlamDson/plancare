@@ -11,6 +11,7 @@ import type { TripPreferences } from "@travelplan/shared";
 import type { TripIntents } from "../services/intent-parser.service";
 import sanitizeHtml from "sanitize-html";
 import type { IActivity } from "../models/Trip.types";
+import { CityCost } from "../models/CityCost";
 
 interface TripJobData {
   tripId: string;
@@ -77,9 +78,29 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
       "Step 1: Generating intents with Gemini...",
     );
 
+    // Fetch baseline costs from ETL database
+    // We use a regex to flexibly match "Hanoi", "Hanoi, Vietnam", etc.
+    const destName =
+      preferences.destination.split(",")[0] || preferences.destination;
+    const cityCost = await CityCost.findOne({
+      cityName: { $regex: new RegExp(destName, "i") },
+    }).lean();
+
+    if (cityCost) {
+      logger.info(
+        {
+          cityId: cityCost.cityId,
+          minFoodUSD: cityCost.minFoodUSD,
+          minHotelUSD: cityCost.minHotelUSD,
+        },
+        "💰 Found Base Costs for destination",
+      );
+    }
+
     const intents = await aiAgentService.generateIntentsWithRetry(
       preferences,
       language,
+      cityCost || undefined,
     );
     const intentList = intentParserService.flattenIntents(intents);
 

@@ -35,6 +35,7 @@ export class AIAgentService {
   async generateIntents(
     preferences: TripPreferences,
     language?: string,
+    cityCost?: any,
   ): Promise<TripIntents> {
     if (!this.model) {
       logger.error(
@@ -46,7 +47,7 @@ export class AIAgentService {
       );
     }
 
-    const prompt = buildTripPrompt(preferences, language);
+    const prompt = buildTripPrompt(preferences, language, cityCost);
 
     logger.info(
       { destination: preferences.destination },
@@ -91,6 +92,7 @@ export class AIAgentService {
   async generateIntentsWithRetry(
     preferences: TripPreferences,
     language?: string,
+    cityCost?: any,
     maxRetries = 4,
   ): Promise<TripIntents> {
     for (let i = 0; i < maxRetries; i++) {
@@ -102,7 +104,11 @@ export class AIAgentService {
           await this.delay(waitMs);
         }
 
-        const intents = await this.generateIntents(preferences, language);
+        const intents = await this.generateIntents(
+          preferences,
+          language,
+          cityCost,
+        );
 
         if (intentParserService.isValidIntentFormat(intents)) {
           logger.info(
