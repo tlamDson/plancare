@@ -102,20 +102,12 @@ export function TripCard({ trip }: TripCardProps) {
                 {trip.title}
               </h3>
 
-              {trip.description && (
-                <p className="text-sm text-muted-foreground mb-3 line-clamp-1">
-                  {trip.description}
-                </p>
-              )}
-
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Calendar className="h-4 w-4" aria-hidden="true" />
-                  <span>
-                    {formatDateRange(trip.startDate, trip.endDate, language)}
-                  </span>
-                </div>
-                <span className="text-muted-foreground">{duration} days</span>
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4" aria-hidden="true" />
+                <span>
+                  {formatDateRange(trip.startDate, trip.endDate, language)}
+                  {duration > 0 && ` · ${duration}-day trip`}
+                </span>
               </div>
 
               {trip.budget.totalLimit > 0 && (

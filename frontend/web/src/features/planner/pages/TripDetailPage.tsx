@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useJobPoller, useTrip } from "@/features/planner/hooks";
-import { formatDateRange } from "@/utils/format";
+import { formatDateRange, getTripDuration } from "@/utils/format";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AgentLockBanner } from "../components/AgentLockBanner";
@@ -21,7 +21,7 @@ import { CalendarDays } from "lucide-react";
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const { data: trip, isLoading, error } = useTrip(tripId);
-  const { language } = useTranslationStore();
+  const { language, t } = useTranslationStore();
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [jobError, setJobError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -137,7 +137,7 @@ export default function TripDetailPage() {
     }
   })();
 
-  const totalDays = trip.itinerary.length;
+  const totalDays = getTripDuration(trip.startDate, trip.endDate);
 
   return (
     <DashboardLayout>
@@ -161,9 +161,6 @@ export default function TripDetailPage() {
         {/* Trip Header */}
         <div>
           <h1 className="text-3xl font-bold">{trip.title}</h1>
-          {trip.description && (
-            <p className="text-muted-foreground mt-1">{trip.description}</p>
-          )}
           {dateRange && (
             <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
               <CalendarDays className="h-4 w-4" aria-hidden="true" />
@@ -177,14 +174,14 @@ export default function TripDetailPage() {
 
         {/* Itinerary */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">Itinerary</h2>
+          <h2 className="text-xl font-semibold mb-4">{t("trip.itinerary")}</h2>
 
           {trip.itinerary.length === 0 ? (
             <div className="rounded-xl border bg-muted/30 p-8 text-center">
               <CalendarDays className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-              <p className="font-medium mb-1">No itinerary yet</p>
+              <p className="font-medium mb-1">{t("trip.noItinerary")}</p>
               <p className="text-sm text-muted-foreground">
-                Use the AI Assistant to generate your trip plan.
+                {t("trip.noItineraryDesc")}
               </p>
             </div>
           ) : (

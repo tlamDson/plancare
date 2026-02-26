@@ -293,6 +293,11 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "menu.myAccount": "My Account",
     "menu.settings": "Settings",
     "menu.signOut": "Sign Out",
+
+    // Trip Detail
+    "trip.itinerary": "Itinerary",
+    "trip.noItinerary": "No itinerary yet",
+    "trip.noItineraryDesc": "Use the AI Assistant to generate your trip plan.",
   },
   French: {
     // Settings Nav
@@ -582,6 +587,12 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "menu.myAccount": "Mon Compte",
     "menu.settings": "Paramètres",
     "menu.signOut": "Se Déconnecter",
+
+    // Trip Detail
+    "trip.itinerary": "Itinéraire",
+    "trip.noItinerary": "Aucun itinéraire pour l'instant",
+    "trip.noItineraryDesc":
+      "Utilisez l'assistant IA pour générer votre plan de voyage.",
   },
   Vietnamese: {
     // Settings Nav
@@ -867,6 +878,11 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "menu.myAccount": "Tài khoản của tôi",
     "menu.settings": "Cài đặt",
     "menu.signOut": "Đăng xuất",
+
+    // Trip Detail
+    "trip.itinerary": "Lịch Trình",
+    "trip.noItinerary": "Chưa có lịch trình",
+    "trip.noItineraryDesc": "Dùng Trợ lý AI để tạo kế hoạch chuyến đi của bạn.",
   },
 };
 
