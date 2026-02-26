@@ -15,7 +15,7 @@ export const env = cleanEnv(process.env, {
   REDIS_HOST: str({ default: "localhost" }),
   REDIS_PORT: port({ default: 6379 }),
   REDIS_PASSWORD: str({ desc: "Redis Password", default: "" }), // Optional for local dev
-  GEMINI_API_KEY: str({ desc: "Gemini API Key", default: "" }), // Optional for API, required for Worker
+  GEMINI_API_KEY: str({ desc: "Gemini API Key — required for Worker service" }), // Fail Fast: crash if missing
   MAPBOX_ACCESS_TOKEN: str({ desc: "Mapbox Access Token", default: "" }), // Week 3
   GOOGLE_PLACES_API_KEY: str({ desc: "Google Places API Key", default: "" }), // Week 3
   FRONTEND_URL: str({

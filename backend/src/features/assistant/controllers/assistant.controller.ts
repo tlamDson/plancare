@@ -40,7 +40,7 @@ export const getSession = async (
       return;
     }
 
-    const sessionId = req.params.sessionId;
+    const sessionId: string = req.params.sessionId ?? "";
     if (!sessionId) {
       res.status(400).json({ message: "Session ID is required" });
       return;
@@ -82,7 +82,7 @@ export const sendMessage = async (
       return;
     }
 
-    const sessionId = req.params.sessionId;
+    const sessionId: string = req.params.sessionId ?? "";
     if (!sessionId) {
       res.status(400).json({ message: "Session ID is required" });
       return;
@@ -120,7 +120,7 @@ export const streamMessage = async (
       return;
     }
 
-    const sessionId = req.params.sessionId;
+    const sessionId: string = req.params.sessionId ?? "";
     if (!sessionId) {
       res.status(400).json({ message: "Session ID is required" });
       return;
@@ -155,7 +155,7 @@ export const getTripSuggestions = async (
       return;
     }
 
-    const tripId = req.params.tripId;
+    const tripId: string = req.params.tripId ?? "";
     if (!tripId) {
       res.status(400).json({ message: "Trip ID is required" });
       return;

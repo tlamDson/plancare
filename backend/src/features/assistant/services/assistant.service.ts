@@ -1,4 +1,5 @@
 import { Types } from "mongoose";
+import sanitizeHtml from "sanitize-html";
 import AISession from "../../planner/models/AISession";
 import { userRepository } from "../../user/repositories/user.repository";
 
@@ -51,23 +52,19 @@ export class AssistantService {
     if (!user) {
       throw new Error("User not found");
     }
-    // Build session data - only include tripId if valid (avoids exactOptionalPropertyTypes issue)
-    const sessionData: {
-      userId: typeof user._id;
-      messages: {
+    // Build session data - conditionally include tripId to satisfy exactOptionalPropertyTypes
+    const baseData = {
+      userId: user._id,
+      messages: [] as {
         role: "user" | "assistant";
         content: string;
         createdAt: Date;
-      }[];
-      tripId?: Types.ObjectId;
-    } = {
-      userId: user._id,
-      messages: [],
+      }[],
     };
-
-    if (tripId && Types.ObjectId.isValid(tripId)) {
-      sessionData.tripId = new Types.ObjectId(tripId);
-    }
+    const sessionData =
+      tripId && Types.ObjectId.isValid(tripId)
+        ? { ...baseData, tripId: new Types.ObjectId(tripId) }
+        : baseData;
 
     const session = await AISession.create(sessionData);
 
@@ -126,7 +123,12 @@ export class AssistantService {
       createdAt: new Date(),
     });
 
-    const reply = buildAssistantReply(content);
+    const rawReply = buildAssistantReply(content);
+    // Sanitize AI output before persisting to MongoDB (Zero Trust rule)
+    const reply = sanitizeHtml(rawReply, {
+      allowedTags: [],
+      allowedAttributes: {},
+    });
     session.messages.push({
       role: "assistant",
       content: reply,
@@ -163,7 +165,7 @@ export class AssistantService {
 
     const defaultSuggestions = suggestionsByType.activities;
     const lookupKey = type ?? "activities";
-    const suggestions =
+    const suggestions: string[] =
       suggestionsByType[lookupKey] ?? defaultSuggestions ?? [];
 
     return { suggestions };
