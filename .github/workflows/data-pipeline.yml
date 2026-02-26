@@ -34,3 +34,40 @@ jobs:
           YELP_API_KEY: ${{ secrets.YELP_API_KEY }}
           AMADEUS_API_KEY: ${{ secrets.AMADEUS_API_KEY }}
           AMADEUS_API_SECRET: ${{ secrets.AMADEUS_API_SECRET }}
+
+      # ─── Email Alert: Notify on failure ──────────────────────────────
+      # Triggered ONLY when the scraper step above fails.
+      # Requires two GitHub Repository Secrets to be set:
+      #   ALERT_EMAIL_ADDRESS  — your Gmail address (sender + recipient)
+      #   ALERT_EMAIL_PASSWORD — Gmail App Password (NOT your account password)
+      #                          Generate one at: https://myaccount.google.com/apppasswords
+      - name: Send Failure Email Alert
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.ALERT_EMAIL_ADDRESS }}
+          password: ${{ secrets.ALERT_EMAIL_PASSWORD }}
+          subject: "🚨 [TravelPlan] ETL Pipeline Failed — ${{ github.run_id }}"
+          to: ${{ secrets.ALERT_EMAIL_ADDRESS }}
+          from: "TravelPlan ETL Bot <${{ secrets.ALERT_EMAIL_ADDRESS }}>"
+          body: |
+            ⚠️  The City Budget ETL Pipeline has FAILED.
+
+            Details:
+            - Repository : ${{ github.repository }}
+            - Branch     : ${{ github.ref_name }}
+            - Run ID     : ${{ github.run_id }}
+            - Triggered  : ${{ github.event_name }}
+            - Time (UTC) : ${{ github.event.head_commit.timestamp }}
+
+            🔗 View full logs:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Possible causes:
+            1. Yelp or Amadeus API schema changed (most common)
+            2. MongoDB connection refused (check MONGO_URI secret)
+            3. API keys expired or rate-limited
+
+            → Action required: Review logs and redeploy a fix.

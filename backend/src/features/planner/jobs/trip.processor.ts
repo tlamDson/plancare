@@ -80,15 +80,42 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
 
     if (cityCost) {
       logger.info(
-        { cityId: cityCost.cityId, minFoodUSD: cityCost.minFoodUSD },
+        {
+          cityId: cityCost.cityId,
+          minFoodUSD: cityCost.minFoodUSD,
+          minHotelUSD: cityCost.minHotelUSD,
+        },
         "💰 Found Base Costs for destination",
       );
     }
 
+    // ─── Accommodation multiplier (Trade-off #3 mitigation) ──────────────
+    // Scale the raw minHotelUSD from the DB to match the user's accommodation
+    // preference. Airbnb has no free API → calculated as 0.75× hotel price.
+    const ACCOMMODATION_MULTIPLIER: Record<string, number> = {
+      hostel: 0.45, // dorm bed / budget guesthouse
+      airbnb: 0.75, // private apartment (estimated)
+      hotel: 1.0, // standard budget hotel (DB baseline)
+      resort: 2.5, // full-service resort
+      any: 0.7, // default: assume budget-conscious traveler
+    };
+    const accommodationType = preferences.accommodationType ?? "any";
+    const multiplier = ACCOMMODATION_MULTIPLIER[accommodationType] ?? 0.7;
+
+    // Build enriched cost context for the AI prompt
+    const cityCostContext = cityCost
+      ? {
+          ...cityCost,
+          // Override minHotelUSD with the type-adjusted floor price
+          minHotelUSD: Math.round((cityCost.minHotelUSD ?? 50) * multiplier),
+          accommodationType,
+        }
+      : undefined;
+
     const intents = await aiAgentService.generateIntentsWithRetry(
       preferences,
       language,
-      cityCost || undefined,
+      cityCostContext,
     );
     const intentList = intentParserService.flattenIntents(intents);
     logger.info(

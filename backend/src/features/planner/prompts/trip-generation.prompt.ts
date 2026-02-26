@@ -65,8 +65,29 @@ export function buildTripPrompt(
       ? `Avoid: ${dealBreakers.join(", ")}.`
       : "";
 
+  // Map accommodation type to human-readable label for the AI context
+  const ACCOMMODATION_LABEL: Record<string, string> = {
+    hostel: "hostel / dorm bed",
+    airbnb: "Airbnb / private apartment",
+    hotel: "budget hotel",
+    resort: "resort / full-service hotel",
+    any: "budget accommodation",
+  };
+  const accomType = (cityCost as any)?.accommodationType ?? "any";
+  const accomLabel = ACCOMMODATION_LABEL[accomType] ?? "budget accommodation";
+
+  // Format lastUpdated for a human-readable freshness note
+  const lastUpdatedStr = (cityCost as any)?.lastUpdated
+    ? new Date((cityCost as any).lastUpdated).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      })
+    : null;
+
   const baseCostContext = cityCost
-    ? `\nBase Costs for ${cityCost.cityName}: Minimum ~$${cityCost.minHotelUSD}/night for budget hotels and ~$${cityCost.minFoodUSD}/meal. Balance the itinerary budget around these localized floor prices.`
+    ? `\nBase Costs for ${cityCost.cityName} (prices as of ${lastUpdatedStr ?? "recent estimate"}):` +
+      ` Minimum ~$${cityCost.minHotelUSD}/night for ${accomLabel} and ~$${cityCost.minFoodUSD}/meal.` +
+      ` Balance the itinerary budget around these localized floor prices.`
     : "";
 
   // Expand all N day keys explicitly — never use "// repeat for N days"
