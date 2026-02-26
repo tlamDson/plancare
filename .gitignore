@@ -35,15 +35,14 @@ lerna-debug.log*
 # ============================================
 # Private documentation
 docs/
-docs/**/*
 .agent/
-.agent/**/*
+.design-docs/
+.expo/
+scripts/
 
 # Private UI/UX data and prompts
 .shared/
-.shared/**/*
 .github/prompts/
-.github/prompts/**/*
 
 # Cursor AI config
 .cursor/
