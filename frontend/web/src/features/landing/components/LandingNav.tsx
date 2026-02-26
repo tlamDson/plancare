@@ -5,7 +5,6 @@
 import { Link } from "react-router-dom";
 import { Plane } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export function LandingNav() {
   return (
@@ -16,7 +15,6 @@ export function LandingNav() {
           <span className="font-bold text-xl">TravelPlanner</span>
         </Link>
         <div className="flex items-center gap-4">
-          <ThemeToggle />
           <Link to="/signin">
             <Button variant="ghost">Sign in</Button>
           </Link>
