@@ -18,7 +18,7 @@
     "@clerk/express": "^1.7.68",
     "@google/generative-ai": "^0.24.1",
     "@travelplan/shared": "*",
-    "axios": "^1.13.4",
+    "axios": "^1.13.5",
     "bullmq": "^5.67.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
