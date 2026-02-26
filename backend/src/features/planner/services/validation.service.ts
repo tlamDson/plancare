@@ -32,7 +32,10 @@ export class ValidationService {
     return false;
   }
 
-  async validateIntent(intent: string): Promise<ValidatedPlace | null> {
+  async validateIntent(
+    intent: string,
+    destination?: string,
+  ): Promise<ValidatedPlace | null> {
     try {
       // 1. Cache check
       const cached = await placeCacheRepository.findByQuery(intent);
@@ -66,12 +69,20 @@ export class ValidationService {
       }
 
       // 2. PRIMARY: Google Places Text Search
-      //    v1 single-call hydration: returns name, coords, rating, photos, hours in one request.
+      //    Append destination to geo-constrain results — prevents queries like
+      //    "Paris Baguette" from resolving to "Paris Baguette Cao Thắng" in Vietnam.
+      const destCity = (destination?.split(",")[0] ?? "").trim();
+      const alreadyContainsDest =
+        destCity.length > 0 &&
+        intent.toLowerCase().includes(destCity.toLowerCase());
+      const geoConstrainedQuery =
+        destCity && !alreadyContainsDest ? `${intent}, ${destCity}` : intent;
+
       logger.info(
-        { intent },
+        { intent, geoConstrainedQuery },
         "Validation: Querying Google Places v1 Text Search",
       );
-      const place = await placesService.searchByText(intent);
+      const place = await placesService.searchByText(geoConstrainedQuery);
 
       if (place && place.location) {
         const [lat, lng] = [place.location.lat, place.location.lng];
@@ -171,11 +182,17 @@ export class ValidationService {
     }
   }
 
-  async validateBatch(intents: string[]): Promise<ValidatedPlace[]> {
-    logger.info({ count: intents.length }, "Validating batch of intents");
+  async validateBatch(
+    intents: string[],
+    destination?: string,
+  ): Promise<ValidatedPlace[]> {
+    logger.info(
+      { count: intents.length, destination },
+      "Validating batch of intents",
+    );
 
     const results = await Promise.allSettled(
-      intents.map((intent) => this.validateIntent(intent)),
+      intents.map((intent) => this.validateIntent(intent, destination)),
     );
 
     const validated = results

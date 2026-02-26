@@ -128,7 +128,10 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
     await updateJobProgress(job, 50, "Validating intents...");
     logger.info({ jobId: job.id, tripId }, "Step 2: Validating intents...");
 
-    let validated = await validationService.validateBatch(intentList);
+    let validated = await validationService.validateBatch(
+      intentList,
+      preferences.destination,
+    );
 
     if (validated.length === 0) {
       logger.warn(
