@@ -22,6 +22,7 @@ import { TripCard } from "@/features/planner/components/TripCard";
 import { Plus, Search, Loader2 } from "lucide-react";
 import { CreateTripDialog } from "@/features/planner/components";
 import { useTranslationStore } from "@/stores/useTranslationStore";
+import { getLocalizedTripTitle } from "@/utils/format";
 
 type FilterStatus =
   | "all"
@@ -39,7 +40,8 @@ export default function TripsPage() {
 
   // Filter trips
   const filteredTrips = trips?.filter((trip) => {
-    const matchesSearch = trip.title
+    const localizedTitle = getLocalizedTripTitle(trip.title, t);
+    const matchesSearch = localizedTitle
       .toLowerCase()
       .includes(search.toLowerCase());
     const matchesStatus =

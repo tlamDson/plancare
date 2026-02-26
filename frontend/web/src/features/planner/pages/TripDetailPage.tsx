@@ -7,7 +7,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useJobPoller, useTrip } from "@/features/planner/hooks";
-import { formatDateRange, getTripDuration } from "@/utils/format";
+import {
+  formatDateRange,
+  getTripDuration,
+  getLocalizedTripTitle,
+} from "@/utils/format";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AgentLockBanner } from "../components/AgentLockBanner";
@@ -36,8 +40,9 @@ export default function TripDetailPage() {
   // ── Debug: log trip data whenever it loads or is refreshed ──
   useEffect(() => {
     if (!trip) return;
+    const title = getLocalizedTripTitle(trip.title, t);
     console.groupCollapsed(
-      `[TripDetailPage] 🗺️ Trip loaded — "${trip.title}" (${trip._id})`,
+      `[TripDetailPage] 🗺️ Trip loaded — "${title}" (${trip._id})`,
     );
     console.log(
       "Status:",
@@ -63,8 +68,9 @@ export default function TripDetailPage() {
   // ── Debug: log when AI job finishes and itinerary is ready to render ──
   useEffect(() => {
     if (!trip || trip.isAgentProcessing || trip.itinerary.length === 0) return;
+    const title = getLocalizedTripTitle(trip.title, t);
     console.group(
-      `[TripDetailPage] ✅ Itinerary READY — "${trip.title}" | ${trip.itinerary.length} day(s)`,
+      `[TripDetailPage] ✅ Itinerary READY — "${title}" | ${trip.itinerary.length} day(s)`,
     );
     trip.itinerary.forEach((day) => {
       const dateOnly = day.date.slice(0, 10);
@@ -160,7 +166,9 @@ export default function TripDetailPage() {
 
         {/* Trip Header */}
         <div>
-          <h1 className="text-3xl font-bold">{trip.title}</h1>
+          <h1 className="text-3xl font-bold">
+            {getLocalizedTripTitle(trip.title, t)}
+          </h1>
           {dateRange && (
             <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
               <CalendarDays className="h-4 w-4" aria-hidden="true" />

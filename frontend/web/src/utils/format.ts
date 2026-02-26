@@ -119,3 +119,28 @@ export function isUpcoming(startDate: string | Date): boolean {
 export function isPastTrip(endDate: string | Date): boolean {
   return isPast(new Date(endDate));
 }
+
+/**
+ * Known default prefixes for trip titles across supported languages
+ */
+const DEFAULT_TRIP_PREFIXES = ["Trip to ", "Voyage à ", "Chuyến đi tới "];
+
+/**
+ * Localizes a trip title on the fly if it matches one of the default generated formats.
+ * E.g., translates "Chuyến đi tới Paris" to "Trip to Paris" if language is English.
+ */
+export function getLocalizedTripTitle(
+  title: string,
+  t: (key: string) => string,
+): string {
+  if (!title) return title;
+
+  for (const prefix of DEFAULT_TRIP_PREFIXES) {
+    if (title.startsWith(prefix)) {
+      const destination = title.slice(prefix.length);
+      return `${t("trips.defaultTitle")} ${destination}`;
+    }
+  }
+
+  return title;
+}

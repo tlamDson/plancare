@@ -23,6 +23,7 @@ import {
   formatDateRange,
   getTripDuration,
   formatCurrency,
+  getLocalizedTripTitle,
 } from "@/utils/format";
 import type { Trip } from "@/utils/schemas";
 import { useDeleteTrip } from "../hooks/useTrips";
@@ -50,7 +51,7 @@ export function TripCard({ trip }: TripCardProps) {
   const duration = getTripDuration(trip.startDate, trip.endDate);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { mutate: deleteTrip, isPending: isDeleting } = useDeleteTrip();
-  const { language } = useTranslationStore();
+  const { language, t } = useTranslationStore();
 
   const budgetPercentage =
     trip.budget.totalLimit > 0
@@ -75,7 +76,7 @@ export function TripCard({ trip }: TripCardProps) {
                   trip.coverImage ||
                   "https://unsplash.com/photos/a-snow-capped-mountain-in-the-distance-behind-some-trees-uFwPTGf07Sg"
                 }
-                alt={trip.title}
+                alt={getLocalizedTripTitle(trip.title, t)}
                 className="w-full h-full object-cover"
                 loading="lazy"
               />
@@ -99,7 +100,7 @@ export function TripCard({ trip }: TripCardProps) {
 
             <CardContent className="p-4">
               <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors line-clamp-1 pr-8">
-                {trip.title}
+                {getLocalizedTripTitle(trip.title, t)}
               </h3>
 
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -183,7 +184,9 @@ export function TripCard({ trip }: TripCardProps) {
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete "{trip.title}"?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Delete "{getLocalizedTripTitle(trip.title, t)}"?
+            </AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete this trip and all its itinerary data.
               This action cannot be undone.
