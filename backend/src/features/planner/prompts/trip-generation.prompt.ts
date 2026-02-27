@@ -90,15 +90,41 @@ export function buildTripPrompt(
       ` Balance the itinerary budget around these localized floor prices.`
     : "";
 
-  // Expand all N day keys explicitly — never use "// repeat for N days"
-  // because the AI stops at whatever example it sees.
+  // Dynamic slots based on activitiesPerDay (2-6)
+  const activitiesPerDay = preferences.activitiesPerDay ?? 3;
+  const slotLabels =
+    activitiesPerDay <= 2
+      ? ["morning", "evening"]
+      : activitiesPerDay === 3
+        ? ["morning", "afternoon", "evening"]
+        : activitiesPerDay === 4
+          ? ["morning", "late morning", "afternoon", "evening"]
+          : activitiesPerDay === 5
+            ? [
+                "morning",
+                "late morning",
+                "afternoon",
+                "late afternoon",
+                "evening",
+              ]
+            : [
+                "morning",
+                "late morning",
+                "afternoon",
+                "late afternoon",
+                "evening",
+                "night",
+              ];
+
   const daySkeletonLines = Array.from({ length: days }, (_, i) => {
     const n = i + 1;
-    return `  "day${n}": {
-    "morning": "search query for day ${n} morning activity in ${destination}",
-    "afternoon": "search query for day ${n} afternoon activity in ${destination}",
-    "evening": "search query for day ${n} evening activity in ${destination}"
-  }`;
+    const slotLines = slotLabels
+      .map(
+        (slot) =>
+          `    "${slot}": "search query for day ${n} ${slot} activity in ${destination}"`,
+      )
+      .join(",\n");
+    return `  "day${n}": {\n${slotLines}\n  }`;
   }).join(",\n");
 
   const languageInstruction = language

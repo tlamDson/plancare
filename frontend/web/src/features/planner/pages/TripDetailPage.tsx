@@ -20,15 +20,22 @@ import { DataError } from "@/components/DataError";
 import { PageLoader } from "@/components/PageLoader";
 import { retryJob } from "../api/jobs.api";
 import { toast } from "sonner";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Undo2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-client";
+import { apiClient } from "@/lib/axios";
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const { data: trip, isLoading, error } = useTrip(tripId);
   const { language, t } = useTranslationStore();
+  const queryClient = useQueryClient();
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [jobError, setJobError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isUndoing, setIsUndoing] = useState(false);
+  const [canUndo, setCanUndo] = useState(true); // optimistic: we don't know history length upfront
 
   useEffect(() => {
     if (trip?.isAgentProcessing && trip.agentJobId) {
@@ -121,6 +128,27 @@ export default function TripDetailPage() {
     }
   }, [activeJobId]);
 
+  const handleUndo = useCallback(async () => {
+    if (!tripId) return;
+    setIsUndoing(true);
+    try {
+      await apiClient.patch(`/trips/${tripId}/undo`);
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.trips.detail(tripId),
+      });
+      toast.success("↩ Hoàn tác thành công — Lịch trình đã được khôi phục.");
+    } catch (err: any) {
+      if (err?.response?.status === 409) {
+        setCanUndo(false);
+        toast.info("Không có lịch sử hoàn tác.");
+      } else {
+        toast.error("Hoàn tác thất bại.");
+      }
+    } finally {
+      setIsUndoing(false);
+    }
+  }, [tripId, queryClient]);
+
   if (isLoading) return <PageLoader />;
 
   if (error || !trip) {
@@ -165,18 +193,34 @@ export default function TripDetailPage() {
         />
 
         {/* Trip Header */}
-        <div>
-          <h1 className="text-3xl font-bold">
-            {getLocalizedTripTitle(trip.title, t)}
-          </h1>
-          {dateRange && (
-            <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
-              <CalendarDays className="h-4 w-4" aria-hidden="true" />
-              <span>
-                {dateRange}
-                {totalDays > 0 && ` · ${totalDays}-day trip`}
-              </span>
-            </div>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">
+              {getLocalizedTripTitle(trip.title, t)}
+            </h1>
+            {dateRange && (
+              <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
+                <CalendarDays className="h-4 w-4" aria-hidden="true" />
+                <span>
+                  {dateRange}
+                  {totalDays > 0 && ` · ${totalDays}-day trip`}
+                </span>
+              </div>
+            )}
+          </div>
+          {/* Undo button — restores most recent itinerary snapshot */}
+          {!trip.isAgentProcessing && canUndo && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleUndo}
+              disabled={isUndoing}
+              className="shrink-0 gap-1.5"
+              title="Hoàn tác thay đổi lịch trình gần nhất"
+            >
+              <Undo2 className="h-4 w-4" />
+              {isUndoing ? "Đang hoàn tác..." : "Hoàn tác"}
+            </Button>
           )}
         </div>
 

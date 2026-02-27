@@ -12,5 +12,6 @@ export {
   getTripById,
   getUserTrips,
   deleteTripById,
+  undoTrip,
 } from "./trip.controller";
 export { getJobStatus, retryJob } from "./job.controller";

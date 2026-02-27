@@ -184,3 +184,48 @@ export const deleteTripById = async (
     res.status(500).json({ message: "Failed to delete trip" });
   }
 };
+
+/**
+ * PATCH /api/trips/:tripId/undo — Undo the last itinerary change
+ * Restores the most recent snapshot from itineraryHistory.
+ */
+export const undoTrip = async (
+  req: ClerkRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.auth?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const { tripId } = req.params;
+    if (!tripId) {
+      res.status(400).json({ message: "Trip ID required" });
+      return;
+    }
+
+    const trip = await tripRepository.findById(tripId);
+    if (!trip) {
+      res.status(404).json({ message: "Trip not found" });
+      return;
+    }
+    if (trip.userId !== userId) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    const restored = await tripRepository.undoLastChange(tripId);
+    if (!restored) {
+      res.status(409).json({ message: "No undo history available" });
+      return;
+    }
+
+    logger.info({ tripId, userId }, "↩ Undo applied — itinerary restored");
+    res.json({ success: true, itinerary: restored });
+  } catch (error: any) {
+    logger.error({ error, tripId: req.params.tripId }, "Failed to undo trip");
+    res.status(500).json({ message: "Failed to undo" });
+  }
+};

@@ -4,6 +4,9 @@ import type { TripIntents } from "../services/intent-parser.service";
 import type { ValidatedPlace } from "../services/validation.service";
 import type { TripPreferences } from "@travelplan/shared";
 import type { IActivity } from "../models/Trip.types";
+import { geoValidatorService } from "../services/geo-validator.service";
+import { nearbyFoodService } from "../services/nearby-food.service";
+import type { TransportMode } from "../services/geo-validator.service";
 
 interface TripJobData {
   tripId: string;
@@ -29,11 +32,47 @@ export async function updateJobProgress(
   await job.updateProgress({ percent, currentStep });
 }
 
-export function buildItinerary(
+// ─── Dynamic time slots based on activitiesPerDay ─────────────────────────
+// Generates slot names for 2–6 activities per day.
+function generateTimeSlots(count: number): string[] {
+  const allSlots = [
+    "morning",
+    "late morning",
+    "afternoon",
+    "late afternoon",
+    "evening",
+    "night",
+  ];
+  // Always start from "morning", take `count` evenly spaced slots
+  if (count <= 2) return ["morning", "evening"];
+  if (count === 3) return ["morning", "afternoon", "evening"];
+  if (count === 4) return ["morning", "late morning", "afternoon", "evening"];
+  if (count === 5)
+    return [
+      "morning",
+      "late morning",
+      "afternoon",
+      "late afternoon",
+      "evening",
+    ];
+  return allSlots; // 6
+}
+
+// Default start times mapped to slot names
+const SLOT_START_TIMES: Record<string, string> = {
+  morning: "09:00",
+  "late morning": "11:30",
+  afternoon: "14:00",
+  "late afternoon": "16:30",
+  evening: "19:00",
+  night: "21:00",
+};
+
+export async function buildItinerary(
   intents: TripIntents,
   validated: ValidatedPlace[],
   preferences: TripPreferences,
-): any[] {
+): Promise<any[]> {
   const itinerary: any[] = [];
   let validatedIndex = 0;
 
@@ -47,6 +86,11 @@ export function buildItinerary(
       (new Date(endDateStr).getTime() - new Date(startDateStr).getTime()) /
         msPerDay,
     ) + 1;
+
+  const activitiesPerDay = preferences.activitiesPerDay ?? 3;
+  const transportMode: TransportMode =
+    (preferences.transportMode as TransportMode) ?? "walking";
+  const timeSlots = generateTimeSlots(activitiesPerDay);
 
   const aiDayKeys = Object.keys(intents).sort();
 
@@ -62,8 +106,19 @@ export function buildItinerary(
     let order = 0;
 
     if (slots) {
-      for (const slot of ["morning", "afternoon", "evening"] as const) {
-        const query = slots[slot as keyof typeof slots];
+      // Use dynamic slot list — falls back to available intent keys
+      const slotKeys = Object.keys(slots);
+
+      for (const slot of timeSlots) {
+        // Map custom slot names to the AI's keys (morning/afternoon/evening)
+        const aiSlotKey =
+          slot === "morning" || slot === "late morning"
+            ? "morning"
+            : slot === "afternoon" || slot === "late afternoon"
+              ? "afternoon"
+              : "evening";
+
+        const query = slots[aiSlotKey as keyof typeof slots];
         if (!query) continue;
 
         const place = validated[validatedIndex];
@@ -80,15 +135,11 @@ export function buildItinerary(
               type: "Point",
               coordinates: place.coordinates,
             },
-            time:
-              slot === "morning"
-                ? "09:00"
-                : slot === "afternoon"
-                  ? "14:00"
-                  : "19:00",
+            time: SLOT_START_TIMES[slot] ?? "09:00",
             status: "planned",
             order,
           };
+
           if (place.googlePlaceId) {
             activity.location!.googlePlaceId = place.googlePlaceId;
           }
@@ -110,11 +161,60 @@ export function buildItinerary(
             activity.openingHours = place.openingHours;
           }
 
+          // ─── Nearby food suggestions ─────────────────────────────────────
+          // Fire-and-forget with cache: costs 0 API calls on cache hit
+          try {
+            const anchorArg: {
+              coordinates: [number, number];
+              name: string;
+              googlePlaceId?: string;
+            } = {
+              coordinates: place.coordinates,
+              name: place.name,
+            };
+            if (place.googlePlaceId)
+              anchorArg.googlePlaceId = place.googlePlaceId;
+
+            const food = await nearbyFoodService.getNearbyFood(
+              anchorArg,
+              transportMode,
+            );
+            if (food.length > 0) {
+              (activity as any).nearbySuggestions = food;
+            }
+          } catch {
+            // Non-blocking: nearby food suggestions are best-effort
+          }
+
           activities.push(activity);
           order++;
         }
       }
     }
+
+    // ─── Distance validation between consecutive activities ───────────────
+    // Flags activities that are too far apart for the chosen transport mode
+    for (let i = 1; i < activities.length; i++) {
+      const prev = activities[i - 1];
+      const curr = activities[i];
+      if (!prev || !curr) continue;
+      const prevCoords = prev.location?.coordinates;
+      const currCoords = curr.location?.coordinates;
+      if (
+        prevCoords?.length === 2 &&
+        currCoords?.length === 2 &&
+        (prevCoords[0] !== 0 || prevCoords[1] !== 0) &&
+        (currCoords[0] !== 0 || currCoords[1] !== 0)
+      ) {
+        const { requiresTransport } = geoValidatorService.validateDistance(
+          prevCoords as [number, number],
+          currCoords as [number, number],
+          transportMode,
+        );
+        (curr as any).requiresTransport = requiresTransport;
+      }
+    }
+
     itinerary.push({ day: dayNum + 1, date: dayDate, activities });
   }
 

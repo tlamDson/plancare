@@ -16,12 +16,13 @@ import type { TripWizardData } from "@/stores/trip-wizard.store";
 import { StepBasics } from "./wizard/StepBasics";
 import { StepBudget } from "./wizard/StepBudget";
 import { StepAccommodation } from "./wizard/StepAccommodation";
+import { StepTransport } from "./wizard/StepTransport";
 import { StepActivities } from "./wizard/StepActivities";
 import { useTripWizard } from "../hooks/useTripWizard";
 import type { TripPreferences } from "@travelplan/shared";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 const MIN_DAILY_BUDGET = 20;
 const MAX_TRIP_DAYS = 90;
 
@@ -30,6 +31,7 @@ const steps = [
   { titleKey: "wizard.step2Title", descKey: "wizard.step2Desc" },
   { titleKey: "wizard.step3Title", descKey: "wizard.step3Desc" },
   { titleKey: "wizard.step4Title", descKey: "wizard.step4Desc" },
+  { titleKey: "wizard.step5Title", descKey: "wizard.step5Desc" },
 ];
 
 function getTripDays(startDate: string, endDate: string) {
@@ -63,6 +65,8 @@ function buildPreferences(data: TripWizardData) {
     dealBreakers: data.dealBreakers.length > 0 ? data.dealBreakers : undefined,
     purpose: data.purpose,
     groupType: data.groupType,
+    transportMode: data.transportMode,
+    activitiesPerDay: data.activitiesPerDay,
   };
 
   return preferences;
@@ -115,6 +119,10 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
     }
 
     if (stepIndex === 3) {
+      return !!data.transportMode;
+    }
+
+    if (stepIndex === 4) {
       return data.mood !== "";
     }
 
@@ -151,6 +159,7 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
     if (stepIndex === 0) return <StepBasics />;
     if (stepIndex === 1) return <StepBudget />;
     if (stepIndex === 2) return <StepAccommodation />;
+    if (stepIndex === 3) return <StepTransport />;
     return <StepActivities />;
   };
 

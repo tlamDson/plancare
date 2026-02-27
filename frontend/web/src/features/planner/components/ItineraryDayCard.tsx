@@ -15,6 +15,9 @@ import {
   DollarSign,
   Star,
   ExternalLink,
+  Car,
+  ChevronDown,
+  Utensils,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { ItineraryDay, Activity } from "@/utils/schemas";
@@ -269,6 +272,62 @@ function ActivityRow({
                 {activity.priceLevel >= 4 && "Luxury"}
               </span>
             </div>
+          )}
+
+          {/* Transport warning — shown when gap to next activity exceeds threshold */}
+          {(activity as any).requiresTransport && (
+            <div className="flex items-center gap-1.5 mt-2 px-2 py-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-md text-xs text-amber-700 dark:text-amber-400">
+              <Car className="h-3 w-3 shrink-0" aria-hidden="true" />
+              <span>
+                Khá xa để đi bộ — cân nhắc gọi xe hoặc dùng phương tiện công
+                cộng.
+              </span>
+            </div>
+          )}
+
+          {/* Nearby food suggestions */}
+          {(activity as any).nearbySuggestions?.length > 0 && (
+            <details className="mt-2 group">
+              <summary className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors list-none">
+                <Utensils className="h-3 w-3 shrink-0" aria-hidden="true" />
+                ᄂn gần đây ({(activity as any).nearbySuggestions.length} gợi ý)
+                <ChevronDown
+                  className="h-3 w-3 ml-auto transition-transform group-open:rotate-180"
+                  aria-hidden="true"
+                />
+              </summary>
+              <div className="mt-2 space-y-1.5 pl-1">
+                {(activity as any).nearbySuggestions.map((s: any) => (
+                  <div
+                    key={s.placeId}
+                    className="flex items-center justify-between gap-2 text-xs"
+                  >
+                    <div className="flex items-center gap-1 min-w-0">
+                      {s.photoUrl ? (
+                        <img
+                          src={s.photoUrl}
+                          alt={s.name}
+                          className="h-5 w-5 rounded object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="h-5 w-5 rounded bg-muted shrink-0" />
+                      )}
+                      <span className="truncate font-medium">{s.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0 text-muted-foreground">
+                      <span>
+                        {s.distanceKm < 1
+                          ? `${Math.round(s.distanceKm * 1000)}m`
+                          : `${s.distanceKm}km`}
+                      </span>
+                      {s.priceLevel !== undefined && (
+                        <span>{"$".repeat(s.priceLevel + 1)}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </details>
           )}
 
           {/* Bottom row: type label + cost */}

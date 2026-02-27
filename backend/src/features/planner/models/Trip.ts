@@ -63,6 +63,18 @@ const ActivitySchema = new Schema<IActivity>(
     priceLevel: Number,
     photoUrl: String,
     openingHours: String,
+    // Distance validation flag — set when next activity is too far for chosen transport mode
+    requiresTransport: { type: Boolean, default: false },
+    // Nearby food/snack suggestions cached from Google Places Nearby Search
+    nearbySuggestions: [
+      {
+        name: String,
+        placeId: String,
+        distanceKm: Number,
+        priceLevel: Number,
+        photoUrl: String,
+      },
+    ],
   },
   { _id: true }, // Keep _id for individual activity updates
 );
@@ -174,6 +186,18 @@ const TripSchema = new Schema<ITrip>(
     agentLockedAt: Date,
 
     version: { type: Number, default: 1 },
+
+    // Undo history: stores up to 5 itinerary snapshots for undo/redo
+    itineraryHistory: {
+      type: [
+        {
+          snapshot: Schema.Types.Mixed,
+          savedAt: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+      select: false, // excluded from default queries (large field)
+    },
 
     status: {
       type: String,

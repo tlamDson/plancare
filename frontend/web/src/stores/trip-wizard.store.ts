@@ -21,11 +21,20 @@ export type TripWizardData = {
   priorities: TripWizardPriorities;
   accommodationType: "hotel" | "hostel" | "airbnb" | "resort" | "any" | "";
   accommodationFlexible: boolean;
-  mood: "" | "city_break" | "beach" | "hiking" | "foodie" | "romantic" | "adventure";
+  mood:
+    | ""
+    | "city_break"
+    | "beach"
+    | "hiking"
+    | "foodie"
+    | "romantic"
+    | "adventure";
   interests: string[];
   dealBreakers: string[];
   purpose?: "leisure" | "business" | "bleisure" | "family_visit" | "event";
   groupType?: "solo" | "couple" | "family_kids" | "friends" | "work";
+  transportMode: "walking" | "public_transport" | "car";
+  activitiesPerDay: number;
 };
 
 const initialData: TripWizardData = {
@@ -42,6 +51,8 @@ const initialData: TripWizardData = {
   dealBreakers: [],
   purpose: undefined,
   groupType: undefined,
+  transportMode: "walking",
+  activitiesPerDay: 3,
 };
 
 type TripWizardState = {

@@ -19,6 +19,16 @@ export interface IPlaceCache extends Document {
   source: "mapbox" | "google" | "both";
   lastVerifiedAt: Date;
   hitCount: number;
+  /** Nearby food suggestions cached per anchor (avoids repeated Nearby Search API calls) */
+  nearbyFood?: Array<{
+    name: string;
+    placeId: string;
+    distanceKm: number;
+    priceLevel?: number;
+    photoUrl?: string;
+  }>;
+  /** TTL expiry — MongoDB auto-deletes this document after 60 days */
+  expiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -60,6 +70,21 @@ const PlaceCacheSchema = new Schema<IPlaceCache>(
     },
     lastVerifiedAt: { type: Date, default: Date.now },
     hitCount: { type: Number, default: 0 },
+    // Nearby food suggestions cached per anchor place
+    nearbyFood: [
+      {
+        name: String,
+        placeId: String,
+        distanceKm: Number,
+        priceLevel: Number,
+        photoUrl: String,
+      },
+    ],
+    // TTL: auto-expire cache after 60 days (MongoDB handles deletion)
+    expiresAt: {
+      type: Date,
+      default: () => new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+    },
   },
   {
     timestamps: true,
@@ -69,5 +94,7 @@ const PlaceCacheSchema = new Schema<IPlaceCache>(
 PlaceCacheSchema.index({ coordinates: "2dsphere" });
 PlaceCacheSchema.index({ query: 1, isVerified: 1 });
 PlaceCacheSchema.index({ lastVerifiedAt: 1 });
+// TTL index: MongoDB auto-deletes cache entries when expiresAt is reached
+PlaceCacheSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model<IPlaceCache>("PlaceCache", PlaceCacheSchema);

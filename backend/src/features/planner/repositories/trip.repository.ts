@@ -220,6 +220,54 @@ export class TripRepository {
 
     return result.modifiedCount;
   }
+
+  /**
+   * Save a snapshot of the current itinerary for undo support.
+   * Keeps a maximum of 5 snapshots (FIFO — oldest is dropped).
+   */
+  async saveSnapshot(tripId: string): Promise<void> {
+    const trip = await Trip.findById(tripId)
+      .select("itinerary itineraryHistory")
+      .exec();
+    if (!trip) return;
+
+    const MAX_HISTORY = 5;
+    const snapshot = { snapshot: trip.itinerary, savedAt: new Date() };
+
+    await Trip.findByIdAndUpdate(tripId, {
+      $push: {
+        itineraryHistory: {
+          $each: [snapshot],
+          $slice: -MAX_HISTORY, // keep only last 5
+        },
+      },
+    }).exec();
+  }
+
+  /**
+   * Restore the most recent itinerary snapshot (undo last change).
+   * Returns the restored itinerary or null if no history exists.
+   */
+  async undoLastChange(tripId: string): Promise<any[] | null> {
+    const trip = await Trip.findById(tripId).select("+itineraryHistory").exec();
+    if (!trip || !trip.itineraryHistory || trip.itineraryHistory.length === 0) {
+      return null;
+    }
+
+    const history = trip.itineraryHistory as Array<{
+      snapshot: any[];
+      savedAt: Date;
+    }>;
+    const last = history[history.length - 1];
+    if (!last) return null;
+
+    await Trip.findByIdAndUpdate(tripId, {
+      $set: { itinerary: last.snapshot },
+      $pop: { itineraryHistory: 1 }, // remove last element
+    }).exec();
+
+    return last.snapshot;
+  }
 }
 
 // Singleton instance

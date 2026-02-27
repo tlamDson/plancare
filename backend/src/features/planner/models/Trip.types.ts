@@ -42,6 +42,16 @@ export interface IActivity {
   priceLevel?: number;
   photoUrl?: string;
   openingHours?: string;
+  /** Distance validation — set by geo-validator when activity requires non-walking transport */
+  requiresTransport?: boolean;
+  /** Nearby food/snack suggestions around this activity anchor (cached from Google Places) */
+  nearbySuggestions?: Array<{
+    name: string;
+    placeId: string;
+    distanceKm: number;
+    priceLevel?: number;
+    photoUrl?: string;
+  }>;
 }
 
 /** Single day in the itinerary */
@@ -116,6 +126,12 @@ export interface ITrip extends Document {
 
   // 5. OPTIMISTIC CONCURRENCY CONTROL
   version: number;
+
+  // 6. UNDO HISTORY — snapshots of itinerary for undo/redo support (max 5 kept)
+  itineraryHistory?: Array<{
+    snapshot: IItineraryDay[];
+    savedAt: Date;
+  }>;
 
   // Metadata
   status: TripStatus;

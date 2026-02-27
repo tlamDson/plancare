@@ -38,6 +38,20 @@ export const activitySchema = z.object({
   priceLevel: z.number().optional(),
   photoUrl: z.string().optional(),
   openingHours: z.string().optional(),
+  // Distance validation — set by geo-validator when activity is too far for chosen transport
+  requiresTransport: z.boolean().optional(),
+  // Nearby food/snack suggestions cached from Google Places Nearby Search
+  nearbySuggestions: z
+    .array(
+      z.object({
+        name: z.string(),
+        placeId: z.string(),
+        distanceKm: z.number(),
+        priceLevel: z.number().optional(),
+        photoUrl: z.string().optional(),
+      }),
+    )
+    .optional(),
 });
 
 export const itineraryDaySchema = z.object({

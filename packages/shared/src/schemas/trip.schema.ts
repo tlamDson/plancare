@@ -17,7 +17,9 @@ export const TripPreferencesSchema = z.object({
   purpose: z
     .enum(["leisure", "business", "bleisure", "family_visit", "event"])
     .optional(),
-  groupType: z.enum(["solo", "couple", "family_kids", "friends", "work"]).optional(),
+  groupType: z
+    .enum(["solo", "couple", "family_kids", "friends", "work"])
+    .optional(),
   priorities: z
     .object({
       money: z.number().min(1).max(10),
@@ -39,6 +41,11 @@ export const TripPreferencesSchema = z.object({
     .enum(["hotel", "hostel", "airbnb", "resort", "any"])
     .optional(),
   mealPreferences: z.array(z.string()).optional(),
+  transportMode: z
+    .enum(["walking", "public_transport", "car"])
+    .optional()
+    .default("walking"),
+  activitiesPerDay: z.number().min(2).max(6).optional().default(3),
 });
 
 export type TripPreferences = z.infer<typeof TripPreferencesSchema>;

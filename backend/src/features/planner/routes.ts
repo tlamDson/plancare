@@ -6,6 +6,7 @@ import {
   getUserTrips,
   retryJob,
   deleteTripById,
+  undoTrip,
 } from "./controllers/planner.controller";
 import { requireUserAuth } from "../../middlewares/auth";
 import { tripCreationLimiter } from "../../middlewares/rate-limiter";
@@ -166,5 +167,10 @@ router.post("/jobs/:jobId/retry", requireUserAuth, retryJob);
  *         description: Trip not found
  */
 router.delete("/trips/:tripId", requireUserAuth, deleteTripById);
+
+/**
+ * PATCH /api/trips/:tripId/undo — Restore most recent itinerary snapshot
+ */
+router.patch("/trips/:tripId/undo", requireUserAuth, undoTrip);
 
 export default router;

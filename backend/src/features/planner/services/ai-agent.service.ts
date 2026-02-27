@@ -50,8 +50,21 @@ export class AIAgentService {
     const prompt = buildTripPrompt(preferences, language, cityCost);
 
     logger.info(
-      { destination: preferences.destination },
-      "🤖 Generating intents with Gemini",
+      {
+        destination: preferences.destination,
+        budgetPerDay:
+          prompt.match(/Budget: \$([0-9.]+)\/person\/day/)?.[1] || "unknown",
+        promptCostContext: cityCost
+          ? `Min ${cityCost.accommodationType ?? "any"}: ~$${cityCost.minHotelUSD}, Meals: ~$${cityCost.minFoodUSD}`
+          : "None",
+      },
+      "🤖 Generating intents with Gemini (Prompt built)",
+    );
+
+    // 📌 LOG POINT: Print the exact text instructing Gemini on budgets so DEV can verify in terminal/docker
+    logger.debug(
+      { aiPrompt: prompt },
+      "🔍 [DEV] Full AI Prompt generated (includes cost and budget instructions)",
     );
 
     try {
