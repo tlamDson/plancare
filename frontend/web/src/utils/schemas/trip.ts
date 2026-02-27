@@ -40,6 +40,7 @@ export const activitySchema = z.object({
   openingHours: z.string().optional(),
   // Distance validation — set by geo-validator when activity is too far for chosen transport
   requiresTransport: z.boolean().optional(),
+  distanceFromPrevious: z.number().optional(),
   // Nearby food/snack suggestions cached from Google Places Nearby Search
   nearbySuggestions: z
     .array(

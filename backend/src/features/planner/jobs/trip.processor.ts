@@ -160,7 +160,7 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
     await updateJobProgress(job, 80, "Building itinerary...");
     logger.info({ jobId: job.id, tripId }, "Step 3: Building itinerary...");
 
-    const itinerary = buildItinerary(
+    const itinerary = await buildItinerary(
       intents as TripIntents,
       validated,
       preferences,

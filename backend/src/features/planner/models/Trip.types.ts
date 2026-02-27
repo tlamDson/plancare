@@ -44,6 +44,8 @@ export interface IActivity {
   openingHours?: string;
   /** Distance validation — set by geo-validator when activity requires non-walking transport */
   requiresTransport?: boolean;
+  /** Distance from the previous activity in the day (in km) */
+  distanceFromPrevious?: number;
   /** Nearby food/snack suggestions around this activity anchor (cached from Google Places) */
   nearbySuggestions?: Array<{
     name: string;

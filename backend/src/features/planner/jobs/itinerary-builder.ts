@@ -6,6 +6,7 @@ import type { TripPreferences } from "@travelplan/shared";
 import type { IActivity } from "../models/Trip.types";
 import { geoValidatorService } from "../services/geo-validator.service";
 import { nearbyFoodService } from "../services/nearby-food.service";
+import { logger } from "../../../lib/logger";
 import type { TransportMode } from "../services/geo-validator.service";
 
 interface TripJobData {
@@ -206,12 +207,26 @@ export async function buildItinerary(
         (prevCoords[0] !== 0 || prevCoords[1] !== 0) &&
         (currCoords[0] !== 0 || currCoords[1] !== 0)
       ) {
-        const { requiresTransport } = geoValidatorService.validateDistance(
+        const { km, requiresTransport } = geoValidatorService.validateDistance(
           prevCoords as [number, number],
           currCoords as [number, number],
           transportMode,
         );
         (curr as any).requiresTransport = requiresTransport;
+        (curr as any).distanceFromPrevious = km;
+
+        // Log distance for debugging thresholds
+        logger.info(
+          {
+            day: dayNum + 1,
+            from: prev.name,
+            to: curr.name,
+            distanceKm: km,
+            mode: transportMode,
+            exceedsThreshold: requiresTransport,
+          },
+          `🚶‍♂️ [DISTANCE] ${prev.name} ➔ ${curr.name}: ${km}km`,
+        );
       }
     }
 

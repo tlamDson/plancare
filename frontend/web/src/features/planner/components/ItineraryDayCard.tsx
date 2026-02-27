@@ -24,6 +24,7 @@ import type { ItineraryDay, Activity } from "@/utils/schemas";
 import { getGoogleMapsUrl } from "../utils/maps";
 import { formatDate } from "@/utils/format";
 import { useTranslationStore } from "@/stores/useTranslationStore";
+import { useState, useEffect } from "react";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -163,18 +164,38 @@ function ActivityRow({
   derivedEndTime,
   currency = "USD",
   isLast,
+  distanceUnit = "Km",
 }: {
   activity: Activity;
   derivedEndTime?: string;
   currency?: string;
   isLast: boolean;
+  distanceUnit?: "Miles" | "Km";
 }) {
   const meta = TYPE_META[activity.type] ?? TYPE_META.custom;
   const Icon = meta.icon;
   const timeLabel = formatTimeRange(activity.time, derivedEndTime);
 
+  // Format distance based on user preference
+  const formatDistance = (km: number) => {
+    if (distanceUnit === "Miles") {
+      return (km * 0.621371).toFixed(1) + " mi";
+    }
+    return km.toFixed(1) + " km";
+  };
+
   return (
     <div className="relative flex gap-3 pb-4">
+      {/* Distance from previous indicator (placed on the timeline above the icon) */}
+      {(activity as any).distanceFromPrevious !== undefined && (
+        <div className="absolute -top-3 left-[0.1rem] flex items-center z-20">
+          <div className="bg-background px-1 text-[10px] font-medium text-muted-foreground border rounded-full shadow-sm flex items-center gap-0.5">
+            <span className="text-[9px]">📍</span>
+            {formatDistance((activity as any).distanceFromPrevious)}
+          </div>
+        </div>
+      )}
+
       {/* Timeline connector */}
       {!isLast && (
         <div className="absolute left-[1.1rem] top-9 bottom-0 w-px bg-border" />
@@ -359,6 +380,16 @@ function ActivityRow({
 
 export function ItineraryDayCard({ day, currency }: ItineraryDayCardProps) {
   const { language } = useTranslationStore();
+  const [distanceUnit, setDistanceUnit] = useState<"Miles" | "Km">("Km");
+
+  useEffect(() => {
+    try {
+      const prefs = JSON.parse(
+        localStorage.getItem("user-preferences") || "{}",
+      );
+      if (prefs.distance) setDistanceUnit(prefs.distance);
+    } catch {}
+  }, []);
 
   const dateLabel = (() => {
     try {
@@ -412,6 +443,7 @@ export function ItineraryDayCard({ day, currency }: ItineraryDayCardProps) {
                 currency={currency}
                 derivedEndTime={deriveEndTime(activity, sorted[idx + 1]?.time)}
                 isLast={idx === sorted.length - 1}
+                distanceUnit={distanceUnit}
               />
             ));
           })()

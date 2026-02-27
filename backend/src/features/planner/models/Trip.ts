@@ -65,6 +65,7 @@ const ActivitySchema = new Schema<IActivity>(
     openingHours: String,
     // Distance validation flag — set when next activity is too far for chosen transport mode
     requiresTransport: { type: Boolean, default: false },
+    distanceFromPrevious: Number,
     // Nearby food/snack suggestions cached from Google Places Nearby Search
     nearbySuggestions: [
       {
