@@ -5,7 +5,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useJobPoller, useTrip } from "@/features/planner/hooks";
 import {
   formatDateRange,
@@ -20,7 +20,7 @@ import { DataError } from "@/components/DataError";
 import { PageLoader } from "@/components/PageLoader";
 import { retryJob } from "../api/jobs.api";
 import { toast } from "sonner";
-import { CalendarDays, Undo2 } from "lucide-react";
+import { CalendarDays, Map, MapPin, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
@@ -28,6 +28,7 @@ import { apiClient } from "@/lib/axios";
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
+  const navigate = useNavigate();
   const { data: trip, isLoading, error } = useTrip(tripId);
   const { language, t } = useTranslationStore();
   const queryClient = useQueryClient();
@@ -35,7 +36,8 @@ export default function TripDetailPage() {
   const [jobError, setJobError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
-  const [canUndo, setCanUndo] = useState(true); // optimistic: we don't know history length upfront
+  const [isReGeocoding, setIsReGeocoding] = useState(false);
+  const [canUndo, setCanUndo] = useState(true);
 
   useEffect(() => {
     if (trip?.isAgentProcessing && trip.agentJobId) {
@@ -149,6 +151,26 @@ export default function TripDetailPage() {
     }
   }, [tripId, queryClient]);
 
+  const handleReGeocode = useCallback(async () => {
+    if (!tripId) return;
+    setIsReGeocoding(true);
+    const toastId = toast.loading("🔍 Re-geocoding activities...");
+    try {
+      const res = await apiClient.post(`/trips/${tripId}/regeocode`);
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.trips.detail(tripId),
+      });
+      toast.success(
+        `✅ Updated ${res.data.updated} activities (${res.data.failed} failed)`,
+        { id: toastId },
+      );
+    } catch (err: any) {
+      toast.error("Re-geocode failed. Check API keys.", { id: toastId });
+    } finally {
+      setIsReGeocoding(false);
+    }
+  }, [tripId, queryClient]);
+
   if (isLoading) return <PageLoader />;
 
   if (error || !trip) {
@@ -161,6 +183,13 @@ export default function TripDetailPage() {
       </DashboardLayout>
     );
   }
+
+  // ── Does this trip have any geocoded activities? ─────────────
+  const hasMapData = trip.itinerary.some((day) =>
+    day.activities.some(
+      (a) => a.location?.coordinates && a.location.coordinates.length === 2,
+    ),
+  );
 
   // ── Date range label ──────────────────────────────────────
   const dateRange = (() => {
@@ -175,7 +204,7 @@ export default function TripDetailPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-3xl">
+      <div className="space-y-6 max-w-5xl md:max-w-6xl w-full">
         {/* Agent Lock Banner */}
         <AgentLockBanner
           isLocked={trip.isAgentProcessing}
@@ -208,7 +237,36 @@ export default function TripDetailPage() {
               </div>
             )}
           </div>
-          {/* Undo button — restores most recent itinerary snapshot */}
+          {/* Action buttons row */}
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {/* Re-geocode button — fixes wrong coordinates on old trips */}
+            {trip.status === "COMPLETED" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReGeocode}
+                disabled={isReGeocoding}
+                className="gap-1.5"
+                aria-label="Re-geocode activities"
+              >
+                <MapPin className="h-4 w-4" aria-hidden="true" />
+                {isReGeocoding ? "Geocoding..." : "Fix Locations"}
+              </Button>
+            )}
+            {/* View on Map button — only when COMPLETED + has coords */}
+            {trip.status === "COMPLETED" && hasMapData && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/map/${trip._id}`)}
+                className="gap-1.5"
+                aria-label={t("map.viewOnMap")}
+              >
+                <Map className="h-4 w-4" aria-hidden="true" />
+                {t("map.viewOnMap")}
+              </Button>
+            )}
+          </div>
           {!trip.isAgentProcessing && canUndo && (
             <Button
               variant="outline"

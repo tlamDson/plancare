@@ -209,10 +209,10 @@ function ActivityRow({
       </div>
 
       {/* Card body */}
-      <div className="flex-1 min-w-0 rounded-lg border bg-card shadow-sm overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col sm:flex-row rounded-lg border bg-card shadow-sm overflow-hidden group hover:border-primary/50 transition-colors duration-300">
         {/* Photo hero */}
         {activity.photoUrl && (
-          <div className="w-full h-36 overflow-hidden">
+          <div className="w-full h-48 sm:w-64 sm:h-auto overflow-hidden shrink-0 border-r border-border/10">
             <img
               src={activity.photoUrl}
               alt={activity.name}
@@ -222,7 +222,7 @@ function ActivityRow({
           </div>
         )}
 
-        <div className="p-3">
+        <div className="p-4 flex-1 flex flex-col">
           {/* Top row: time + status */}
           <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
             {timeLabel ? (
@@ -242,7 +242,7 @@ function ActivityRow({
           </div>
 
           {/* Activity name */}
-          <p className="font-medium text-sm leading-snug line-clamp-2">
+          <p className="font-medium text-base sm:text-lg leading-snug line-clamp-2 group-hover:text-primary transition-colors">
             {activity.name}
           </p>
 
@@ -352,24 +352,26 @@ function ActivityRow({
           )}
 
           {/* Bottom row: type label + cost */}
-          <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-border/40 flex-wrap gap-1">
-            <span className={`text-xs font-medium ${meta.color}`}>
-              {meta.label}
-            </span>
-            {activity.cost != null && activity.cost > 0 && (
-              <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
-                <DollarSign className="h-3 w-3" aria-hidden="true" />
-                {activity.cost.toLocaleString()} {currency}
+          <div className="mt-auto">
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/40 flex-wrap gap-1">
+              <span className={`text-xs font-medium ${meta.color}`}>
+                {meta.label}
               </span>
+              {activity.cost != null && activity.cost > 0 && (
+                <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                  <DollarSign className="h-3 w-3" aria-hidden="true" />
+                  {activity.cost.toLocaleString()} {currency}
+                </span>
+              )}
+            </div>
+
+            {/* Notes */}
+            {activity.notes && (
+              <p className="mt-2 pt-2 border-t border-border/40 text-xs text-muted-foreground italic line-clamp-2">
+                {activity.notes}
+              </p>
             )}
           </div>
-
-          {/* Notes */}
-          {activity.notes && (
-            <p className="mt-1.5 pt-1.5 border-t border-border/40 text-xs text-muted-foreground italic line-clamp-2">
-              {activity.notes}
-            </p>
-          )}
         </div>
       </div>
     </div>
