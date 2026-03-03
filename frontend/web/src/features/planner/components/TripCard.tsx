@@ -26,6 +26,7 @@ import {
   getLocalizedTripTitle,
 } from "@/utils/format";
 import type { Trip } from "@/utils/schemas";
+import { getCountryImage } from "@/utils/countryImage";
 import { useDeleteTrip } from "../hooks/useTrips";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 
@@ -53,6 +54,9 @@ export function TripCard({ trip }: TripCardProps) {
   const { mutate: deleteTrip, isPending: isDeleting } = useDeleteTrip();
   const { language, t } = useTranslationStore();
 
+  const coverSrc =
+    trip.coverImage || getCountryImage(trip.title, trip._id) || null;
+
   const budgetPercentage =
     trip.budget.totalLimit > 0
       ? Math.round((trip.budget.totalSpent / trip.budget.totalLimit) * 100)
@@ -71,15 +75,16 @@ export function TripCard({ trip }: TripCardProps) {
         <Link to={`/trips/${trip._id}`}>
           <Card className="group hover:border-primary/50 transition-all duration-300 hover:shadow-md overflow-hidden cursor-pointer">
             <div className="aspect-video relative">
-              <img
-                src={
-                  trip.coverImage ||
-                  "https://unsplash.com/photos/a-snow-capped-mountain-in-the-distance-behind-some-trees-uFwPTGf07Sg"
-                }
-                alt={getLocalizedTripTitle(trip.title, t)}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
+              {coverSrc ? (
+                <img
+                  src={coverSrc}
+                  alt={getLocalizedTripTitle(trip.title, t)}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-muted" />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
 
               <span
