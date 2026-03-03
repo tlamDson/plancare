@@ -141,8 +141,23 @@ export function StepActivities() {
     constraint: (typeof CONSTRAINT_OPTIONS)[number],
   ): boolean => {
     if (constraint.incompatibleWith.length === 0) return false;
-    return constraint.incompatibleWith.some((f) =>
-      data.focus.includes(f as any),
+    return (constraint.incompatibleWith as readonly string[]).some((f) =>
+      data.focus.includes(f as (typeof data.focus)[number]),
+    );
+  };
+
+  // A focus is disabled if we reached max 3 OR if any checked constraint is incompatible with it
+  const isFocusDisabled = (focusValue: string) => {
+    if (
+      data.focus.length >= 3 &&
+      !data.focus.includes(focusValue as (typeof data.focus)[number])
+    ) {
+      return true;
+    }
+    return CONSTRAINT_OPTIONS.some(
+      (c) =>
+        data.constraints[c.id as ConstraintKey] &&
+        (c.incompatibleWith as readonly string[]).includes(focusValue),
     );
   };
 
@@ -199,24 +214,35 @@ export function StepActivities() {
           onValueChange={handleFocusChange}
           className="grid grid-cols-2 gap-3"
         >
-          {FOCUS_OPTIONS.map((opt) => (
-            <ToggleGroupItem
-              key={opt.value}
-              value={opt.value}
-              disabled={
-                data.focus.length >= 3 && !data.focus.includes(opt.value)
-              }
-              className="flex h-auto flex-col items-start gap-1 rounded-lg border p-3 text-left data-[state=on]:border-primary data-[state=on]:bg-primary/5"
-            >
-              <div className="flex items-center gap-2 font-medium">
-                <span>{opt.icon}</span>
-                <span className="text-sm">{t(opt.labelKey)}</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {t(opt.descriptionKey)}
-              </p>
-            </ToggleGroupItem>
-          ))}
+          {FOCUS_OPTIONS.map((opt) => {
+            const disabled = isFocusDisabled(opt.value);
+            const incompatible = CONSTRAINT_OPTIONS.some(
+              (c) =>
+                data.constraints[c.id as ConstraintKey] &&
+                (c.incompatibleWith as readonly string[]).includes(opt.value),
+            );
+            return (
+              <ToggleGroupItem
+                key={opt.value}
+                value={opt.value}
+                disabled={disabled}
+                className={`flex h-auto flex-col items-start gap-1 rounded-lg border p-3 text-left data-[state=on]:border-primary data-[state=on]:bg-primary/5 ${
+                  incompatible ? "cursor-not-allowed opacity-40" : ""
+                }`}
+                title={
+                  incompatible ? t("wizard.constraintIncompatible") : undefined
+                }
+              >
+                <div className="flex items-center gap-2 font-medium">
+                  <span>{opt.icon}</span>
+                  <span className="text-sm">{t(opt.labelKey)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t(opt.descriptionKey)}
+                </p>
+              </ToggleGroupItem>
+            );
+          })}
         </ToggleGroup>
       </div>
 
