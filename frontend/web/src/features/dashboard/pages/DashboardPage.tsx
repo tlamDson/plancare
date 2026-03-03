@@ -6,7 +6,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { WidgetError } from "@/components/WidgetError";
 import { useTrips } from "@/features/planner/hooks/useTrips";
 import { TripCard } from "@/features/planner/components/TripCard";
-import { Plus, Plane, Calendar, Map, Loader2 } from "lucide-react";
+import { Plus, Plane, MapPin, CreditCard, Users, Loader2 } from "lucide-react";
 import { CreateTripDialog } from "@/features/planner/components";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 
@@ -14,13 +14,31 @@ export default function DashboardPage() {
   const { data: trips, isLoading, error } = useTrips();
   const { t } = useTranslationStore();
 
-  // Filter trips
-  const upcomingTrips =
-    trips?.filter(
-      (trip) => trip.status === "DRAFT" || trip.status === "QUEUED",
-    ) || [];
-  const activeTrips =
-    trips?.filter((trip) => trip.status.startsWith("PROCESSING")) || [];
+  // Computed Metrics
+  const totalPlaces =
+    trips?.reduce((acc, trip) => acc + (trip.cities?.length || 0), 0) || 0;
+
+  const totalSpent =
+    trips?.reduce((acc, trip) => acc + (trip.budget?.totalSpent || 0), 0) || 0;
+
+  const totalTravelers =
+    trips?.reduce((acc, trip) => {
+      switch (trip.groupType) {
+        case "couple":
+          return acc + 2;
+        case "family_kids":
+        case "friends":
+          return acc + 4;
+        case "solo":
+        case "work":
+        default:
+          return acc + 1;
+      }
+    }, 0) || 0;
+
+  const avgTravelers = trips?.length
+    ? Math.round(totalTravelers / trips.length)
+    : 0;
 
   return (
     <DashboardLayout>
@@ -46,34 +64,40 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
-                {t("dash.totalTrips")}
+                {t("dash.totalPlaces")}
               </CardTitle>
-              <Plane className="h-4 w-4 text-muted-foreground" />
+              <MapPin className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{trips?.length || 0}</div>
+              <div className="text-2xl font-bold">{totalPlaces}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
-                {t("dash.upcomingTrips")}
+                {t("dash.budgetSpent")}
               </CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{upcomingTrips.length}</div>
+              <div className="text-2xl font-bold">
+                {new Intl.NumberFormat(undefined, {
+                  style: "currency",
+                  currency: "USD",
+                  maximumFractionDigits: 0,
+                }).format(totalSpent)}
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
-                {t("dash.activeNow")}
+                {t("dash.avgTravelers")}
               </CardTitle>
-              <Map className="h-4 w-4 text-muted-foreground" />
+              <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{activeTrips.length}</div>
+              <div className="text-2xl font-bold">{avgTravelers}</div>
             </CardContent>
           </Card>
         </div>
