@@ -239,6 +239,60 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.db_publicTransport": "Public transport",
     "wizard.db_streetFood": "Street food",
     "wizard.db_lateNights": "Late nights",
+    // Activities Step (Wizard Step 4 - New Questions)
+    "wizard.paceLabel": "Trip Pace",
+    "wizard.paceRelaxed": "Relaxed",
+    "wizard.paceRelaxedDesc": "Take time to soak it in (2-3 spots/day)",
+    "wizard.paceBalanced": "Balanced",
+    "wizard.paceBalancedDesc":
+      "Most popular, plenty of time to rest (4-5 spots/day)",
+    "wizard.pacePacked": "Packed",
+    "wizard.pacePackedDesc": "See as much as possible (6+ spots/day)",
+    "wizard.focusLabel": "Trip Focus",
+    "wizard.focusMax3": "(Max 3)",
+    "wizard.focusCulture": "Heritage & Culture",
+    "wizard.focusCultureDesc": "Museums, history, arts",
+    "wizard.focusNature": "Nature",
+    "wizard.focusNatureDesc": "Beaches, parks, hiking",
+    "wizard.focusGastronomy": "Gastronomy",
+    "wizard.focusGastronomyDesc": "Local markets, restaurants, cafes",
+    "wizard.focusLifestyle": "Lifestyle",
+    "wizard.focusLifestyleDesc": "Shopping, spa, bar & nightlife",
+    "wizard.constraintsLabel": "Special Requirements",
+    "wizard.constraintMobility": "♿ Mobility friendly",
+    "wizard.constraintMobilityDesc": "Max 800m walking or short rides",
+    "wizard.constraintCrowds": "🤫 Avoid crowds",
+    "wizard.constraintCrowdsDesc": "Prioritize hidden gems, avoid peak hours",
+    "wizard.constraintStartLate": "🌅 Start after 10 AM",
+    "wizard.constraintStartLateDesc": "No early morning activities",
+    "wizard.constraintIndoor": "🏠 Indoor only",
+    "wizard.constraintIndoorDesc": "Museums, malls, no outdoors",
+    "wizard.constraintNoStreetFood": "🍽️ No street food",
+    "wizard.constraintNoStreetFoodDesc":
+      "Only restaurants & cafes with seating",
+    "wizard.constraintNoLateNights": "🌙 Early nights",
+    "wizard.constraintNoLateNightsDesc": "Finish by 10 PM, no bars/clubs",
+    "wizard.warnLifestyleLateNights":
+      "⚠️ Nightlife & 'Early nights' conflict. We will prioritize bars closing before 22h.",
+    "wizard.infoCrowdsLifestyle":
+      "ℹ️ We'll suggest boutique shops instead of big malls and crowded night markets.",
+    "wizard.constraintIncompatible": "Incompatible with current focus",
+
+    // Transport Step (Wizard Step 5)
+    "wizard.step5Title": "Transport",
+    "wizard.step5Desc": "How do you want to get around?",
+    "wizard.transportLabel": "How do you want to travel?",
+    "wizard.transportLabelDesc":
+      "This helps us suggest sightseeing spots that match the distance between locations.",
+    "wizard.transportWalking": "Walking",
+    "wizard.transportWalkingDesc":
+      "Comfortable when two points are less than 1.5 km apart",
+    "wizard.transportPublic": "Public Transport",
+    "wizard.transportPublicDesc":
+      "Bus / Metro / Tram — great for distances under 10 km",
+    "wizard.transportCar": "Car / Taxi",
+    "wizard.transportCarDesc":
+      "Suitable for distances under 15 km between stops",
 
     // Trips Page
     "trips.pageTitle": "My Trips",
@@ -294,10 +348,18 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "menu.settings": "Settings",
     "menu.signOut": "Sign Out",
 
-    // Trip Detail
     "trip.itinerary": "Itinerary",
     "trip.noItinerary": "No itinerary yet",
     "trip.noItineraryDesc": "Use the AI Assistant to generate your trip plan.",
+
+    // Map View
+    "map.viewOnMap": "View on Map",
+    "map.day": "Day",
+    "map.activities": "activities",
+    "map.noCoords": "No location data for this trip",
+    "map.noCoordsDesc":
+      "Locations appear here once the itinerary is generated.",
+    "map.flyToDay": "Jump to Day",
   },
   French: {
     // Settings Nav
@@ -532,6 +594,63 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.db_publicTransport": "Transports en commun",
     "wizard.db_streetFood": "Cuisine de rue",
     "wizard.db_lateNights": "Nuits tardives",
+    // Activities Step (Wizard Step 4 - New Questions)
+    "wizard.paceLabel": "Rythme du Voyage",
+    "wizard.paceRelaxed": "Détendu",
+    "wizard.paceRelaxedDesc": "Prenez le temps d'apprécier (2-3 lieux/jour)",
+    "wizard.paceBalanced": "Équilibré",
+    "wizard.paceBalancedDesc":
+      "Le plus populaire, assez de temps pour se reposer (4-5 lieux/jour)",
+    "wizard.pacePacked": "Intense",
+    "wizard.pacePackedDesc": "Voir autant que possible (6+ lieux/jour)",
+    "wizard.focusLabel": "Objectif du Voyage",
+    "wizard.focusMax3": "(Max 3)",
+    "wizard.focusCulture": "Patrimoine & Culture",
+    "wizard.focusCultureDesc": "Musées, histoire, arts",
+    "wizard.focusNature": "Nature",
+    "wizard.focusNatureDesc": "Plages, parcs, randonnée",
+    "wizard.focusGastronomy": "Gastronomie",
+    "wizard.focusGastronomyDesc": "Marchés locaux, restaurants, cafés",
+    "wizard.focusLifestyle": "Style de vie",
+    "wizard.focusLifestyleDesc": "Shopping, spa, bar et vie nocturne",
+    "wizard.constraintsLabel": "Besoins Spécifiques",
+    "wizard.constraintMobility": "♿ Accessibilité",
+    "wizard.constraintMobilityDesc": "Max 800m de marche ou trajets courts",
+    "wizard.constraintCrowds": "🤫 Éviter la foule",
+    "wizard.constraintCrowdsDesc":
+      "Privilégier les lieux cachés, éviter les heures de pointe",
+    "wizard.constraintStartLate": "🌅 Commencer après 10h",
+    "wizard.constraintStartLateDesc": "Pas d'activités tôt le matin",
+    "wizard.constraintIndoor": "🏠 En intérieur uniquement",
+    "wizard.constraintIndoorDesc":
+      "Musées, centres commerciaux, pas d'extérieur",
+    "wizard.constraintNoStreetFood": "🍽️ Pas de cuisine de rue",
+    "wizard.constraintNoStreetFoodDesc":
+      "Seulement des restaurants et cafés avec places assises",
+    "wizard.constraintNoLateNights": "🌙 Rentrer tôt",
+    "wizard.constraintNoLateNightsDesc":
+      "Terminer avant 22h, pas de bars/clubs",
+    "wizard.warnLifestyleLateNights":
+      "⚠️ Conflit entre 'Vie nocturne' et 'Rentrer tôt'. Nous prioriserons les bars fermant avant 22h.",
+    "wizard.infoCrowdsLifestyle":
+      "ℹ️ Nous suggérerons des boutiques plutôt que de grands magasins et les foules.",
+    "wizard.constraintIncompatible": "Incompatible avec l'objectif actuel",
+
+    // Transport Step (Wizard Step 5)
+    "wizard.step5Title": "Transport",
+    "wizard.step5Desc": "Comment souhaitez-vous vous déplacer ?",
+    "wizard.transportLabel": "Comment voulez-vous voyager ?",
+    "wizard.transportLabelDesc":
+      "Cela nous aide à suggérer des sites touristiques adaptés à la distance entre les lieux.",
+    "wizard.transportWalking": "À pied",
+    "wizard.transportWalkingDesc":
+      "Confortable lorsque deux points sont à moins de 1,5 km",
+    "wizard.transportPublic": "Transports en commun",
+    "wizard.transportPublicDesc":
+      "Bus / Métro / Tram — idéal pour les distances de moins de 10 km",
+    "wizard.transportCar": "Voiture / Taxi",
+    "wizard.transportCarDesc":
+      "Adapté pour les distances de moins de 15 km entre les arrêts",
 
     // Trips Page
     "trips.pageTitle": "Mes Voyages",
@@ -588,11 +707,19 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "menu.settings": "Paramètres",
     "menu.signOut": "Se Déconnecter",
 
-    // Trip Detail
     "trip.itinerary": "Itinéraire",
     "trip.noItinerary": "Aucun itinéraire pour l'instant",
     "trip.noItineraryDesc":
       "Utilisez l'assistant IA pour générer votre plan de voyage.",
+
+    // Map View
+    "map.viewOnMap": "Voir sur la carte",
+    "map.day": "Jour",
+    "map.activities": "activités",
+    "map.noCoords": "Aucune donnée de localisation pour ce voyage",
+    "map.noCoordsDesc":
+      "Les lieux apparaissent ici une fois l'itinéraire généré.",
+    "map.flyToDay": "Aller au Jour",
   },
   Vietnamese: {
     // Settings Nav
@@ -824,6 +951,59 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.db_publicTransport": "Giao thông công cộng",
     "wizard.db_streetFood": "Thức ăn đường phố",
     "wizard.db_lateNights": "Thức khuya",
+    // Activities Step (Wizard Step 4 - New Questions)
+    "wizard.paceLabel": "Tốc độ chuyến đi",
+    "wizard.paceRelaxed": "Thong thả",
+    "wizard.paceRelaxedDesc": "Tận hưởng từng khoảnh khắc (2-3 điểm/ngày)",
+    "wizard.paceBalanced": "Cân bằng",
+    "wizard.paceBalancedDesc":
+      "Phổ biến nhất, đủ thời gian nghỉ (4-5 điểm/ngày)",
+    "wizard.pacePacked": "Khám phá tối đa",
+    "wizard.pacePackedDesc": "Đi nhiều nhất có thể (6+ điểm/ngày)",
+    "wizard.focusLabel": "Trọng tâm chuyến đi",
+    "wizard.focusMax3": "(Chọn tối đa 3)",
+    "wizard.focusCulture": "Di sản & Văn hóa",
+    "wizard.focusCultureDesc": "Bảo tàng, lịch sử, nghệ thuật",
+    "wizard.focusNature": "Thiên nhiên",
+    "wizard.focusNatureDesc": "Bãi biển, công viên, leo núi",
+    "wizard.focusGastronomy": "Ẩm thực",
+    "wizard.focusGastronomyDesc": "Chợ địa phương, nhà hàng, cà phê",
+    "wizard.focusLifestyle": "Phong cách sống",
+    "wizard.focusLifestyleDesc": "Mua sắm, spa, bar & nightlife",
+    "wizard.constraintsLabel": "Yêu cầu đặc biệt",
+    "wizard.constraintMobility": "♿ Di chuyển thoải mái",
+    "wizard.constraintMobilityDesc": "Tối đa 800m đi bộ hoặc đón xe ngắn",
+    "wizard.constraintCrowds": "🤫 Tránh chỗ đông người",
+    "wizard.constraintCrowdsDesc": "Ưu tiên 'hidden gems', tránh giờ cao điểm",
+    "wizard.constraintStartLate": "🌅 Bắt đầu sau 10 giờ",
+    "wizard.constraintStartLateDesc": "Không xếp hoạt động buổi sáng sớm",
+    "wizard.constraintIndoor": "🏠 Trong nhà",
+    "wizard.constraintIndoorDesc": "Bảo tàng, mall, không đi ngoài trời",
+    "wizard.constraintNoStreetFood": "🍽️ Không ăn vỉa hè",
+    "wizard.constraintNoStreetFoodDesc": "Chỉ nhà hàng và cà phê có bàn ghế",
+    "wizard.constraintNoLateNights": "🌙 Về sớm",
+    "wizard.constraintNoLateNightsDesc":
+      "Kết thúc trước 22 giờ, không bar/club",
+    "wizard.warnLifestyleLateNights":
+      "⚠️ Nightlife và 'Về sớm' có thể xung đột. Chúng tôi sẽ ưu tiên bars đóng trước 22h.",
+    "wizard.infoCrowdsLifestyle":
+      "ℹ️ Sẽ gợi ý boutique shops thay vì mall lớn và chợ đêm đông.",
+    "wizard.constraintIncompatible": "Không tương thích với focus hiện tại",
+
+    // Transport Step (Wizard Step 5)
+    "wizard.step5Title": "Phương Tiện",
+    "wizard.step5Desc": "Bạn muốn di chuyển bằng gì?",
+    "wizard.transportLabel": "Bạn muốn di chuyển bằng phương tiện gì?",
+    "wizard.transportLabelDesc":
+      "Lựa chọn này giúp chúng tôi gợi ý các điểm tham quan phù hợp với khoảng cách giữa các địa điểm.",
+    "wizard.transportWalking": "Đi bộ",
+    "wizard.transportWalkingDesc": "Thoải mái khi 2 điểm cách nhau dưới 1.5 km",
+    "wizard.transportPublic": "Phương tiện công cộng",
+    "wizard.transportPublicDesc":
+      "Xe buýt / Tàu điện / Tram — tốt cho khoảng cách dưới 10 km",
+    "wizard.transportCar": "Xe / Taxi",
+    "wizard.transportCarDesc":
+      "Phù hợp cho khoảng cách dưới 15 km giữa các điểm",
 
     // Trips Page
     "trips.pageTitle": "Chuyến đi của tôi",
@@ -879,10 +1059,18 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "menu.settings": "Cài đặt",
     "menu.signOut": "Đăng xuất",
 
-    // Trip Detail
     "trip.itinerary": "Lịch Trình",
     "trip.noItinerary": "Chưa có lịch trình",
     "trip.noItineraryDesc": "Dùng Trợ lý AI để tạo kế hoạch chuyến đi của bạn.",
+
+    // Map View
+    "map.viewOnMap": "Xem trên bản đồ",
+    "map.day": "Ngày",
+    "map.activities": "hoạt động",
+    "map.noCoords": "Không có dữ liệu vị trí cho chuyến đi này",
+    "map.noCoordsDesc":
+      "Các địa điểm sẽ hiện ở đây sau khi lịch trình được tạo.",
+    "map.flyToDay": "Nhảy đến Ngày",
   },
 };
 
