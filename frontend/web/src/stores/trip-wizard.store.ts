@@ -7,6 +7,7 @@ export type TripWizardPriorities = {
 };
 
 export type TripWizardData = {
+  title: string;
   destination: string;
   startDate: string;
   endDate: string;
@@ -51,6 +52,7 @@ export type TripWizardData = {
 };
 
 const initialData: TripWizardData = {
+  title: "",
   destination: "",
   startDate: "",
   endDate: "",

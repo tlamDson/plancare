@@ -20,8 +20,17 @@ import { DataError } from "@/components/DataError";
 import { PageLoader } from "@/components/PageLoader";
 import { retryJob } from "../api/jobs.api";
 import { toast } from "sonner";
-import { CalendarDays, Map, MapPin, Undo2 } from "lucide-react";
+import {
+  CalendarDays,
+  Map,
+  MapPin,
+  Undo2,
+  Edit2,
+  Check,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -31,7 +40,7 @@ import {
 } from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
-import { useUpdateTripLifecycle } from "../hooks/useTrips";
+import { useUpdateTrip, useUpdateTripLifecycle } from "../hooks/useTrips";
 import { apiClient } from "@/lib/axios";
 
 export default function TripDetailPage() {
@@ -40,8 +49,11 @@ export default function TripDetailPage() {
   const { data: trip, isLoading, error } = useTrip(tripId);
   const { language, t } = useTranslationStore();
   const queryClient = useQueryClient();
-  const { mutate: updateLifecycle, isPending: isUpdating } =
+  const { mutate: updateLifecycle, isPending: isUpdatingLifecycle } =
     useUpdateTripLifecycle();
+  const { mutate: updateTrip, isPending: isUpdatingTrip } = useUpdateTrip();
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState("");
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [jobError, setJobError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -181,6 +193,26 @@ export default function TripDetailPage() {
     }
   }, [tripId, queryClient]);
 
+  const handleEditTitle = () => {
+    if (!trip) return;
+    setEditTitleValue(trip.title);
+    setIsEditingTitle(true);
+  };
+
+  const handleSaveTitle = () => {
+    if (!trip) return;
+    const trimmed = editTitleValue.trim();
+    if (trimmed && trimmed !== trip.title) {
+      updateTrip({ tripId: trip._id, data: { title: trimmed } });
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleKeyDownTitle = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSaveTitle();
+    if (e.key === "Escape") setIsEditingTitle(false);
+  };
+
   if (isLoading) return <PageLoader />;
 
   if (error || !trip) {
@@ -235,9 +267,51 @@ export default function TripDetailPage() {
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-3xl font-bold">
-                {getLocalizedTripTitle(trip.title, t)}
-              </h1>
+              {isEditingTitle ? (
+                <div className="flex items-center gap-1">
+                  <Input
+                    autoFocus
+                    value={editTitleValue}
+                    onChange={(e) => setEditTitleValue(e.target.value)}
+                    onKeyDown={handleKeyDownTitle}
+                    disabled={isUpdatingTrip}
+                    className="h-9 md:h-10 text-xl font-bold md:text-3xl w-[200px] md:w-[350px] shadow-sm"
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                    onClick={handleSaveTitle}
+                    disabled={isUpdatingTrip}
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                    onClick={() => setIsEditingTitle(false)}
+                    disabled={isUpdatingTrip}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="group flex items-center gap-2">
+                  <h1 className="text-3xl font-bold">
+                    {getLocalizedTripTitle(trip.title, t)}
+                  </h1>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 shrink-0 focus:opacity-100"
+                    onClick={handleEditTitle}
+                    title="Edit Trip Name"
+                  >
+                    <Edit2 className="h-4 w-4 text-muted-foreground mr-0.5" />
+                  </Button>
+                </div>
+              )}
 
               {/* User Lifecycle Status Dropdown (only visible if AI is done) */}
               {trip.status === "COMPLETED" && (
@@ -246,7 +320,7 @@ export default function TripDetailPage() {
                   onValueChange={(val: any) =>
                     updateLifecycle({ tripId: trip._id, lifecycle: val })
                   }
-                  disabled={isUpdating || trip.isAgentProcessing}
+                  disabled={isUpdatingLifecycle || trip.isAgentProcessing}
                 >
                   <SelectTrigger className="h-8 min-w-[120px] text-xs font-medium px-3 shadow-sm border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors focus:ring-1 focus:ring-primary rounded-full">
                     <SelectValue />

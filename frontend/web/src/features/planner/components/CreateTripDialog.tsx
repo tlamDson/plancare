@@ -66,7 +66,7 @@ function buildPreferences(data: TripWizardData) {
       adults: data.travelers.adults,
       children: data.travelers.children,
     },
-    accommodationType: data.accommodationType || undefined,
+    accommodationType: (data.accommodationType || "any") as any,
     priorities: data.priorities,
     mood: data.mood || undefined,
     interests: data.interests.length > 0 ? data.interests : undefined,
@@ -115,6 +115,7 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
 
     if (stepIndex === 0) {
       return (
+        data.title.trim().length >= 2 &&
         data.destination.trim().length >= 2 &&
         tripDays !== null &&
         data.travelers.adults >= 1
@@ -162,7 +163,7 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
 
   const handleSubmit = () => {
     const preferences = buildPreferences(data);
-    const title = `${t("trips.defaultTitle")} ${preferences.destination}`;
+    const title = data.title.trim();
 
     console.log(
       "🚀 [CreateTripDialog] Submitting trip with preferences:",

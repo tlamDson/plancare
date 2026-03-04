@@ -32,6 +32,19 @@ export function StepBasics() {
 
   return (
     <div className="space-y-6">
+      {/* Title */}
+      <div className="space-y-2">
+        <Label htmlFor="title">{t("wizard.title")}</Label>
+        <Input
+          id="title"
+          placeholder={t("wizard.titlePlaceholder")}
+          value={data.title}
+          onChange={(e) => setData({ title: e.target.value })}
+        />
+        {data.title.trim().length > 0 && data.title.trim().length < 2 && (
+          <p className="text-sm text-destructive">{t("wizard.titleError")}</p>
+        )}
+      </div>
       {/* Destination */}
       <div className="space-y-2">
         <Label htmlFor="destination">{t("wizard.destination")}</Label>
