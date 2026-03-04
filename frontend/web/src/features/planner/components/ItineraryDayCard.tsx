@@ -209,10 +209,10 @@ function ActivityRow({
       </div>
 
       {/* Card body */}
-      <div className="flex-1 min-w-0 flex flex-col sm:flex-row rounded-lg border bg-card shadow-sm overflow-hidden group hover:border-primary/50 transition-colors duration-300">
+      <div className="flex-1 min-w-0 flex flex-col sm:flex-row rounded-lg border bg-card shadow-sm overflow-hidden group hover:border-primary/50 transition-colors duration-300 sm:min-h-[200px]">
         {/* Photo hero */}
         {activity.photoUrl && (
-          <div className="w-full h-48 sm:w-64 sm:h-auto overflow-hidden shrink-0 border-r border-border/10">
+          <div className="w-full h-48 sm:w-56 sm:h-auto overflow-hidden shrink-0 border-r border-border/10">
             <img
               src={activity.photoUrl}
               alt={activity.name}
