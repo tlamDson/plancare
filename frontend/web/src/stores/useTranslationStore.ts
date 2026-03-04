@@ -215,8 +215,12 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.any": "Any",
     "wizard.flexibility": "Flexibility",
     "wizard.flexDesc": "Toggle if you already have a booking",
-    "wizard.step4Title": "Activities",
-    "wizard.step4Desc": "Mood and interests for the trip.",
+    "wizard.step4Title": "Transport",
+    "wizard.step4Desc": "How are you getting around?",
+    "wizard.step5Title": "Activities",
+    "wizard.step5Desc": "Pace, focus, and travel style.",
+    "wizard.step6Title": "Requirements",
+    "wizard.step6Desc": "Any special needs or considerations?",
     "wizard.mood": "Mood",
     "wizard.cityBreak": "City Break",
     "wizard.beach": "Beach",
@@ -281,9 +285,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
       "ℹ️ We'll suggest boutique shops instead of big malls and crowded night markets.",
     "wizard.constraintIncompatible": "Incompatible with current focus",
 
-    // Transport Step (Wizard Step 5)
-    "wizard.step5Title": "Transport",
-    "wizard.step5Desc": "How do you want to get around?",
+    // Transport Step Options
     "wizard.transportLabel": "How do you want to travel?",
     "wizard.transportLabelDesc":
       "This helps us suggest sightseeing spots that match the distance between locations.",
@@ -594,8 +596,12 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.any": "Peu importe",
     "wizard.flexibility": "Flexibilité",
     "wizard.flexDesc": "Cochez si vous avez déjà une réservation",
-    "wizard.step4Title": "Activités",
-    "wizard.step4Desc": "Ambiance et centres d'intérêt du voyage.",
+    "wizard.step4Title": "Transport",
+    "wizard.step4Desc": "Comment vous déplacez-vous ?",
+    "wizard.step5Title": "Activités",
+    "wizard.step5Desc": "Rythme, centres d'intérêt et style de voyage.",
+    "wizard.step6Title": "Exigences",
+    "wizard.step6Desc": "Besoins particuliers ou considérations ?",
     "wizard.mood": "Ambiance",
     "wizard.cityBreak": "Escapade Citadine",
     "wizard.beach": "Plage",
@@ -663,9 +669,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
       "ℹ️ Nous suggérerons des boutiques plutôt que de grands magasins et les foules.",
     "wizard.constraintIncompatible": "Incompatible avec l'objectif actuel",
 
-    // Transport Step (Wizard Step 5)
-    "wizard.step5Title": "Transport",
-    "wizard.step5Desc": "Comment souhaitez-vous vous déplacer ?",
+    // Transport Step Options
     "wizard.transportLabel": "Comment voulez-vous voyager ?",
     "wizard.transportLabelDesc":
       "Cela nous aide à suggérer des sites touristiques adaptés à la distance entre les lieux.",
@@ -974,8 +978,12 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.any": "Bất kỳ",
     "wizard.flexibility": "Sự Linh hoạt",
     "wizard.flexDesc": "Bật nếu bạn đã đặt chỗ trước",
-    "wizard.step4Title": "Hoạt Động",
-    "wizard.step4Desc": "Tâm trạng và sở thích cho chuyến đi.",
+    "wizard.step4Title": "Di chuyển",
+    "wizard.step4Desc": "Bạn định di chuyển như thế nào?",
+    "wizard.step5Title": "Hoạt động",
+    "wizard.step5Desc": "Nhịp độ, sở thích và phong cách du lịch.",
+    "wizard.step6Title": "Yêu cầu",
+    "wizard.step6Desc": "Bất kỳ nhu cầu hoặc lưu ý đặc biệt nào?",
     "wizard.mood": "Tâm trạng",
     "wizard.cityBreak": "Khám phá thành phố",
     "wizard.beach": "Biển",
@@ -1040,9 +1048,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
       "ℹ️ Sẽ gợi ý boutique shops thay vì mall lớn và chợ đêm đông.",
     "wizard.constraintIncompatible": "Không tương thích với focus hiện tại",
 
-    // Transport Step (Wizard Step 5)
-    "wizard.step5Title": "Phương Tiện",
-    "wizard.step5Desc": "Bạn muốn di chuyển bằng gì?",
+    // Transport Step Options
     "wizard.transportLabel": "Bạn muốn di chuyển bằng phương tiện gì?",
     "wizard.transportLabelDesc":
       "Lựa chọn này giúp chúng tôi gợi ý các điểm tham quan phù hợp với khoảng cách giữa các địa điểm.",
