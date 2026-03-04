@@ -5,6 +5,7 @@ import {
   getTripById,
   getUserTrips,
   deleteTripById,
+  updateTripById,
   undoTrip,
   reGeocodeTrip,
   updateTripLifecycle,
@@ -168,6 +169,11 @@ router.post("/jobs/:jobId/retry", requireUserAuth, retryJob);
  *         description: Trip not found
  */
 router.delete("/trips/:tripId", requireUserAuth, deleteTripById);
+
+/**
+ * PATCH /api/trips/:tripId - Update trip fields
+ */
+router.patch("/trips/:tripId", requireUserAuth, updateTripById);
 
 /**
  * PATCH /api/trips/:tripId/undo — Restore most recent itinerary snapshot

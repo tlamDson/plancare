@@ -186,6 +186,61 @@ export const deleteTripById = async (
 };
 
 /**
+ * PATCH /api/trips/:tripId - Update trip fields (e.g. title)
+ */
+export const updateTripById = async (
+  req: ClerkRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.auth?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const { tripId } = req.params;
+    if (!tripId) {
+      res.status(400).json({ message: "Trip ID is required" });
+      return;
+    }
+
+    const trip = await tripRepository.findById(tripId);
+    if (!trip) {
+      res.status(404).json({ message: "Trip not found" });
+      return;
+    }
+
+    if (trip.userId !== userId) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    // Only allow updating specific fields for safety
+    const allowedUpdates = ["title", "description"];
+    const updateData: any = {};
+    for (const key of allowedUpdates) {
+      if (req.body[key] !== undefined) {
+        updateData[key] = req.body[key];
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      res.status(400).json({ message: "No valid fields to update" });
+      return;
+    }
+
+    const updatedTrip = await tripRepository.update(tripId, updateData);
+    logger.info({ tripId, userId, updateData }, "Trip updated");
+
+    res.json({ success: true, data: updatedTrip });
+  } catch (error: any) {
+    logger.error({ error, tripId: req.params.tripId }, "Failed to update trip");
+    res.status(500).json({ message: "Failed to update trip" });
+  }
+};
+
+/**
  * PATCH /api/trips/:tripId/undo — Undo the last itinerary change
  * Restores the most recent snapshot from itineraryHistory.
  */
