@@ -21,8 +21,6 @@ import {
   Loader2,
   Clock,
   DollarSign,
-  Star,
-  X,
 } from "lucide-react";
 import { WidgetError } from "@/components/WidgetError";
 import type { Trip, ItineraryDay, Activity } from "@/utils/schemas";
@@ -61,97 +59,9 @@ function getValidActivities(day: ItineraryDay): Activity[] {
 // Bottom place card (Google Maps style)
 // ─────────────────────────────────────────────────────────────────
 
-function PlaceCard({
-  selected,
-  onClose,
-}: {
-  selected: SelectedActivity;
-  onClose: () => void;
-}) {
-  const { activity: act, dayNumber, stopIndex, color } = selected;
-  const bg = getDayColorLight(dayNumber);
-
-  return (
-    <div
-      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 w-[340px] max-w-[90vw] bg-background/97 backdrop-blur-md border border-border/60 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-3 duration-200"
-      role="dialog"
-      aria-label={act.name}
-    >
-      {/* Color bar top */}
-      <div className="h-1 w-full" style={{ backgroundColor: color }} />
-
-      <div className="p-4">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="min-w-0">
-            {/* Day + stop badge */}
-            <div
-              className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mb-1.5"
-              style={{ backgroundColor: bg, color }}
-            >
-              <span
-                className="h-1.5 w-1.5 rounded-full"
-                style={{ backgroundColor: color }}
-                aria-hidden="true"
-              />
-              Day {dayNumber} · Stop {stopIndex}
-            </div>
-            <h3 className="font-bold text-base leading-tight line-clamp-2">
-              {act.name}
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="shrink-0 h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted transition-colors cursor-pointer mt-0.5"
-          >
-            <X className="h-4 w-4" aria-hidden="true" />
-          </button>
-        </div>
-
-        {/* Details row */}
-        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          {act.time && (
-            <span className="flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              {act.time}
-              {act.endTime ? ` – ${act.endTime}` : ""}
-            </span>
-          )}
-          {act.cost != null && act.cost > 0 && (
-            <span className="flex items-center gap-1.5">
-              <DollarSign className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              {act.cost}
-            </span>
-          )}
-          {act.rating != null && (
-            <span className="flex items-center gap-1.5 text-amber-500">
-              <Star
-                className="h-3.5 w-3.5 fill-current shrink-0"
-                aria-hidden="true"
-              />
-              {act.rating.toFixed(1)}
-            </span>
-          )}
-        </div>
-
-        {/* Opening hours */}
-        {act.openingHours && (
-          <p className="mt-2 text-xs text-muted-foreground border-t border-border/50 pt-2 line-clamp-1">
-            🕐 {act.openingHours}
-          </p>
-        )}
-
-        {/* Notes */}
-        {act.notes && (
-          <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2 italic">
-            {act.notes}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
+// ─────────────────────────────────────────────────────────────────
+// Removed bottom PlaceCard component as it is now a Popup
+// ─────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────
 // Main component
@@ -179,7 +89,7 @@ export function TripMapView({ trip }: TripMapViewProps) {
     zoom: 13,
   });
 
-  const { flyToDay, selectActivity, deselect } = useTripMarkers({
+  const { flyToDay, selectActivity } = useTripMarkers({
     map,
     isLoaded,
     itinerary: trip.itinerary,
@@ -193,13 +103,7 @@ export function TripMapView({ trip }: TripMapViewProps) {
   const handleDayClick = (dayNumber: number) => {
     setActiveDay(dayNumber);
     setSelectedActivity(null);
-    deselect();
     flyToDay(dayNumber);
-  };
-
-  const handleCloseCard = () => {
-    setSelectedActivity(null);
-    deselect();
   };
 
   if (!hasCoords) {
@@ -410,46 +314,6 @@ export function TripMapView({ trip }: TripMapViewProps) {
           )}
         </button>
       </div>
-
-      {/* ── LEGEND bottom-right ───────────────────────────────── */}
-      {isLoaded && (
-        <div className="absolute bottom-4 right-4 z-20 bg-background/90 backdrop-blur-md border border-border/60 rounded-xl shadow-lg p-3 max-h-52 overflow-y-auto">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
-            Days
-          </p>
-          <div className="flex flex-col gap-1.5">
-            {sortedDays.map((day) => {
-              const color = getDayColor(day.day);
-              const bg = getDayColorLight(day.day);
-              const isActive = activeDay === day.day;
-              return (
-                <button
-                  key={day.day}
-                  onClick={() => handleDayClick(day.day)}
-                  className={`flex items-center gap-2 px-2 py-1 rounded-lg text-left cursor-pointer transition-all duration-200 ${
-                    isActive ? "shadow-sm" : "hover:opacity-80"
-                  }`}
-                  style={{ backgroundColor: isActive ? bg : "transparent" }}
-                >
-                  <span
-                    className="h-2.5 w-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: color }}
-                    aria-hidden="true"
-                  />
-                  <span className="text-xs font-medium">
-                    {t("map.day")} {day.day}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── BOTTOM PLACE CARD (Google Maps style) ────────────── */}
-      {selectedActivity && (
-        <PlaceCard selected={selectedActivity} onClose={handleCloseCard} />
-      )}
     </div>
   );
 }

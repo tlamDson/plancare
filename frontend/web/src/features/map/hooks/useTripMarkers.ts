@@ -91,6 +91,7 @@ export function useTripMarkers({
       string,
       {
         el: HTMLElement;
+        markerInstance: Marker;
         color: string;
         activity: Activity;
         dayNumber: number;
@@ -276,9 +277,65 @@ export function useTripMarkers({
           el.textContent = String(idx + 1);
           el.setAttribute("aria-label", act.name);
 
+          // ── Create Popup Content ──────────────────────────────
+          const timeText = act.time
+            ? `${act.time}${act.endTime ? ` – ${act.endTime}` : ""}`
+            : "";
+
+          let costText = "";
+          if (act.cost != null) {
+            costText = act.cost > 0 ? `$${act.cost}` : "Free";
+          } else if (act.priceLevel != null) {
+            costText = act.priceLevel > 0 ? "$".repeat(act.priceLevel) : "Free";
+          }
+
+          const ratingText =
+            act.rating != null ? `⭐ ${act.rating.toFixed(1)}` : "";
+          const metaText = [timeText, costText, ratingText]
+            .filter(Boolean)
+            .join(" · ");
+
+          let popupHtml = `
+            <div class="px-3 py-2.5 max-w-[260px] font-sans">
+              <div class="text-[9px] font-bold uppercase tracking-wider mb-1" style="color: ${dayColor};">
+                Day ${day.day} · Stop ${idx + 1}
+              </div>
+              <h3 class="font-bold text-sm leading-tight text-slate-900 mb-1 mt-0">
+                ${act.name}
+              </h3>
+          `;
+
+          if (metaText) {
+            popupHtml += `<p class="text-[11px] text-slate-500 m-0 mb-1.5 font-medium">${metaText}</p>`;
+          }
+
+          if (act.openingHours) {
+            popupHtml += `<p class="text-[11px] text-slate-500 m-0 pt-1.5 border-t border-slate-200 line-clamp-1">🕐 ${act.openingHours}</p>`;
+          }
+
+          if (act.notes) {
+            popupHtml += `<p class="text-[11px] text-slate-500 m-0 mt-1 italic leading-tight line-clamp-2">${act.notes}</p>`;
+          }
+
+          popupHtml += `</div>`;
+
+          const popup = new mapboxgl.Popup({
+            offset: 20,
+            closeButton: false, // Let hover/click manage or use native simple close
+            closeOnClick: false,
+            className: "trip-map-popup",
+          }).setHTML(popupHtml);
+
+          // ── Create Marker ─────────────────────────────────────
+          const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
+            .setLngLat([lng, lat])
+            .setPopup(popup)
+            .addTo(map);
+
           const handleClick = () => {
             selectEl(el, dayColor);
             map.flyTo({ center: [lng, lat], zoom: 15, duration: 800 });
+            marker.togglePopup(); // Show the popup
             onMarkerClick?.(day.day);
             onActivityClick?.({
               activity: act,
@@ -296,15 +353,13 @@ export function useTripMarkers({
           // Store marker data for programmatic selection from panel
           markerDataRef.current.set(actId, {
             el,
+            markerInstance: marker,
             color: dayColor,
             activity: act,
             dayNumber: day.day,
             stopIndex: idx + 1,
           });
 
-          const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
-            .setLngLat([lng, lat])
-            .addTo(map);
           markerInstancesRef.current.push(marker);
         });
       });
@@ -352,6 +407,11 @@ export function useTripMarkers({
       if (!data || !map) return;
       selectEl(data.el, data.color);
       map.flyTo({ center: [lng, lat], zoom: 15, duration: 800 });
+
+      // Close all other popups then open this one
+      markerInstancesRef.current.forEach((m) => m.getPopup()?.remove());
+      data.markerInstance.togglePopup();
+
       onMarkerClick?.(data.dayNumber);
       onActivityClick?.({
         activity: data.activity,
