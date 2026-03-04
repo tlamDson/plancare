@@ -1,10 +1,15 @@
-import { TripPreferencesSchema, TripStatusValues } from "@travelplan/shared";
+import {
+  TripPreferencesSchema,
+  TripStatusValues,
+  TripLifecycleValues,
+} from "@travelplan/shared";
 import { z } from "zod";
 import { geoPointSchema } from "./common";
 
 export { TripPreferencesSchema };
 
 export const tripStatusSchema = z.enum(TripStatusValues);
+export const tripLifecycleSchema = z.enum(TripLifecycleValues);
 
 export const tripTypeSchema = z.enum(["solo", "family", "friends", "business"]);
 
@@ -113,6 +118,7 @@ export const tripSchema = z.object({
   agentJobId: z.string().optional(),
   version: z.number(),
   status: tripStatusSchema,
+  lifecycle: tripLifecycleSchema.default("UPCOMING"),
   coverImage: z.string().url().optional(),
   tags: z.array(z.string()).optional(),
   createdAt: z.string().datetime(),

@@ -56,11 +56,7 @@ export async function getTrips(params?: {
   if (!Array.isArray(payload)) {
     throw new Error("Invalid trips response");
   }
-  return validateArrayPartial(
-    tripSchema,
-    payload,
-    "getTrips",
-  );
+  return validateArrayPartial(tripSchema, payload, "getTrips");
 }
 
 /**
@@ -68,15 +64,8 @@ export async function getTrips(params?: {
  */
 export async function getTrip(tripId: string): Promise<Trip> {
   const response = await apiClient.get(`/trips/${tripId}`);
-  const payload =
-    response.data?.data ??
-    response.data?.trip ??
-    response.data;
-  return validateAPI(
-    tripSchema,
-    payload,
-    "getTrip",
-  );
+  const payload = response.data?.data ?? response.data?.trip ?? response.data;
+  return validateAPI(tripSchema, payload, "getTrip");
 }
 
 /**
@@ -130,4 +119,19 @@ export async function updateBudgetSpent(
     response.data.data || response.data,
     "updateBudgetSpent",
   );
+}
+/**
+ * Update trip lifecycle user status
+ */
+export async function updateTripLifecycle(
+  tripId: string,
+  lifecycle: import("@travelplan/shared").TripLifecycle,
+): Promise<Trip> {
+  const response = await apiClient.patch(`/trips/${tripId}/lifecycle`, {
+    lifecycle,
+  });
+  // Backend returns { success: true, trip: {...} }
+  const payload = response.data.trip ?? response.data.data ?? response.data;
+  console.log("[lifecycle] 📦 Raw response payload:", payload);
+  return validateAPI(tripSchema, payload, "updateTripLifecycle");
 }

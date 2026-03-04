@@ -18,11 +18,12 @@ import { StepBudget } from "./wizard/StepBudget";
 import { StepAccommodation } from "./wizard/StepAccommodation";
 import { StepTransport } from "./wizard/StepTransport";
 import { StepActivities } from "./wizard/StepActivities";
+import { StepRequirements } from "./wizard/StepRequirements";
 import { useTripWizard } from "../hooks/useTripWizard";
 import type { TripPreferences } from "@travelplan/shared";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 const MIN_DAILY_BUDGET = 20;
 const MAX_TRIP_DAYS = 90;
 
@@ -32,6 +33,7 @@ const steps = [
   { titleKey: "wizard.step3Title", descKey: "wizard.step3Desc" },
   { titleKey: "wizard.step4Title", descKey: "wizard.step4Desc" },
   { titleKey: "wizard.step5Title", descKey: "wizard.step5Desc" },
+  { titleKey: "wizard.step6Title", descKey: "wizard.step6Desc" },
 ];
 
 function getTripDays(startDate: string, endDate: string) {
@@ -44,6 +46,12 @@ function getTripDays(startDate: string, endDate: string) {
   if (diffDays < 1 || diffDays > MAX_TRIP_DAYS) return null;
   return diffDays;
 }
+
+const PACE_TO_ACTIVITIES: Record<string, number> = {
+  relaxed: 2,
+  balanced: 4,
+  packed: 6,
+};
 
 function buildPreferences(data: TripWizardData) {
   const preferences: TripPreferences = {
@@ -66,7 +74,12 @@ function buildPreferences(data: TripWizardData) {
     purpose: data.purpose,
     groupType: data.groupType,
     transportMode: data.transportMode,
-    activitiesPerDay: data.activitiesPerDay,
+    // New Step 5 fields
+    pace: data.pace,
+    focus: data.focus,
+    constraints: data.constraints,
+    specialRequirements: data.specialRequirements || undefined,
+    activitiesPerDay: PACE_TO_ACTIVITIES[data.pace] ?? 3,
   };
 
   return preferences;
@@ -123,7 +136,13 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
     }
 
     if (stepIndex === 4) {
-      return data.mood !== "";
+      // Pace + at least 1 focus selected
+      return !!data.pace && data.focus.length > 0;
+    }
+
+    if (stepIndex === 5) {
+      // Special requirements step is always optional — always valid
+      return true;
     }
 
     return false;
@@ -160,7 +179,8 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
     if (stepIndex === 1) return <StepBudget />;
     if (stepIndex === 2) return <StepAccommodation />;
     if (stepIndex === 3) return <StepTransport />;
-    return <StepActivities />;
+    if (stepIndex === 4) return <StepActivities />;
+    return <StepRequirements />;
   };
 
   return (

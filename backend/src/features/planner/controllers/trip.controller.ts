@@ -229,3 +229,167 @@ export const undoTrip = async (
     res.status(500).json({ message: "Failed to undo" });
   }
 };
+
+import { z } from "zod";
+import { TripLifecycleValues } from "@travelplan/shared";
+
+/**
+ * PATCH /api/trips/:tripId/lifecycle — Update the user-managed trip status
+ */
+export const updateTripLifecycle = async (
+  req: ClerkRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.auth?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const { tripId } = req.params;
+    if (!tripId) {
+      res.status(400).json({ message: "Trip ID required" });
+      return;
+    }
+
+    logger.info(
+      { tripId, userId, body: req.body },
+      "[lifecycle] PATCH request received",
+    );
+
+    // Strictly validate the payload
+    const lifecycleSchema = z.object({
+      lifecycle: z.enum(TripLifecycleValues),
+    });
+
+    const validation = lifecycleSchema.safeParse(req.body);
+    if (!validation.success) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid lifecycle status",
+        errors: validation.error.issues,
+      });
+      return;
+    }
+
+    const { lifecycle } = validation.data;
+
+    // Delegate to service
+    const updatedTrip = await plannerService.updateTripLifecycle(
+      tripId,
+      userId,
+      lifecycle,
+    );
+
+    logger.info({ tripId, userId, lifecycle }, "Trip lifecycle updated");
+    res.json({ success: true, trip: updatedTrip });
+  } catch (error: any) {
+    if (error.message === "Trip not found") {
+      res.status(404).json({ message: "Trip not found" });
+      return;
+    }
+    if (error.message === "Forbidden") {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    logger.error(
+      { error, tripId: req.params.tripId },
+      "Failed to update trip lifecycle",
+    );
+    res.status(500).json({ message: "Failed to update trip lifecycle" });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/trips/:tripId/regeocode
+// Re-validates coordinates for all activities in an existing trip.
+// Useful when a trip was generated before API keys were configured.
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { validationService } from "../services/validation.service";
+
+export const reGeocodeTrip = async (
+  req: ClerkRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.auth?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const { tripId } = req.params;
+    if (!tripId) {
+      res.status(400).json({ message: "Trip ID required" });
+      return;
+    }
+    const trip = await tripRepository.findById(tripId);
+    if (!trip) {
+      res.status(404).json({ message: "Trip not found" });
+      return;
+    }
+    if (trip.userId !== userId) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    // Extract destination from trip title (first word(s) before comma or dash)
+    const destination = (trip as any).title?.split(/[,\-–]/)[0]?.trim() ?? "";
+
+    let updated = 0;
+    let failed = 0;
+
+    for (const day of (trip as any).itinerary) {
+      for (const activity of day.activities) {
+        try {
+          const query = `${activity.name}${destination ? `, ${destination}` : ""}`;
+          const result = await validationService.validateIntent(
+            query,
+            destination,
+          );
+
+          if (result) {
+            activity.name = result.name;
+            activity.location = {
+              type: "Point",
+              coordinates: result.coordinates, // [lng, lat]
+            };
+            if (result.rating !== undefined) activity.rating = result.rating;
+            if (result.openingHours)
+              activity.openingHours = result.openingHours;
+            if (result.photoUrl) activity.photoUrl = result.photoUrl;
+            updated++;
+          } else {
+            failed++;
+            logger.warn(
+              { name: activity.name, tripId },
+              "Re-geocode: no result",
+            );
+          }
+        } catch (err: any) {
+          failed++;
+          logger.error(
+            { name: activity.name, err: err.message },
+            "Re-geocode activity failed",
+          );
+        }
+      }
+    }
+
+    await (trip as any).save();
+
+    logger.info({ tripId, updated, failed }, "Re-geocode complete");
+    res.json({
+      success: true,
+      message: `Re-geocoded ${updated} activities (${failed} failed)`,
+      updated,
+      failed,
+    });
+  } catch (error: any) {
+    logger.error({ error, tripId: req.params.tripId }, "reGeocodeTrip failed");
+    res.status(500).json({ message: "Re-geocode failed" });
+  }
+};

@@ -39,7 +39,7 @@ export function useMap({ containerId, center, zoom, style }: UseMapOptions) {
         const mapboxgl = (await import("mapbox-gl")).default;
 
         // Get token from environment
-        const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+        const token = import.meta.env.VITE_MAPBOX_TOKEN;
         if (!token) {
           throw new Error(t("explore.mapboxTokenError"));
         }

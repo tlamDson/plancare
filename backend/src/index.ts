@@ -57,7 +57,7 @@ app.use(
       env.FRONTEND_URL,
     ],
     credentials: true, // Required for Clerk / Auth headers
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   }),
 );

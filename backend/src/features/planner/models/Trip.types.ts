@@ -1,7 +1,11 @@
 import { Document, Types } from "mongoose";
-import type { TripStatus as SharedTripStatus } from "@travelplan/shared";
+import type {
+  TripStatus as SharedTripStatus,
+  TripLifecycle as SharedTripLifecycle,
+} from "@travelplan/shared";
 
 export type TripStatus = SharedTripStatus;
+export type TripLifecycle = SharedTripLifecycle;
 
 /** Budget category breakdown (e.g., food, accommodation, transport) */
 export interface IBudgetCategory {
@@ -137,6 +141,7 @@ export interface ITrip extends Document {
 
   // Metadata
   status: TripStatus;
+  lifecycle: TripLifecycle;
   coverImage?: string;
   tags?: string[];
 

@@ -114,6 +114,52 @@ export class PlannerService {
     }
   }
 
+  /**
+   * Update user-managed trip lifecycle securely
+   */
+  async updateTripLifecycle(
+    tripId: string,
+    userId: string,
+    lifecycle: import("@travelplan/shared").TripLifecycle,
+  ): Promise<import("../models/Trip").ITrip> {
+    logger.info(
+      { tripId, userId, lifecycle },
+      "[lifecycle] updateTripLifecycle called",
+    );
+
+    const trip = await tripRepository.findById(tripId);
+
+    if (!trip) {
+      logger.warn({ tripId, userId }, "[lifecycle] Trip not found");
+      throw new Error("Trip not found");
+    }
+    if (trip.userId !== userId) {
+      logger.warn(
+        { tripId, userId, ownerId: trip.userId },
+        "[lifecycle] Forbidden — userId mismatch",
+      );
+      throw new Error("Forbidden");
+    }
+
+    logger.info(
+      { tripId, oldLifecycle: trip.lifecycle, newLifecycle: lifecycle },
+      "[lifecycle] Updating lifecycle in DB",
+    );
+
+    const updated = await tripRepository.updateLifecycle(tripId, lifecycle);
+    if (!updated) {
+      logger.error({ tripId }, "[lifecycle] DB update returned null");
+      throw new Error("Failed to update trip lifecycle");
+    }
+
+    logger.info(
+      { tripId, lifecycle: updated.lifecycle },
+      "[lifecycle] Successfully persisted lifecycle change",
+    );
+
+    return updated;
+  }
+
   // Delegate status/retry/query operations to trip-status.service
   getJobStatusForUser = getJobStatusForUser;
   retryTripJobForUser = retryTripJobForUser;

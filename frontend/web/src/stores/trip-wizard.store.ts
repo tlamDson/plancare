@@ -21,6 +21,19 @@ export type TripWizardData = {
   priorities: TripWizardPriorities;
   accommodationType: "hotel" | "hostel" | "airbnb" | "resort" | "any" | "";
   accommodationFlexible: boolean;
+  // ─── New Step 5 fields ────────────────────────────────────────────────
+  pace: "relaxed" | "balanced" | "packed";
+  focus: ("Culture" | "Nature" | "Gastronomy" | "Lifestyle")[];
+  constraints: {
+    mobility_friendly: boolean;
+    avoid_crowds: boolean;
+    start_late: boolean;
+    indoor_only: boolean;
+    no_street_food: boolean;
+    no_late_nights: boolean;
+  };
+  specialRequirements: string;
+  // ─── Deprecated (kept for backward compat) ────────────────────────────
   mood:
     | ""
     | "city_break"
@@ -46,6 +59,17 @@ const initialData: TripWizardData = {
   priorities: { money: 5, comfort: 5, unique: 5 },
   accommodationType: "",
   accommodationFlexible: true,
+  pace: "balanced",
+  focus: [],
+  constraints: {
+    mobility_friendly: false,
+    avoid_crowds: false,
+    start_late: false,
+    indoor_only: false,
+    no_street_food: false,
+    no_late_nights: false,
+  },
+  specialRequirements: "",
   mood: "",
   interests: [],
   dealBreakers: [],

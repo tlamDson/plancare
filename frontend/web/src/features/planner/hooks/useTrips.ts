@@ -181,3 +181,43 @@ export function useUpdateBudget() {
     },
   });
 }
+/**
+ * Update trip lifecycle mutation
+ */
+export function useUpdateTripLifecycle() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      tripId,
+      lifecycle,
+    }: {
+      tripId: string;
+      lifecycle: import("@travelplan/shared").TripLifecycle;
+    }) => {
+      console.log(
+        `[lifecycle] 🔄 Sending PATCH /trips/${tripId}/lifecycle →`,
+        lifecycle,
+      );
+      return tripsApi.updateTripLifecycle(tripId, lifecycle);
+    },
+    onSuccess: (updatedTrip) => {
+      console.log(
+        `[lifecycle] ✅ Success — tripId: ${updatedTrip._id} | lifecycle: ${updatedTrip.lifecycle}`,
+      );
+      // Update cache
+      queryClient.setQueryData(
+        queryKeys.trips.detail(updatedTrip._id),
+        updatedTrip,
+      );
+      queryClient.invalidateQueries({ queryKey: queryKeys.trips.lists() });
+      toast.success(
+        `Trip marked as ${updatedTrip.lifecycle.replace("_", " ").toLowerCase()}`,
+      );
+    },
+    onError: (error: Error) => {
+      console.error("[lifecycle] ❌ Error:", error.message);
+      toast.error(error.message || "Failed to update trip status");
+    },
+  });
+}

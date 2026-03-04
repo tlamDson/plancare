@@ -9,3 +9,11 @@ export const TripStatusValues = [
 ] as const;
 
 export type TripStatus = (typeof TripStatusValues)[number];
+export const TripLifecycleValues = [
+  "UPCOMING",
+  "IN_TRIP",
+  "COMPLETED",
+  "CANCELLED",
+] as const;
+
+export type TripLifecycle = (typeof TripLifecycleValues)[number];

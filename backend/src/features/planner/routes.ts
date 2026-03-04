@@ -1,13 +1,14 @@
 import { Router } from "express";
+import { getJobStatus, retryJob } from "./controllers/planner.controller";
 import {
   generateTrip,
-  getJobStatus,
   getTripById,
   getUserTrips,
-  retryJob,
   deleteTripById,
   undoTrip,
-} from "./controllers/planner.controller";
+  reGeocodeTrip,
+  updateTripLifecycle,
+} from "./controllers/trip.controller";
 import { requireUserAuth } from "../../middlewares/auth";
 import { tripCreationLimiter } from "../../middlewares/rate-limiter";
 
@@ -172,5 +173,16 @@ router.delete("/trips/:tripId", requireUserAuth, deleteTripById);
  * PATCH /api/trips/:tripId/undo — Restore most recent itinerary snapshot
  */
 router.patch("/trips/:tripId/undo", requireUserAuth, undoTrip);
+
+/**
+ * PATCH /api/trips/:tripId/lifecycle — Update user lifecycle status
+ */
+router.patch("/trips/:tripId/lifecycle", requireUserAuth, updateTripLifecycle);
+
+/**
+ * POST /api/trips/:tripId/regeocode — Re-geocode all activities using Google Places / Mapbox
+ * Use when a trip was generated before API keys were configured.
+ */
+router.post("/trips/:tripId/regeocode", requireUserAuth, reGeocodeTrip);
 
 export default router;

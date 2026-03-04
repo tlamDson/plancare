@@ -7,7 +7,7 @@ import {
   ICityStop,
   ITrip,
 } from "./Trip.types";
-import { TripStatusValues } from "@travelplan/shared";
+import { TripStatusValues, TripLifecycleValues } from "@travelplan/shared";
 import { attachTripMethods } from "./Trip.methods";
 
 export type { ITrip } from "./Trip.types";
@@ -204,6 +204,12 @@ const TripSchema = new Schema<ITrip>(
       type: String,
       enum: TripStatusValues as unknown as string[],
       default: "DRAFT",
+      index: true,
+    },
+    lifecycle: {
+      type: String,
+      enum: TripLifecycleValues as unknown as string[],
+      default: "UPCOMING",
       index: true,
     },
     coverImage: String,

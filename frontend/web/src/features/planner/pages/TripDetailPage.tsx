@@ -22,8 +22,16 @@ import { retryJob } from "../api/jobs.api";
 import { toast } from "sonner";
 import { CalendarDays, Map, MapPin, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
+import { useUpdateTripLifecycle } from "../hooks/useTrips";
 import { apiClient } from "@/lib/axios";
 
 export default function TripDetailPage() {
@@ -32,6 +40,8 @@ export default function TripDetailPage() {
   const { data: trip, isLoading, error } = useTrip(tripId);
   const { language, t } = useTranslationStore();
   const queryClient = useQueryClient();
+  const { mutate: updateLifecycle, isPending: isUpdating } =
+    useUpdateTripLifecycle();
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [jobError, setJobError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -222,11 +232,40 @@ export default function TripDetailPage() {
         />
 
         {/* Trip Header */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">
-              {getLocalizedTripTitle(trip.title, t)}
-            </h1>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl font-bold">
+                {getLocalizedTripTitle(trip.title, t)}
+              </h1>
+
+              {/* User Lifecycle Status Dropdown (only visible if AI is done) */}
+              {trip.status === "COMPLETED" && (
+                <Select
+                  value={trip.lifecycle || "UPCOMING"}
+                  onValueChange={(val: any) =>
+                    updateLifecycle({ tripId: trip._id, lifecycle: val })
+                  }
+                  disabled={isUpdating || trip.isAgentProcessing}
+                >
+                  <SelectTrigger className="h-8 min-w-[120px] text-xs font-medium px-3 shadow-sm border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors focus:ring-1 focus:ring-primary rounded-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UPCOMING">Upcoming</SelectItem>
+                    <SelectItem value="IN_TRIP">In Trip</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                    <SelectItem
+                      value="CANCELLED"
+                      className="text-muted-foreground"
+                    >
+                      Cancelled
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
             {dateRange && (
               <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
                 <CalendarDays className="h-4 w-4" aria-hidden="true" />
@@ -237,6 +276,7 @@ export default function TripDetailPage() {
               </div>
             )}
           </div>
+
           {/* Action buttons row */}
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
             {/* Re-geocode button — fixes wrong coordinates on old trips */}
@@ -266,20 +306,21 @@ export default function TripDetailPage() {
                 {t("map.viewOnMap")}
               </Button>
             )}
+
+            {!trip.isAgentProcessing && canUndo && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUndo}
+                disabled={isUndoing}
+                className="shrink-0 gap-1.5"
+                title="Hoàn tác thay đổi lịch trình gần nhất"
+              >
+                <Undo2 className="h-4 w-4" />
+                {isUndoing ? "Đang hoàn tác..." : "Hoàn tác"}
+              </Button>
+            )}
           </div>
-          {!trip.isAgentProcessing && canUndo && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleUndo}
-              disabled={isUndoing}
-              className="shrink-0 gap-1.5"
-              title="Hoàn tác thay đổi lịch trình gần nhất"
-            >
-              <Undo2 className="h-4 w-4" />
-              {isUndoing ? "Đang hoàn tác..." : "Hoàn tác"}
-            </Button>
-          )}
         </div>
 
         {/* Itinerary */}

@@ -112,10 +112,18 @@ export function validateArrayPartial<T extends z.ZodTypeAny>(
   });
 
   if (invalidIndices.length > 0) {
+    const sampleItem = data[invalidIndices[0]];
+    const parsedSample = schema.safeParse(sampleItem);
+
     console.warn(
       `[API Validation Warning]${context ? ` ${context}:` : ""} ` +
         `${invalidIndices.length} of ${data.length} items failed validation`,
-      { invalidIndices },
+      {
+        invalidIndices,
+        sampleIssues: !parsedSample.success
+          ? parsedSample.error.format()
+          : "unknown",
+      },
     );
   }
 

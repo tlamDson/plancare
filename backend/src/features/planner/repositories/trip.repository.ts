@@ -137,6 +137,20 @@ export class TripRepository {
   }
 
   /**
+   * Update user-managed trip lifecycle status safely without touching AI lock/status
+   */
+  async updateLifecycle(
+    tripId: string | Types.ObjectId,
+    lifecycle: ITrip["lifecycle"],
+  ): Promise<ITrip | null> {
+    return Trip.findByIdAndUpdate(
+      tripId,
+      { $set: { lifecycle } },
+      { new: true },
+    ).exec();
+  }
+
+  /**
    * Update trip data (with optimistic locking)
    */
   async update(
