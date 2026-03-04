@@ -102,6 +102,48 @@ export class AIAgentService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  // Called when validation yield < total slots needed.
+  // Returns an array of raw search query strings (not day/slot structured).
+  async generateSupplementaryQueries(
+    count: number,
+    destination: string,
+    existingPlaceNames: string[],
+  ): Promise<string[]> {
+    if (!this.model) return [];
+
+    const avoidList =
+      existingPlaceNames.length > 0
+        ? `Avoid suggesting: ${existingPlaceNames.slice(0, 20).join(", ")}.`
+        : "";
+
+    const prompt =
+      `Generate exactly ${count} specific location search queries for places to visit in ${destination}. ` +
+      `Each query must name a real district, landmark, or neighborhood in ${destination}. ` +
+      `${avoidList} ` +
+      `Return ONLY a valid JSON array of strings, no markdown, no explanation: ["query1", "query2", ...]`;
+
+    try {
+      const result = await this.model.generateContent(prompt);
+      const text: string = result.response.text();
+
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) return [];
+
+      const parsed: unknown = JSON.parse(jsonMatch[0]);
+      if (!Array.isArray(parsed)) return [];
+
+      return (parsed as unknown[])
+        .filter((q): q is string => typeof q === "string" && q.trim().length > 0)
+        .slice(0, count);
+    } catch (error: any) {
+      logger.warn(
+        { error: error.message, destination, count },
+        "⚠️ Supplementary query generation failed — continuing without fill",
+      );
+      return [];
+    }
+  }
+
   async generateIntentsWithRetry(
     preferences: TripPreferences,
     language?: string,

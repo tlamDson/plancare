@@ -9,6 +9,135 @@ import { nearbyFoodService } from "../services/nearby-food.service";
 import { logger } from "../../../lib/logger";
 import type { TransportMode } from "../services/geo-validator.service";
 
+// ─── Slot-aware geographic clustering ────────────────────────────────────────
+// Strategy: cluster places by proximity (so nearby places share a day) AND
+// sort within each cluster by original slot order (morning→afternoon→evening)
+// so that intent semantics — "morning museum", "evening restaurant" — are
+// preserved even after geographic re-grouping.
+
+const SLOT_ORDER: Record<string, number> = {
+  morning: 0,
+  afternoon: 1,
+  evening: 2,
+};
+
+interface TaggedPlace {
+  place: ValidatedPlace;
+  slotType: "morning" | "afternoon" | "evening";
+  slotOrder: number; // 0 / 1 / 2 — used for in-cluster sort
+}
+
+// Reconstruct the (slot, ValidatedPlace) correspondence by iterating intents
+// in the same order as flattenIntents so that validated[i] maps to the correct
+// (day, slot) pair.
+function buildTaggedPlaces(
+  intents: TripIntents,
+  validated: ValidatedPlace[],
+): TaggedPlace[] {
+  const tagged: TaggedPlace[] = [];
+  let idx = 0;
+
+  for (const dayKey of Object.keys(intents)) {
+    const slots = intents[dayKey];
+    if (!slots) continue;
+
+    for (const slotType of ["morning", "afternoon", "evening"] as const) {
+      if (!slots[slotType]) continue;
+      if (idx < validated.length) {
+        tagged.push({
+          place: validated[idx]!,
+          slotType,
+          slotOrder: SLOT_ORDER[slotType] ?? 0,
+        });
+      }
+      idx++;
+    }
+  }
+
+  return tagged;
+}
+
+// Greedy nearest-neighbor clustering on TaggedPlace[].
+// After each cluster is assembled, it is sorted by slotOrder so that
+// "morning-type" places always precede "afternoon-type" which precede "evening-type".
+// Result: geographic grouping + preserved temporal intent within each day.
+function clusterByProximity(
+  taggedPlaces: TaggedPlace[],
+  numDays: number,
+  slotsPerDay: number,
+): TaggedPlace[][] {
+  if (taggedPlaces.length === 0 || numDays === 0) {
+    return Array.from({ length: numDays }, () => []);
+  }
+
+  // Separate valid-coord entries from [0,0] passthrough fallbacks
+  const withCoords = taggedPlaces.filter(
+    (t) => t.place.coordinates[0] !== 0 || t.place.coordinates[1] !== 0,
+  );
+  const withoutCoords = taggedPlaces.filter(
+    (t) => t.place.coordinates[0] === 0 && t.place.coordinates[1] === 0,
+  );
+
+  if (withCoords.length === 0) {
+    return Array.from({ length: numDays }, (_, i) =>
+      taggedPlaces.slice(i * slotsPerDay, (i + 1) * slotsPerDay),
+    );
+  }
+
+  const clusters: TaggedPlace[][] = Array.from({ length: numDays }, () => []);
+  const used = new Set<number>();
+
+  for (let day = 0; day < numDays; day++) {
+    const remaining = numDays - day;
+    const targetSize = Math.min(
+      slotsPerDay,
+      Math.ceil((withCoords.length - used.size) / remaining),
+    );
+
+    const seedIdx = withCoords.findIndex((_, i) => !used.has(i));
+    if (seedIdx === -1) break;
+
+    used.add(seedIdx);
+    clusters[day]!.push(withCoords[seedIdx]!);
+
+    while (clusters[day]!.length < targetSize) {
+      const anchor = clusters[day]![clusters[day]!.length - 1]!;
+      let nearestIdx = -1;
+      let nearestDist = Infinity;
+
+      for (let i = 0; i < withCoords.length; i++) {
+        if (used.has(i)) continue;
+        const dist = geoValidatorService.haversineKm(
+          anchor.place.coordinates,
+          withCoords[i]!.place.coordinates,
+        );
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestIdx = i;
+        }
+      }
+
+      if (nearestIdx === -1) break;
+      used.add(nearestIdx);
+      clusters[day]!.push(withCoords[nearestIdx]!);
+    }
+
+    // Re-sort within the cluster by original slot intent:
+    // morning-type activities first, then afternoon, then evening.
+    clusters[day]!.sort((a, b) => a.slotOrder - b.slotOrder);
+  }
+
+  // Fill short clusters with passthrough places ([0,0] coords — dev fallback)
+  let passthroughIdx = 0;
+  for (const cluster of clusters) {
+    while (cluster.length < slotsPerDay && passthroughIdx < withoutCoords.length) {
+      cluster.push(withoutCoords[passthroughIdx++]!);
+    }
+  }
+
+  return clusters;
+}
+
 interface TripJobData {
   tripId: string;
   userId: string;
@@ -75,7 +204,6 @@ export async function buildItinerary(
   preferences: TripPreferences,
 ): Promise<any[]> {
   const itinerary: any[] = [];
-  let validatedIndex = 0;
 
   const startDateStr = new Date(preferences.startDate)
     .toISOString()
@@ -95,6 +223,26 @@ export async function buildItinerary(
 
   const aiDayKeys = Object.keys(intents).sort();
 
+  // Tag each validated place with its original slot intent (morning/afternoon/evening),
+  // then cluster by geographic proximity while sorting within each cluster by slot order.
+  // This guarantees: nearby places share a day AND morning-type activities stay in the morning.
+  const tagged = buildTaggedPlaces(intents, validated);
+  const clusters = clusterByProximity(tagged, expectedDays, activitiesPerDay);
+
+  logger.info(
+    {
+      totalValidated: validated.length,
+      totalTagged: tagged.length,
+      numDays: expectedDays,
+      clusterSizes: clusters.map((c, i) => ({
+        day: i + 1,
+        places: c.length,
+        slots: c.map((t) => t.slotType),
+      })),
+    },
+    "📍 [GEO-CLUSTER] Places grouped by proximity (slot order preserved)",
+  );
+
   for (let dayNum = 0; dayNum < expectedDays; dayNum++) {
     const dayKey = aiDayKeys[dayNum] ?? `day${dayNum + 1}`;
     const slots = intents[dayKey];
@@ -106,12 +254,14 @@ export async function buildItinerary(
     const activities: IActivity[] = [];
     let order = 0;
 
-    if (slots) {
-      // Use dynamic slot list — falls back to available intent keys
-      const slotKeys = Object.keys(slots);
+    // Each day consumes its own geographic cluster — no global counter, no wrap repeats.
+    // Places are already sorted morning→afternoon→evening within the cluster.
+    const dayTagged = clusters[dayNum] ?? [];
+    let dayTagIdx = 0;
 
+    if (slots) {
       for (const slot of timeSlots) {
-        // Map custom slot names to the AI's keys (morning/afternoon/evening)
+        // Map sub-slots to the AI's 3-key schema (morning/afternoon/evening)
         const aiSlotKey =
           slot === "morning" || slot === "late morning"
             ? "morning"
@@ -122,8 +272,7 @@ export async function buildItinerary(
         const query = slots[aiSlotKey as keyof typeof slots];
         if (!query) continue;
 
-        const place = validated[validatedIndex];
-        validatedIndex = (validatedIndex + 1) % Math.max(validated.length, 1);
+        const place = dayTagged[dayTagIdx++]?.place;
 
         if (place) {
           const activity: IActivity = {

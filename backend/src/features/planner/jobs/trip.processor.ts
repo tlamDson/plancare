@@ -156,6 +156,35 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
       "Validation complete",
     );
 
+    // 3b. Supplementary fill — if some intents failed validation, request more
+    // queries from AI to avoid leaving day slots empty.
+    const deficit = intentList.length - validated.length;
+    if (deficit > 0 && validated.length > 0) {
+      logger.warn(
+        { jobId: job.id, tripId, deficit, validated: validated.length, total: intentList.length },
+        "⚠️ [DEFICIT] Validation yield below intent count — requesting supplementary places",
+      );
+
+      const existingNames = validated.map((p) => p.name);
+      const supplementaryQueries = await aiAgentService.generateSupplementaryQueries(
+        deficit,
+        preferences.destination,
+        existingNames,
+      );
+
+      if (supplementaryQueries.length > 0) {
+        const supplementaryValidated = await validationService.validateBatch(
+          supplementaryQueries,
+          preferences.destination,
+        );
+        validated = [...validated, ...supplementaryValidated];
+        logger.info(
+          { jobId: job.id, tripId, added: supplementaryValidated.length, newTotal: validated.length },
+          "✅ [DEFICIT] Supplementary places added",
+        );
+      }
+    }
+
     // 4. Build itinerary (80%)
     await updateJobProgress(job, 80, "Building itinerary...");
     logger.info({ jobId: job.id, tripId }, "Step 3: Building itinerary...");
