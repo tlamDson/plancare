@@ -27,25 +27,59 @@ export const TripPreferencesSchema = z.object({
       unique: z.number().min(1).max(10),
     })
     .optional(),
+  // ─── New Step 5 fields ─────────────────────────────────────────────────
+  /** Travel pace — maps to PACE_CONFIG on backend */
+  pace: z
+    .enum(["relaxed", "balanced", "packed"])
+    .optional()
+    .default("balanced"),
+  /** Main focus areas — replaces interests (max 3) */
+  focus: z
+    .array(z.enum(["Culture", "Nature", "Gastronomy", "Lifestyle"]))
+    .max(3)
+    .optional()
+    .default([]),
+  /** Structured constraint flags */
+  constraints: z
+    .object({
+      mobility_friendly: z.boolean().default(false),
+      avoid_crowds: z.boolean().default(false),
+      start_late: z.boolean().default(false),
+      indoor_only: z.boolean().default(false),
+      no_street_food: z.boolean().default(false),
+      no_late_nights: z.boolean().default(false),
+    })
+    .optional()
+    .default(() => ({
+      mobility_friendly: false,
+      avoid_crowds: false,
+      start_late: false,
+      indoor_only: false,
+      no_street_food: false,
+      no_late_nights: false,
+    })),
+  /** Free-text special requirements (diet, accessibility, etc.) */
+  specialRequirements: z.string().max(200).optional(),
+
+  // ─── Deprecated — kept for backward compat with existing DB trips ───────
+  /** @deprecated Use focus[] instead */
   mood: z
     .enum(["city_break", "beach", "hiking", "foodie", "romantic", "adventure"])
     .optional(),
-  dealBreakers: z.array(z.string()).optional(),
-  vibe: z
-    .enum(["adventure", "relaxation", "culture", "food", "nightlife", "nature"])
-    .optional(),
-  energyLevel: z.enum(["low", "medium", "high"]).optional(),
-  pacePreference: z.enum(["slow", "moderate", "fast"]).optional(),
+  /** @deprecated Use focus[] instead */
   interests: z.array(z.string()).optional(),
-  accommodationType: z
-    .enum(["hotel", "hostel", "airbnb", "resort", "any"])
-    .optional(),
-  mealPreferences: z.array(z.string()).optional(),
+  /** @deprecated Use constraints instead */
+  dealBreakers: z.array(z.string()).optional(),
   transportMode: z
     .enum(["walking", "public_transport", "car"])
     .optional()
     .default("walking"),
-  activitiesPerDay: z.number().min(2).max(6).optional().default(3),
+  activitiesPerDay: z.number().min(2).max(8).optional().default(3),
+  /** Accommodation preference — used to calculate hotel cost multiplier */
+  accommodationType: z
+    .enum(["hostel", "airbnb", "hotel", "resort", "any"])
+    .optional()
+    .default("any"),
 });
 
 export type TripPreferences = z.infer<typeof TripPreferencesSchema>;

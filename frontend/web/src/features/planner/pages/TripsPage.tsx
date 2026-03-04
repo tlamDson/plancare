@@ -4,7 +4,7 @@
  * Full trips list with filtering and sorting
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,31 +26,73 @@ import { getLocalizedTripTitle } from "@/utils/format";
 
 type FilterStatus =
   | "all"
-  | "DRAFT"
-  | "QUEUED"
-  | "PROCESSING"
+  | "UPCOMING"
+  | "IN_TRIP"
   | "COMPLETED"
+  | "CANCELLED"
+  | "GENERATING"
   | "FAILED";
+
+type SortOption = "newest" | "oldest" | "az" | "za";
 
 export default function TripsPage() {
   const { data: trips, isLoading, error, refetch } = useTrips();
   const { t } = useTranslationStore();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
 
-  // Filter trips
-  const filteredTrips = trips?.filter((trip) => {
-    const localizedTitle = getLocalizedTripTitle(trip.title, t);
-    const matchesSearch = localizedTitle
-      .toLowerCase()
-      .includes(search.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "PROCESSING"
-        ? trip.status.startsWith("PROCESSING")
-        : trip.status === statusFilter);
-    return matchesSearch && matchesStatus;
-  });
+  const filteredTrips = useMemo(() => {
+    const base =
+      trips?.filter((trip) => {
+        const localizedTitle = getLocalizedTripTitle(trip.title, t);
+        const matchesSearch = localizedTitle
+          .toLowerCase()
+          .includes(search.toLowerCase());
+
+        let matchesStatus = false;
+        if (statusFilter === "all") {
+          matchesStatus = true;
+        } else if (statusFilter === "GENERATING") {
+          matchesStatus =
+            ["DRAFT", "QUEUED"].includes(trip.status) ||
+            trip.status.startsWith("PROCESSING");
+        } else if (statusFilter === "FAILED") {
+          matchesStatus = trip.status === "FAILED";
+        } else {
+          // It's a lifecycle filter (UPCOMING, IN_TRIP, COMPLETED, CANCELLED)
+          // We only match lifecycle if the AI is truly done (COMPLETED).
+          const currentLifecycle = (trip as any).lifecycle || "UPCOMING";
+          matchesStatus =
+            trip.status === "COMPLETED" && currentLifecycle === statusFilter;
+        }
+
+        return matchesSearch && matchesStatus;
+      }) ?? [];
+
+    return [...base].sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        case "az":
+          return getLocalizedTripTitle(a.title, t)
+            .toLowerCase()
+            .localeCompare(getLocalizedTripTitle(b.title, t).toLowerCase());
+        case "za":
+          return getLocalizedTripTitle(b.title, t)
+            .toLowerCase()
+            .localeCompare(getLocalizedTripTitle(a.title, t).toLowerCase());
+        default:
+          return 0;
+      }
+    });
+  }, [trips, search, statusFilter, sortBy, t]);
 
   return (
     <DashboardLayout>
@@ -71,8 +113,9 @@ export default function TripsPage() {
           />
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
+        {/* Filters & Sort */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Search */}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -82,24 +125,49 @@ export default function TripsPage() {
               className="pl-9"
             />
           </div>
+
+          {/* Status filter */}
           <Select
             value={statusFilter}
             onValueChange={(v) => setStatusFilter(v as FilterStatus)}
           >
-            <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               <SelectValue placeholder={t("trips.filterPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("trips.filterAll")}</SelectItem>
-              <SelectItem value="DRAFT">{t("trips.filterDraft")}</SelectItem>
-              <SelectItem value="QUEUED">{t("trips.filterQueued")}</SelectItem>
-              <SelectItem value="PROCESSING">
-                {t("trips.filterProcessing")}
+              <SelectItem value="UPCOMING">
+                {t("trip.lifecycle_upcoming")}
+              </SelectItem>
+              <SelectItem value="IN_TRIP">
+                {t("trip.lifecycle_in_trip")}
               </SelectItem>
               <SelectItem value="COMPLETED">
-                {t("trips.filterCompleted")}
+                {t("trip.lifecycle_completed")}
+              </SelectItem>
+              <SelectItem value="CANCELLED">
+                {t("trip.lifecycle_cancelled")}
+              </SelectItem>
+              <SelectItem value="GENERATING">
+                {t("trips.filterGenerating")}
               </SelectItem>
               <SelectItem value="FAILED">{t("trips.filterFailed")}</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Sort */}
+          <Select
+            value={sortBy}
+            onValueChange={(v) => setSortBy(v as SortOption)}
+          >
+            <SelectTrigger className="w-full sm:w-[160px]">
+              <SelectValue placeholder={t("trips.sortPlaceholder")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">{t("trips.sortNewest")}</SelectItem>
+              <SelectItem value="oldest">{t("trips.sortOldest")}</SelectItem>
+              <SelectItem value="az">{t("trips.sortAZ")}</SelectItem>
+              <SelectItem value="za">{t("trips.sortZA")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -116,7 +184,7 @@ export default function TripsPage() {
               message={error.message}
               onRetry={() => refetch()}
             />
-          ) : filteredTrips?.length === 0 ? (
+          ) : filteredTrips.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">
                 {search || statusFilter !== "all"
@@ -136,7 +204,7 @@ export default function TripsPage() {
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredTrips?.map((trip) => (
+              {filteredTrips.map((trip) => (
                 <TripCard key={trip._id} trip={trip} />
               ))}
             </div>

@@ -1,12 +1,19 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, Loader2, MoreVertical, Trash2 } from "lucide-react";
+import {
+  Calendar,
+  ChevronDown,
+  Loader2,
+  MoreVertical,
+  Trash2,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -27,31 +34,42 @@ import {
 } from "@/utils/format";
 import type { Trip } from "@/utils/schemas";
 import { getCountryImage } from "@/utils/countryImage";
-import { useDeleteTrip } from "../hooks/useTrips";
+import { useDeleteTrip, useUpdateTripLifecycle } from "../hooks/useTrips";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 
 interface TripCardProps {
   trip: Trip;
 }
 
-const statusColors: Record<string, string> = {
-  DRAFT: "bg-muted text-muted-foreground",
-  QUEUED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  PROCESSING:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  PROCESSING_STEP_1:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  PROCESSING_STEP_2:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  COMPLETED:
-    "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  FAILED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+const AI_STATUS_COLORS: Record<string, string> = {
+  DRAFT: "bg-slate-700/80 text-slate-200",
+  QUEUED: "bg-blue-700/80 text-blue-100",
+  PROCESSING: "bg-amber-600/80 text-amber-100",
+  PROCESSING_STEP_1: "bg-amber-600/80 text-amber-100",
+  PROCESSING_STEP_2: "bg-amber-600/80 text-amber-100",
+  FAILED: "bg-red-700/80 text-red-100",
+};
+
+const LIFECYCLE_OPTIONS = [
+  { value: "UPCOMING", labelKey: "trip.lifecycle_upcoming" },
+  { value: "IN_TRIP", labelKey: "trip.lifecycle_in_trip" },
+  { value: "COMPLETED", labelKey: "trip.lifecycle_completed" },
+  { value: "CANCELLED", labelKey: "trip.lifecycle_cancelled" },
+] as const;
+
+const LIFECYCLE_COLORS: Record<string, string> = {
+  UPCOMING: "bg-blue-600/80 text-blue-100",
+  IN_TRIP: "bg-emerald-600/80 text-emerald-100",
+  COMPLETED: "bg-slate-600/80 text-slate-200",
+  CANCELLED: "bg-red-700/80 text-red-100",
 };
 
 export function TripCard({ trip }: TripCardProps) {
   const duration = getTripDuration(trip.startDate, trip.endDate);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { mutate: deleteTrip, isPending: isDeleting } = useDeleteTrip();
+  const { mutate: updateLifecycle, isPending: isUpdating } =
+    useUpdateTripLifecycle();
   const { language, t } = useTranslationStore();
 
   const coverSrc =
@@ -61,6 +79,12 @@ export function TripCard({ trip }: TripCardProps) {
     trip.budget.totalLimit > 0
       ? Math.round((trip.budget.totalSpent / trip.budget.totalLimit) * 100)
       : 0;
+
+  const isAiDone = trip.status === "COMPLETED";
+  const isAiFailed = trip.status === "FAILED";
+  const isAiActive = !isAiDone && !isAiFailed;
+
+  const currentLifecycle = (trip as any).lifecycle || "UPCOMING";
 
   const formatStatusLabel = (status: string) =>
     status
@@ -74,6 +98,7 @@ export function TripCard({ trip }: TripCardProps) {
       <div className="relative">
         <Link to={`/trips/${trip._id}`}>
           <Card className="group hover:border-primary/50 transition-all duration-300 hover:shadow-md overflow-hidden cursor-pointer">
+            {/* ── Fixed-ratio image area ─────────────────────────────── */}
             <div className="aspect-video relative">
               {coverSrc ? (
                 <img
@@ -85,39 +110,112 @@ export function TripCard({ trip }: TripCardProps) {
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-muted" />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+              {/* Dark gradient overlay for text readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
 
-              <span
-                className={`absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-medium ${
-                  statusColors[trip.status] || statusColors.DRAFT
-                }`}
-              >
-                {formatStatusLabel(trip.status)}
-              </span>
+              {/* ── Top-left: AI status badge (only when AI is still working) */}
+              {isAiActive && (
+                <div className="absolute top-3 left-3 flex gap-2 z-10">
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm ${
+                      AI_STATUS_COLORS[trip.status] ?? AI_STATUS_COLORS.DRAFT
+                    }`}
+                  >
+                    {formatStatusLabel(trip.status)}
+                  </span>
+                </div>
+              )}
 
+              {/* ── Failed badge */}
+              {isAiFailed && (
+                <div className="absolute top-3 left-3 z-10">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-700/80 text-red-100 backdrop-blur-sm">
+                    {t("trip.lifecycle_failed")}
+                  </span>
+                </div>
+              )}
+
+              {/* ── AI Processing pulse (extra pill) */}
               {trip.isAgentProcessing && (
-                <span className="absolute top-10 left-3 px-2 py-1 rounded-full text-xs font-medium bg-primary text-primary-foreground flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
-                  AI Processing
-                </span>
+                <div className="absolute top-3 left-3 z-10">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/90 text-primary-foreground flex items-center gap-1 backdrop-blur-sm shadow-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                    AI
+                  </span>
+                </div>
+              )}
+
+              {/* ── Top-right: Lifecycle pill dropdown (only after AI done) */}
+              {isAiDone && (
+                <div
+                  className="absolute top-3 left-3 z-10"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm transition-opacity hover:opacity-90 focus:outline-none ${
+                          LIFECYCLE_COLORS[currentLifecycle] ??
+                          LIFECYCLE_COLORS.UPCOMING
+                        }`}
+                        disabled={isUpdating}
+                        aria-label={t("trip.changeStatus")}
+                      >
+                        {isUpdating ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            {t(
+                              LIFECYCLE_OPTIONS.find(
+                                (o) => o.value === currentLifecycle,
+                              )?.labelKey ?? "trip.lifecycle_upcoming",
+                            )}
+                            <ChevronDown className="h-3 w-3" />
+                          </>
+                        )}
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-36">
+                      {LIFECYCLE_OPTIONS.map((opt) => (
+                        <DropdownMenuItem
+                          key={opt.value}
+                          className={`text-xs cursor-pointer justify-center focus:bg-transparent ${
+                            currentLifecycle === opt.value
+                              ? LIFECYCLE_COLORS[opt.value]
+                              : ""
+                          }`}
+                          onSelect={() =>
+                            updateLifecycle({
+                              tripId: trip._id,
+                              lifecycle: opt.value,
+                            })
+                          }
+                        >
+                          <span>{t(opt.labelKey)}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               )}
             </div>
 
-            <CardContent className="p-4">
-              <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors line-clamp-1 pr-8">
+            {/* ── Card body ───────────────────────────────────────────── */}
+            <CardContent className="p-4 space-y-2">
+              <h3 className="font-semibold text-base group-hover:text-primary transition-colors line-clamp-1">
                 {getLocalizedTripTitle(trip.title, t)}
               </h3>
 
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" aria-hidden="true" />
-                <span>
+                <Calendar className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span className="line-clamp-1">
                   {formatDateRange(trip.startDate, trip.endDate, language)}
                   {duration > 0 && ` · ${duration}-day trip`}
                 </span>
               </div>
 
               {trip.budget.totalLimit > 0 && (
-                <div className="mt-3">
+                <div>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-muted-foreground">Budget</span>
                     <span>
@@ -125,8 +223,8 @@ export function TripCard({ trip }: TripCardProps) {
                         trip.budget.totalSpent,
                         trip.budget.currency,
                         language,
-                      )}{" "}
-                      /{" "}
+                      )}
+                      {" / "}
                       {formatCurrency(
                         trip.budget.totalLimit,
                         trip.budget.currency,
@@ -152,13 +250,13 @@ export function TripCard({ trip }: TripCardProps) {
           </Card>
         </Link>
 
-        {/* ⋮ Actions Menu — always visible, top-right corner, outside the Link */}
+        {/* ⋮ Actions Menu — top-right corner, outside Link */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-2 right-2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background border border-border/50 shadow-sm z-10"
+              className="absolute top-2 right-2 h-7 w-7 rounded-full bg-background/70 backdrop-blur-sm hover:bg-background border border-border/40 shadow-sm z-10"
               aria-label="Trip actions"
               onClick={(e) => e.preventDefault()}
             >
@@ -170,6 +268,7 @@ export function TripCard({ trip }: TripCardProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
               disabled={isDeleting || trip.isAgentProcessing}
@@ -179,7 +278,7 @@ export function TripCard({ trip }: TripCardProps) {
               }}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              {trip.isAgentProcessing ? "Processing…" : "Delete trip"}
+              {trip.isAgentProcessing ? "Processing…" : t("trip.delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -190,15 +289,17 @@ export function TripCard({ trip }: TripCardProps) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Delete "{getLocalizedTripTitle(trip.title, t)}"?
+              {t("trip.deleteConfirmTitle").replace(
+                "{name}",
+                getLocalizedTripTitle(trip.title, t),
+              )}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this trip and all its itinerary data.
-              This action cannot be undone.
+              {t("trip.deleteConfirmDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("security.btnCancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 deleteTrip(trip._id);
@@ -206,7 +307,7 @@ export function TripCard({ trip }: TripCardProps) {
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete Trip
+              {t("trip.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

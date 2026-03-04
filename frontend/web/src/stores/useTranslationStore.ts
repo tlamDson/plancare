@@ -306,6 +306,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trips.filterProcessing": "Processing",
     "trips.filterCompleted": "Completed",
     "trips.filterFailed": "Failed",
+    "trips.filterGenerating": "Generating",
     "trips.errorLoad": "Failed to load trips",
     "trips.emptyFilter": "No trips match your filters",
     "trips.emptyAll": "You haven't created any trips yet",
@@ -354,6 +355,22 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.itinerary": "Itinerary",
     "trip.noItinerary": "No itinerary yet",
     "trip.noItineraryDesc": "Use the AI Assistant to generate your trip plan.",
+    "trip.delete": "Delete trip",
+    "trip.deleteConfirmTitle": 'Delete "{name}"?',
+    "trip.deleteConfirmDesc":
+      "This will permanently delete this trip and all its itinerary data. This action cannot be undone.",
+    "trip.changeStatus": "Change trip status",
+    "trip.lifecycle_upcoming": "Upcoming",
+    "trip.lifecycle_in_trip": "In Trip",
+    "trip.lifecycle_completed": "Completed",
+    "trip.lifecycle_cancelled": "Cancelled",
+    "trip.lifecycle_failed": "Failed",
+    // Trips page sort
+    "trips.sortPlaceholder": "Sort by",
+    "trips.sortNewest": "Newest first",
+    "trips.sortOldest": "Oldest first",
+    "trips.sortAZ": "A \u2192 Z",
+    "trips.sortZA": "Z \u2192 A",
 
     // Map View
     "map.viewOnMap": "View on Map",
@@ -667,6 +684,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trips.filterProcessing": "En traitement",
     "trips.filterCompleted": "Terminé",
     "trips.filterFailed": "Échoué",
+    "trips.filterGenerating": "En génération",
     "trips.errorLoad": "Échec du chargement des voyages",
     "trips.emptyFilter": "Aucun voyage ne correspond à vos filtres",
     "trips.emptyAll": "Vous n'avez pas encore créé de voyage",
@@ -717,6 +735,22 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.noItinerary": "Aucun itinéraire pour l'instant",
     "trip.noItineraryDesc":
       "Utilisez l'assistant IA pour générer votre plan de voyage.",
+    "trip.delete": "Supprimer",
+    "trip.deleteConfirmTitle": 'Supprimer "{name}" ?',
+    "trip.deleteConfirmDesc":
+      "Cette action supprimera définitivement ce voyage et toutes ses données. Elle est irréversible.",
+    "trip.changeStatus": "Changer le statut",
+    "trip.lifecycle_upcoming": "À venir",
+    "trip.lifecycle_in_trip": "En cours",
+    "trip.lifecycle_completed": "Terminé",
+    "trip.lifecycle_cancelled": "Annulé",
+    "trip.lifecycle_failed": "Échoué",
+    // Trips page sort
+    "trips.sortPlaceholder": "Trier par",
+    "trips.sortNewest": "Plus récent",
+    "trips.sortOldest": "Plus ancien",
+    "trips.sortAZ": "A \u2192 Z",
+    "trips.sortZA": "Z \u2192 A",
 
     // Map View
     "map.viewOnMap": "Voir sur la carte",
@@ -1023,6 +1057,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trips.filterProcessing": "Đang xử lý",
     "trips.filterCompleted": "Đã hoàn thành",
     "trips.filterFailed": "Thất bại",
+    "trips.filterGenerating": "Đang tạo",
     "trips.errorLoad": "Không thể tải danh sách chuyến đi",
     "trips.emptyFilter": "Không có chuyến đi nào phù hợp với bộ lọc",
     "trips.emptyAll": "Bạn chưa tạo chuyến đi nào",
@@ -1071,6 +1106,22 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.itinerary": "Lịch Trình",
     "trip.noItinerary": "Chưa có lịch trình",
     "trip.noItineraryDesc": "Dùng Trợ lý AI để tạo kế hoạch chuyến đi của bạn.",
+    "trip.delete": "Xóa chuyến đi",
+    "trip.deleteConfirmTitle": 'Xóa "{name}"?',
+    "trip.deleteConfirmDesc":
+      "Thao tác này sẽ xóa vĩnh viễn chuyến đi này và toàn bộ lịch trình. Không thể hoàn tác.",
+    "trip.changeStatus": "Thay đổi trạng thái",
+    "trip.lifecycle_upcoming": "Sắp đi",
+    "trip.lifecycle_in_trip": "Đang đi",
+    "trip.lifecycle_completed": "Hoàn thành",
+    "trip.lifecycle_cancelled": "Đã hủy",
+    "trip.lifecycle_failed": "Thất bại",
+    // Trips page sort
+    "trips.sortPlaceholder": "Sắp xếp",
+    "trips.sortNewest": "Mới nhất",
+    "trips.sortOldest": "Cũ nhất",
+    "trips.sortAZ": "A \u2192 Z",
+    "trips.sortZA": "Z \u2192 A",
 
     // Map View
     "map.viewOnMap": "Xem trên bản đồ",
