@@ -179,10 +179,10 @@ export function TripCard({ trip }: TripCardProps) {
                       {LIFECYCLE_OPTIONS.map((opt) => (
                         <DropdownMenuItem
                           key={opt.value}
-                          className={`text-xs cursor-pointer justify-center focus:bg-transparent ${
+                          className={`text-xs cursor-pointer focus:text-white transition-colors pl-3 pr-4 ${
                             currentLifecycle === opt.value
                               ? LIFECYCLE_COLORS[opt.value]
-                              : ""
+                              : "focus:bg-accent focus:text-accent-foreground"
                           }`}
                           onSelect={() =>
                             updateLifecycle({
@@ -191,7 +191,7 @@ export function TripCard({ trip }: TripCardProps) {
                             })
                           }
                         >
-                          <span>{t(opt.labelKey)}</span>
+                          {t(opt.labelKey)}
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>

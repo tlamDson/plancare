@@ -35,6 +35,52 @@ type FilterStatus =
 
 type SortOption = "newest" | "oldest" | "az" | "za";
 
+const getStatusColor = (status: FilterStatus | "sort") => {
+  const baseClasses =
+    "pl-3 [&>span.absolute]:hidden mx-1 my-0.5 font-medium transition-colors";
+
+  if (status === "sort") {
+    // For sort options: generic highlight
+    return `${baseClasses} data-[state=checked]:bg-primary/20 data-[state=checked]:text-primary focus:bg-accent`;
+  }
+
+  // Define background/text colors based on status (similar to TripCard)
+  let specificColors =
+    "data-[state=checked]:bg-primary/20 data-[state=checked]:text-primary";
+  switch (status) {
+    case "UPCOMING":
+      specificColors =
+        "data-[state=checked]:bg-blue-600/80 data-[state=checked]:text-white focus:bg-blue-600/20";
+      break;
+    case "IN_TRIP":
+      specificColors =
+        "data-[state=checked]:bg-emerald-600/80 data-[state=checked]:text-white focus:bg-emerald-600/20";
+      break;
+    case "COMPLETED":
+      specificColors =
+        "data-[state=checked]:bg-slate-600/80 data-[state=checked]:text-white focus:bg-slate-600/20";
+      break;
+    case "CANCELLED":
+      specificColors =
+        "data-[state=checked]:bg-red-700/80 data-[state=checked]:text-white focus:bg-red-700/20";
+      break;
+    case "GENERATING":
+      specificColors =
+        "data-[state=checked]:bg-amber-600/80 data-[state=checked]:text-white focus:bg-amber-600/20";
+      break;
+    case "FAILED":
+      specificColors =
+        "data-[state=checked]:bg-red-700/80 data-[state=checked]:text-white focus:bg-red-700/20";
+      break;
+    case "all":
+    default:
+      specificColors =
+        "data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground focus:bg-accent focus:text-accent-foreground";
+      break;
+  }
+  return `${baseClasses} ${specificColors}`;
+};
+
 export default function TripsPage() {
   const { data: trips, isLoading, error, refetch } = useTrips();
   const { t } = useTranslationStore();
@@ -135,23 +181,39 @@ export default function TripsPage() {
               <SelectValue placeholder={t("trips.filterPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t("trips.filterAll")}</SelectItem>
-              <SelectItem value="UPCOMING">
+              <SelectItem className={getStatusColor("all")} value="all">
+                {t("trips.filterAll")}
+              </SelectItem>
+              <SelectItem
+                className={getStatusColor("UPCOMING")}
+                value="UPCOMING"
+              >
                 {t("trip.lifecycle_upcoming")}
               </SelectItem>
-              <SelectItem value="IN_TRIP">
+              <SelectItem className={getStatusColor("IN_TRIP")} value="IN_TRIP">
                 {t("trip.lifecycle_in_trip")}
               </SelectItem>
-              <SelectItem value="COMPLETED">
+              <SelectItem
+                className={getStatusColor("COMPLETED")}
+                value="COMPLETED"
+              >
                 {t("trip.lifecycle_completed")}
               </SelectItem>
-              <SelectItem value="CANCELLED">
+              <SelectItem
+                className={getStatusColor("CANCELLED")}
+                value="CANCELLED"
+              >
                 {t("trip.lifecycle_cancelled")}
               </SelectItem>
-              <SelectItem value="GENERATING">
+              <SelectItem
+                className={getStatusColor("GENERATING")}
+                value="GENERATING"
+              >
                 {t("trips.filterGenerating")}
               </SelectItem>
-              <SelectItem value="FAILED">{t("trips.filterFailed")}</SelectItem>
+              <SelectItem className={getStatusColor("FAILED")} value="FAILED">
+                {t("trips.filterFailed")}
+              </SelectItem>
             </SelectContent>
           </Select>
 
@@ -164,10 +226,18 @@ export default function TripsPage() {
               <SelectValue placeholder={t("trips.sortPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="newest">{t("trips.sortNewest")}</SelectItem>
-              <SelectItem value="oldest">{t("trips.sortOldest")}</SelectItem>
-              <SelectItem value="az">{t("trips.sortAZ")}</SelectItem>
-              <SelectItem value="za">{t("trips.sortZA")}</SelectItem>
+              <SelectItem className={getStatusColor("sort")} value="newest">
+                {t("trips.sortNewest")}
+              </SelectItem>
+              <SelectItem className={getStatusColor("sort")} value="oldest">
+                {t("trips.sortOldest")}
+              </SelectItem>
+              <SelectItem className={getStatusColor("sort")} value="az">
+                {t("trips.sortAZ")}
+              </SelectItem>
+              <SelectItem className={getStatusColor("sort")} value="za">
+                {t("trips.sortZA")}
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
