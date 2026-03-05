@@ -87,8 +87,8 @@ function buildPreferences(data: TripWizardData) {
 
 export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
   const navigate = useNavigate();
-  const { data, reset } = useTripWizardStore();
-  const { t, language } = useTranslationStore();
+  const { data, reset, initWizard } = useTripWizardStore();
+  const { t, language, currency: preferredCurrency } = useTranslationStore();
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
 
@@ -188,11 +188,14 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
-        setOpen(nextOpen);
-        if (!nextOpen) {
+        if (nextOpen) {
+          // Sync budget currency with user's preferred currency setting
+          initWizard(preferredCurrency || "USD");
+        } else {
           reset();
           setStepIndex(0);
         }
+        setOpen(nextOpen);
       }}
     >
       <DialogTrigger asChild>{trigger}</DialogTrigger>

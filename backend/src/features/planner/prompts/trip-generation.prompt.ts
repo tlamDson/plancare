@@ -248,7 +248,7 @@ export function buildTripPrompt(
 Trip details:
 - Destination: ${destination}
 - Dates: ${new Date(startDate).toLocaleDateString()} → ${new Date(endDate).toLocaleDateString()} (${days} days)
-- Budget: $${budgetPerDay.toFixed(0)}/person/day
+- Budget: ${budget.currency} ${budgetPerDay.toFixed(0)}/person/day
 - Group: ${travelers.adults} adult${travelers.adults !== 1 ? "s" : ""}${travelers.children > 0 ? `, ${travelers.children} child${travelers.children !== 1 ? "ren" : ""}` : ""}
 - ${paceConfig.paceInstruction}
 - ${transportContext}
