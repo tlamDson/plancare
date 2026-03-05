@@ -166,5 +166,18 @@ export function getCountryImage(
     }
   }
 
-  return null;
+  // Fallback to a random image from all available images if no keyword matches
+  const allImages = Object.values(COUNTRY_IMAGES).flat();
+  let index = 0;
+  if (seedString) {
+    let hash = 0;
+    for (let i = 0; i < seedString.length; i++) {
+      hash = seedString.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    index = Math.abs(hash) % allImages.length;
+  } else {
+    index = tripTitle.length % allImages.length;
+  }
+
+  return allImages[index];
 }

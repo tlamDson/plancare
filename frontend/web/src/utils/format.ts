@@ -89,11 +89,17 @@ export function formatCurrency(
   currencyCode: string,
   lang?: Language,
 ): string {
-  return new Intl.NumberFormat(getLocaleCode(lang), {
-    style: "currency",
-    currency: currencyCode || "USD",
-    maximumFractionDigits: currencyCode === "VND" ? 0 : 2, // VND doesn't typically display cents
-  }).format(amount);
+  try {
+    return new Intl.NumberFormat(getLocaleCode(lang), {
+      style: "currency",
+      currency: currencyCode || "USD",
+      currencyDisplay: "symbol",
+      maximumFractionDigits: currencyCode === "VND" ? 0 : 2,
+    }).format(amount);
+  } catch (e) {
+    // Fallback if the browser doesn't like the currency code
+    return `${amount.toFixed(currencyCode === "VND" ? 0 : 2)} ${currencyCode}`;
+  }
 }
 
 /**
