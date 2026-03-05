@@ -11,7 +11,7 @@ export const getJobStatus = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth?.()?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -51,7 +51,7 @@ export const retryJob = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth?.()?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;

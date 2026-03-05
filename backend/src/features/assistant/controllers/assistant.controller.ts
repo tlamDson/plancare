@@ -8,7 +8,7 @@ export const createSession = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const clerkUserId = req.auth?.userId;
+    const clerkUserId = req.auth?.()?.userId;
     if (!clerkUserId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -34,7 +34,7 @@ export const getSession = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const clerkUserId = req.auth?.userId;
+    const clerkUserId = req.auth?.()?.userId;
     if (!clerkUserId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -70,7 +70,7 @@ export const sendMessage = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const clerkUserId = req.auth?.userId;
+    const clerkUserId = req.auth?.()?.userId;
     if (!clerkUserId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -108,7 +108,7 @@ export const streamMessage = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const clerkUserId = req.auth?.userId;
+    const clerkUserId = req.auth?.()?.userId;
     if (!clerkUserId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -149,7 +149,7 @@ export const getTripSuggestions = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const clerkUserId = req.auth?.userId;
+    const clerkUserId = req.auth?.()?.userId;
     if (!clerkUserId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -182,7 +182,7 @@ export const deleteSession = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const clerkUserId = req.auth?.userId;
+    const clerkUserId = req.auth?.()?.userId;
     if (!clerkUserId) {
       res.status(401).json({ message: "Unauthorized" });
       return;

@@ -23,8 +23,16 @@ export interface ClerkAuth {
   sessionId?: string;
   actor?: string;
 }
-// Extend the Express `Request` type to include `auth`
+
+/**
+ * @clerk/express v1.x: req.auth() is a callable function that returns ClerkAuth.
+ * The intersection with Partial<ClerkAuth> preserves backward-compat property
+ * access (e.g. req.auth?.userId) without triggering deprecation errors in TS.
+ * auth is OPTIONAL so ClerkRequest remains assignable to Express RequestHandler.
+ */
+type ClerkAuthFn = (() => ClerkAuth) & Partial<ClerkAuth>;
+
 export interface ClerkRequest extends Request {
-  auth?: ClerkAuth;
+  auth?: ClerkAuthFn;
 }
 export type ControllerFunction = (req: Request, res: Response) => Promise<any>;

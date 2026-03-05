@@ -26,11 +26,11 @@ export const tripCreationLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req, res) => {
-    const userId = (req as ClerkRequest).auth?.userId;
+    const userId = (req as ClerkRequest).auth?.()?.userId;
     if (userId) return `user:${userId}`;
     return ipKeyGenerator(req, res);
   },
-  skip: (req) => !(req as ClerkRequest).auth?.userId,
+  skip: (req) => !(req as ClerkRequest).auth?.()?.userId,
   store: new RedisStore({
     sendCommand: async (...args: any[]): Promise<any> => {
       const [command, ...commandArgs] = args;

@@ -8,7 +8,7 @@ export const getUserMe = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const clerkId = req.auth?.userId;
+    const clerkId = req.auth?.()?.userId;
     if (!clerkId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -31,7 +31,7 @@ export const updateUserMe = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const clerkId = req.auth?.userId;
+    const clerkId = req.auth?.()?.userId;
     if (!clerkId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
