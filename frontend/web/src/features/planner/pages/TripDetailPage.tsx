@@ -6,7 +6,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useJobPoller, useTrip } from "@/features/planner/hooks";
+import {
+  useJobPoller,
+  useTrip,
+  useReorderActivities,
+  useRegenActivity,
+} from "@/features/planner/hooks";
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 import {
   formatDateRange,
   getTripDuration,
@@ -52,6 +65,10 @@ export default function TripDetailPage() {
   const { mutate: updateLifecycle, isPending: isUpdatingLifecycle } =
     useUpdateTripLifecycle();
   const { mutate: updateTrip, isPending: isUpdatingTrip } = useUpdateTrip();
+  const { mutate: reorderActivities, isPending: isReordering } =
+    useReorderActivities();
+  const { mutate: regenActivity, isPending: isRegening, variables: regenVariables } =
+    useRegenActivity();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitleValue, setEditTitleValue] = useState("");
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -212,6 +229,53 @@ export default function TripDetailPage() {
     if (e.key === "Enter") handleSaveTitle();
     if (e.key === "Escape") setIsEditingTitle(false);
   };
+
+  // ── DnD sensors: require 8px movement before drag starts (prevents misclicks)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent, dayIndex: number) => {
+      const { active, over } = event;
+
+      // Guard 1: dropped outside any droppable area
+      if (!over) return;
+      // Guard 2: dropped on itself — nothing to do
+      if (active.id === over.id) return;
+
+      if (!trip) return;
+      const day = trip.itinerary[dayIndex];
+      if (!day) return;
+
+      const sorted = day.activities
+        .slice()
+        .sort((a, b) => (a.time && b.time ? a.time.localeCompare(b.time) : a.order - b.order));
+
+      const oldIndex = sorted.findIndex((a) => a._id === active.id);
+      const newIndex = sorted.findIndex((a) => a._id === over.id);
+
+      // Guard 3: index didn't actually change
+      if (oldIndex === newIndex) return;
+
+      const reordered = arrayMove(sorted, oldIndex, newIndex);
+
+      reorderActivities({
+        tripId: trip._id,
+        dayIndex,
+        orderedActivityIds: reordered.map((a) => a._id!),
+      });
+    },
+    [trip, reorderActivities],
+  );
+
+  const handleRegenActivity = useCallback(
+    (dayIndex: number, activityId: string, hint?: string) => {
+      if (!trip) return;
+      regenActivity({ tripId: trip._id, dayIndex, activityId, hint });
+    },
+    [trip, regenActivity],
+  );
 
   if (isLoading) return <PageLoader />;
 
@@ -414,12 +478,25 @@ export default function TripDetailPage() {
               {trip.itinerary
                 .slice()
                 .sort((a, b) => a.day - b.day)
-                .map((day) => (
-                  <ItineraryDayCard
+                .map((day, dayIndex) => (
+                  <DndContext
                     key={day._id ?? day.day}
-                    day={day}
-                    currency={trip.budget.currency}
-                  />
+                    sensors={sensors}
+                    onDragEnd={(event) => handleDragEnd(event, dayIndex)}
+                  >
+                    <ItineraryDayCard
+                      day={day}
+                      dayIndex={dayIndex}
+                      currency={trip.budget.currency}
+                      isDragDisabled={trip.isAgentProcessing || isReordering || isRegening}
+                      regenningActivityId={
+                        isRegening && regenVariables?.dayIndex === dayIndex
+                          ? regenVariables.activityId
+                          : null
+                      }
+                      onRegenActivity={handleRegenActivity}
+                    />
+                  </DndContext>
                 ))}
             </div>
           )}
