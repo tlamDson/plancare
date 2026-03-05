@@ -87,6 +87,8 @@ type TripWizardState = {
   setTravelers: (travelers: TripWizardData["travelers"]) => void;
   setBudget: (budget: TripWizardData["budget"]) => void;
   setPriorities: (priorities: TripWizardPriorities) => void;
+  /** Call this when opening the wizard to inject user's preferred currency */
+  initWizard: (currency: string) => void;
   reset: () => void;
 };
 
@@ -107,6 +109,10 @@ export const useTripWizardStore = create<TripWizardState>((set) => ({
   setPriorities: (priorities) =>
     set((state) => ({
       data: { ...state.data, priorities },
+    })),
+  initWizard: (currency) =>
+    set((state) => ({
+      data: { ...state.data, budget: { ...state.data.budget, currency } },
     })),
   reset: () => set({ data: initialData }),
 }));
