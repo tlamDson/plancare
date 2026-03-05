@@ -4,6 +4,7 @@ import { tripRepository } from "../repositories/trip.repository";
 import { aiAgentService } from "../services/ai-agent.service";
 import { intentParserService } from "../services/intent-parser.service";
 import { validationService } from "../services/validation.service";
+import { geoValidatorService } from "../services/geo-validator.service";
 import type { TripPreferences } from "@travelplan/shared";
 import type { TripIntents } from "../services/intent-parser.service";
 import { CityCost } from "../models/CityCost";
@@ -18,6 +19,63 @@ interface TripJobData {
   userId: string;
   preferences: TripPreferences;
   language?: string;
+}
+
+const MIN_DUPLICATE_DISTANCE_KM = 0.1; // ~100m: treat ultra-close POIs as duplicates
+
+function normalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasValidCoords(coords?: [number, number]): coords is [number, number] {
+  return !!coords && (coords[0] !== 0 || coords[1] !== 0);
+}
+
+function dedupeValidatedPlaces(validated: any[]) {
+  const kept: any[] = [];
+  const seenNames = new Set<string>();
+  const seenGoogleIds = new Set<string>();
+  const dropped: Array<{ reason: string; name: string }> = [];
+
+  for (const place of validated) {
+    const nameKey = normalizeName(place.name ?? "");
+    const googleId = place.googlePlaceId as string | undefined;
+
+    if (googleId && seenGoogleIds.has(googleId)) {
+      dropped.push({ reason: "googlePlaceId", name: place.name });
+      continue;
+    }
+
+    if (nameKey && seenNames.has(nameKey)) {
+      dropped.push({ reason: "name", name: place.name });
+      continue;
+    }
+
+    if (hasValidCoords(place.coordinates)) {
+      const tooClose = kept.some((k) => {
+        if (!hasValidCoords(k.coordinates)) return false;
+        const km = geoValidatorService.haversineKm(
+          place.coordinates,
+          k.coordinates,
+        );
+        return km <= MIN_DUPLICATE_DISTANCE_KM;
+      });
+      if (tooClose) {
+        dropped.push({ reason: "distance", name: place.name });
+        continue;
+      }
+    }
+
+    kept.push(place);
+    if (nameKey) seenNames.add(nameKey);
+    if (googleId) seenGoogleIds.add(googleId);
+  }
+
+  return { kept, dropped };
 }
 
 /**
@@ -182,6 +240,55 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
           { jobId: job.id, tripId, added: supplementaryValidated.length, newTotal: validated.length },
           "✅ [DEFICIT] Supplementary places added",
         );
+      }
+    }
+
+    // 3c. Deduplicate by name / googlePlaceId / ultra-close distance
+    const dedupeResult = dedupeValidatedPlaces(validated);
+    if (dedupeResult.dropped.length > 0) {
+      logger.warn(
+        {
+          jobId: job.id,
+          tripId,
+          dropped: dedupeResult.dropped,
+          before: validated.length,
+          after: dedupeResult.kept.length,
+        },
+        "⚠️ [DEDUP] Removed duplicate or too-close places before itinerary build",
+      );
+    }
+    validated = dedupeResult.kept;
+
+    // 3d. If dedupe created a new deficit, request one more supplementary pass
+    const postDedupeDeficit = intentList.length - validated.length;
+    if (postDedupeDeficit > 0 && validated.length > 0) {
+      logger.warn(
+        {
+          jobId: job.id,
+          tripId,
+          deficit: postDedupeDeficit,
+          validated: validated.length,
+          total: intentList.length,
+        },
+        "⚠️ [DEDUP DEFICIT] Dedup removed places — requesting supplementary fill",
+      );
+
+      const existingNames = validated.map((p) => p.name);
+      const supplementaryQueries = await aiAgentService.generateSupplementaryQueries(
+        postDedupeDeficit,
+        preferences.destination,
+        existingNames,
+      );
+
+      if (supplementaryQueries.length > 0) {
+        const supplementaryValidated = await validationService.validateBatch(
+          supplementaryQueries,
+          preferences.destination,
+        );
+        validated = [...validated, ...supplementaryValidated];
+        // Final dedupe pass (no more fill after this)
+        const finalDedupe = dedupeValidatedPlaces(validated);
+        validated = finalDedupe.kept;
       }
     }
 
