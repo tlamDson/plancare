@@ -31,15 +31,44 @@ export const apiClient = axios.create({
 });
 
 // ============================================
+// CLERK AUTH TOKEN BRIDGE (frontend -> backend)
+// ============================================
+
+let tokenGetter: (() => Promise<string | null>) | null = null;
+
+/**
+ * Register a token getter from Clerk (useAuth().getToken).
+ * This allows axios to attach Bearer tokens to API requests.
+ */
+export function registerAuthTokenGetter(
+  getter: () => Promise<string | null>,
+) {
+  tokenGetter = getter;
+}
+
+// ============================================
 // REQUEST INTERCEPTOR
 // ============================================
 
 apiClient.interceptors.request.use(
-  (config) => {
+  async (config) => {
     // Auth token is handled via httpOnly cookies (more secure)
     // Or if using Bearer token:
     // const token = getAuthToken();
     // if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (tokenGetter) {
+      try {
+        const token = await tokenGetter();
+        if (token) {
+          config.headers = {
+            ...(config.headers || {}),
+            Authorization: `Bearer ${token}`,
+          };
+        }
+      } catch {
+        // Silently ignore token retrieval errors
+      }
+    }
 
     return config;
   },

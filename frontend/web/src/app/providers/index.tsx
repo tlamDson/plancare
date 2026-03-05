@@ -8,7 +8,7 @@
  * - React Router for URL state
  */
 
-import { ClerkProvider } from "@clerk/clerk-react";
+import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,7 +17,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { queryClient } from "@/lib/query-client";
 import { ThemeProvider } from "./ThemeProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { registerAuthTokenGetter } from "@/lib/axios";
 
 // Get Clerk publishable key from environment
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -37,7 +38,14 @@ interface AppProvidersProps {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <ErrorBoundary>
-      <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+      <ClerkProvider
+        publishableKey={CLERK_PUBLISHABLE_KEY}
+        signInUrl="/signin"
+        signUpUrl="/signup"
+        afterSignInUrl="/dashboard"
+        afterSignUpUrl="/onboarding"
+      >
+        <ClerkTokenBridge />
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
             <TooltipProvider>
@@ -52,4 +60,19 @@ export function AppProviders({ children }: AppProvidersProps) {
       </ClerkProvider>
     </ErrorBoundary>
   );
+}
+
+/**
+ * Bridge Clerk session tokens into axios requests so the backend
+ * can authenticate users via Bearer tokens.
+ */
+function ClerkTokenBridge() {
+  const { getToken, isLoaded } = useAuth();
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    registerAuthTokenGetter(() => getToken());
+  }, [getToken, isLoaded]);
+
+  return null;
 }
