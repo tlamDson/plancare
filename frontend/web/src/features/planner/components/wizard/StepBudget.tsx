@@ -2,10 +2,12 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { useTripWizardStore } from "@/stores/trip-wizard.store";
 import { useTranslationStore } from "@/stores/useTranslationStore";
+import { convertCurrency } from "@/utils/format";
 
-const MIN_BUDGET = 500;
-const MAX_BUDGET = 10000;
-const MIN_DAILY_BUDGET = 20;
+const BASE_MIN_USD = 200;
+const BASE_MAX_USD = 10_000;
+const BASE_MIN_DAILY_USD = 20;
+const BASE_STEP_USD = 100;
 
 function getTripDays(startDate: string, endDate: string) {
   if (!startDate || !endDate) return null;
@@ -21,6 +23,18 @@ export function StepBudget() {
   const { data, setBudget, setPriorities } = useTripWizardStore();
   const { t } = useTranslationStore();
 
+  const currency = data.budget.currency;
+
+  // Scale slider range from the USD base to the active currency
+  const sliderMin = Math.round(convertCurrency(BASE_MIN_USD, "USD", currency));
+  const sliderMax = Math.round(convertCurrency(BASE_MAX_USD, "USD", currency));
+  const sliderStep = Math.round(
+    convertCurrency(BASE_STEP_USD, "USD", currency),
+  );
+  const minDailyBudget = Math.round(
+    convertCurrency(BASE_MIN_DAILY_USD, "USD", currency),
+  );
+
   const tripDays = getTripDays(data.startDate, data.endDate);
   const totalTravelers = data.travelers.adults + data.travelers.children * 0.5;
   const budgetPerPersonDay =
@@ -30,9 +44,18 @@ export function StepBudget() {
 
   const formattedBudget = new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: data.budget.currency,
+    currency,
     maximumFractionDigits: 0,
   }).format(data.budget.total);
+
+  const formattedPerDay =
+    budgetPerPersonDay !== null
+      ? new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency,
+          maximumFractionDigits: 0,
+        }).format(budgetPerPersonDay)
+      : null;
 
   return (
     <div className="space-y-6">
@@ -43,22 +66,22 @@ export function StepBudget() {
         </div>
         <Slider
           value={[data.budget.total]}
-          min={MIN_BUDGET}
-          max={MAX_BUDGET}
-          step={100}
+          min={sliderMin}
+          max={sliderMax}
+          step={sliderStep}
           onValueChange={(value) =>
             setBudget({ ...data.budget, total: value[0] })
           }
         />
-        {budgetPerPersonDay !== null && (
+        {formattedPerDay !== null && (
           <p
             className={`text-sm ${
-              budgetPerPersonDay < MIN_DAILY_BUDGET
+              budgetPerPersonDay! < minDailyBudget
                 ? "text-destructive"
                 : "text-muted-foreground"
             }`}
           >
-            {`~${budgetPerPersonDay.toFixed(0)} ${data.budget.currency}${t("wizard.personDay")}`}
+            {`~${formattedPerDay}${t("wizard.personDay")}`}
           </p>
         )}
       </div>

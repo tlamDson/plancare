@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { convertCurrency } from "@/utils/format";
 
 export type TripWizardPriorities = {
   money: number;
@@ -57,7 +58,7 @@ const initialData: TripWizardData = {
   startDate: "",
   endDate: "",
   travelers: { adults: 1, children: 0 },
-  budget: { total: 2000, currency: "USD" },
+  budget: { total: 500, currency: "USD" },
   priorities: { money: 5, comfort: 5, unique: 5 },
   accommodationType: "",
   accommodationFlexible: true,
@@ -112,7 +113,14 @@ export const useTripWizardStore = create<TripWizardState>((set) => ({
     })),
   initWizard: (currency) =>
     set((state) => ({
-      data: { ...state.data, budget: { ...state.data.budget, currency } },
+      data: {
+        ...state.data,
+        budget: {
+          // Convert the 500 USD base default into the user's preferred currency
+          total: Math.round(convertCurrency(500, "USD", currency)),
+          currency,
+        },
+      },
     })),
   reset: () => set({ data: initialData }),
 }));

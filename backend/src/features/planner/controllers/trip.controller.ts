@@ -374,7 +374,13 @@ export const reorderActivities = async (
     // Snapshot current itinerary for undo before mutation
     await tripRepository.saveSnapshot(tripId);
 
+    const { recalcDayDistances } = await import(
+      "../services/activity-regen.service"
+    );
+
     trip.itinerary[dayIndex]!.activities = reordered;
+    recalcDayDistances(trip.itinerary[dayIndex]!.activities as any[]);
+    trip.markModified("itinerary");
     await trip.save();
 
     logger.info(

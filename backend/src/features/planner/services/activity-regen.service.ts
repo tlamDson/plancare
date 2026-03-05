@@ -14,6 +14,7 @@
 import { aiAgentService } from "./ai-agent.service";
 import { validationService } from "./validation.service";
 import { geoValidatorService } from "./geo-validator.service";
+import type { TransportMode } from "./geo-validator.service";
 import { logger } from "../../../lib/logger";
 import type { IActivity } from "../models/Trip.types";
 
@@ -28,7 +29,10 @@ interface RegenOneParams {
  * Recalculates distanceFromPrevious and requiresTransport for every activity
  * in a day after an insertion/replacement. Mutates the array in-place.
  */
-export function recalcDayDistances(activities: IActivity[]): void {
+export function recalcDayDistances(
+  activities: IActivity[],
+  mode: TransportMode = "walking",
+): void {
   for (let i = 1; i < activities.length; i++) {
     const prev = activities[i - 1] as any;
     const curr = activities[i] as any;
@@ -37,7 +41,7 @@ export function recalcDayDistances(activities: IActivity[]): void {
       const result = geoValidatorService.validateDistance(
         prev.location.coordinates as [number, number],
         curr.location.coordinates as [number, number],
-        "walking",
+        mode,
       );
       curr.distanceFromPrevious = result.km;
       curr.requiresTransport = result.requiresTransport;
