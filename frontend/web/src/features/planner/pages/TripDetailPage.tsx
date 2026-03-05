@@ -250,7 +250,11 @@ export default function TripDetailPage() {
 
       const sorted = day.activities
         .slice()
-        .sort((a, b) => (a.time && b.time ? a.time.localeCompare(b.time) : a.order - b.order));
+        .sort((a, b) => {
+          if (a.order !== b.order) return a.order - b.order;
+          if (a.time && b.time) return a.time.localeCompare(b.time);
+          return 0;
+        });
 
       const oldIndex = sorted.findIndex((a) => a._id === active.id);
       const newIndex = sorted.findIndex((a) => a._id === over.id);

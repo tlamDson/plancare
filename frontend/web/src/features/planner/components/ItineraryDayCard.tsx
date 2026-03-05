@@ -460,9 +460,12 @@ export function ItineraryDayCard({
           </p>
         ) : (
           (() => {
+            // Important: DnD uses `order` as the source of truth.
+            // Sorting by time would snap cards back to their old position.
             const sorted = day.activities.slice().sort((a, b) => {
+              if (a.order !== b.order) return a.order - b.order;
               if (a.time && b.time) return a.time.localeCompare(b.time);
-              return a.order - b.order;
+              return 0;
             });
             // Only include activities that have an _id (Mongo subdocuments always do)
             const sortableIds = sorted
