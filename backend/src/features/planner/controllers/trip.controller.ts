@@ -285,6 +285,198 @@ export const undoTrip = async (
   }
 };
 
+/**
+ * PATCH /api/trips/:tripId/reorder-activities
+ * Reorders activities within a single day (drag-and-drop support).
+ * Body: { dayIndex: number, orderedActivityIds: string[] }
+ */
+export const reorderActivities = async (
+  req: ClerkRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.auth?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const { tripId } = req.params;
+    const { dayIndex, orderedActivityIds } = req.body;
+
+    if (
+      typeof dayIndex !== "number" ||
+      !Array.isArray(orderedActivityIds) ||
+      orderedActivityIds.length === 0
+    ) {
+      res
+        .status(400)
+        .json({ message: "dayIndex (number) and orderedActivityIds (string[]) are required" });
+      return;
+    }
+
+    const trip = await tripRepository.findById(tripId);
+    if (!trip) {
+      res.status(404).json({ message: "Trip not found" });
+      return;
+    }
+
+    if (trip.userId !== userId) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    if (trip.isAgentProcessing) {
+      res.status(409).json({ message: "Trip is being processed by AI — try again shortly" });
+      return;
+    }
+
+    const day = trip.itinerary[dayIndex];
+    if (!day) {
+      res.status(400).json({ message: `Day index ${dayIndex} not found in itinerary` });
+      return;
+    }
+
+    // Build id→activity map from the target day
+    const activityMap = new Map(
+      day.activities.map((a: any) => [a._id.toString(), a]),
+    );
+
+    // Verify every supplied ID belongs to this day
+    for (const id of orderedActivityIds) {
+      if (!activityMap.has(id)) {
+        res.status(400).json({ message: `Activity ${id} not found in day ${dayIndex}` });
+        return;
+      }
+    }
+
+    // Guard: if the supplied order matches the current order, skip the DB write
+    const currentIds = day.activities.map((a: any) => a._id.toString());
+    const isSameOrder = currentIds.every(
+      (id: string, idx: number) => id === orderedActivityIds[idx],
+    );
+    if (isSameOrder && currentIds.length === orderedActivityIds.length) {
+      res.json({ success: true, itinerary: trip.itinerary });
+      return;
+    }
+
+    // Re-assign `order` field to match the new sequence
+    const reordered = orderedActivityIds.map((id, idx) => {
+      const act = activityMap.get(id) as any;
+      return { ...act.toObject(), order: idx };
+    });
+
+    // Snapshot current itinerary for undo before mutation
+    await tripRepository.saveSnapshot(tripId);
+
+    trip.itinerary[dayIndex]!.activities = reordered;
+    await trip.save();
+
+    logger.info(
+      { tripId, userId, dayIndex, count: reordered.length },
+      "✅ Activities reordered",
+    );
+    res.json({ success: true, itinerary: trip.itinerary });
+  } catch (error: any) {
+    logger.error({ error, tripId: req.params.tripId }, "Failed to reorder activities");
+    res.status(500).json({ message: "Failed to reorder activities" });
+  }
+};
+
+/**
+ * POST /api/trips/:tripId/regen-activity
+ * Regenerates a single activity with a new AI-suggested place.
+ * Body: { dayIndex: number, activityId: string }
+ */
+export const regenActivity = async (
+  req: ClerkRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.auth?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const { tripId } = req.params;
+    const { dayIndex, activityId } = req.body;
+
+    if (typeof dayIndex !== "number" || typeof activityId !== "string") {
+      res.status(400).json({ message: "dayIndex (number) and activityId (string) are required" });
+      return;
+    }
+
+    const trip = await tripRepository.findById(tripId);
+    if (!trip) {
+      res.status(404).json({ message: "Trip not found" });
+      return;
+    }
+
+    if (trip.userId !== userId) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    if (trip.isAgentProcessing) {
+      res.status(409).json({ message: "Trip is being processed by AI — try again shortly" });
+      return;
+    }
+
+    const day = trip.itinerary[dayIndex];
+    if (!day) {
+      res.status(400).json({ message: `Day index ${dayIndex} not found` });
+      return;
+    }
+
+    const activityIdx = day.activities.findIndex(
+      (a: any) => a._id.toString() === activityId,
+    );
+    if (activityIdx === -1) {
+      res.status(404).json({ message: "Activity not found in specified day" });
+      return;
+    }
+
+    // Collect all existing place names across the entire trip for dedup
+    const existingNames = trip.itinerary
+      .flatMap((d: any) => d.activities.map((a: any) => a.name as string));
+
+    const destination =
+      (trip as any).preferences?.destination ??
+      (trip as any).destination ??
+      "";
+
+    const { activityRegenService } = await import(
+      "../services/activity-regen.service"
+    );
+
+    const newActivity = await activityRegenService.regenOne({
+      target: day.activities[activityIdx] as any,
+      destination,
+      existingNames,
+    });
+
+    // Snapshot before mutation
+    await tripRepository.saveSnapshot(tripId);
+
+    trip.itinerary[dayIndex]!.activities[activityIdx] = newActivity as any;
+    await trip.save();
+
+    logger.info(
+      { tripId, userId, dayIndex, activityId, newName: newActivity.name },
+      "✅ Activity regenerated",
+    );
+    res.json({ success: true, activity: newActivity, itinerary: trip.itinerary });
+  } catch (error: any) {
+    logger.error({ error, tripId: req.params.tripId }, "Failed to regen activity");
+    if (error.message === "NO_ALTERNATIVE_FOUND") {
+      res.status(422).json({ message: "Could not find a unique alternative activity. Try again." });
+      return;
+    }
+    res.status(500).json({ message: "Failed to regenerate activity" });
+  }
+};
+
 import { z } from "zod";
 import { TripLifecycleValues } from "@travelplan/shared";
 
@@ -413,6 +605,8 @@ export const reGeocodeTrip = async (
               coordinates: result.coordinates, // [lng, lat]
             };
             if (result.rating !== undefined) activity.rating = result.rating;
+            if (result.priceLevel !== undefined)
+              activity.priceLevel = result.priceLevel;
             if (result.openingHours)
               activity.openingHours = result.openingHours;
             if (result.photoUrl) activity.photoUrl = result.photoUrl;

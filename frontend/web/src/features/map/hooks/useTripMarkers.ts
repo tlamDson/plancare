@@ -104,6 +104,9 @@ export function useTripMarkers({
   const selectedElRef = useRef<HTMLElement | null>(null);
 
   const deselect = useCallback(() => {
+    // Hide all popups
+    markerInstancesRef.current.forEach((m) => m.getPopup()?.remove());
+
     if (selectedElRef.current) {
       selectedElRef.current.style.transform = "scale(1)";
       selectedElRef.current.style.boxShadow = "0 2px 6px rgba(0,0,0,0.35)";
@@ -277,6 +280,10 @@ export function useTripMarkers({
           el.textContent = String(idx + 1);
           el.setAttribute("aria-label", act.name);
 
+          console.log(
+            `[Popup Cost Debug] ${act.name}: cost=${act.cost}, priceLevel=${act.priceLevel}`,
+          );
+
           // ── Create Popup Content ──────────────────────────────
           const timeText = act.time
             ? `${act.time}${act.endTime ? ` – ${act.endTime}` : ""}`
@@ -335,7 +342,13 @@ export function useTripMarkers({
           const handleClick = () => {
             selectEl(el, dayColor);
             map.flyTo({ center: [lng, lat], zoom: 15, duration: 800 });
-            marker.togglePopup(); // Show the popup
+
+            // Close all other popups
+            markerInstancesRef.current.forEach((m) => {
+              if (m !== marker) m.getPopup()?.remove();
+            });
+
+            marker.togglePopup(); // Show this popup
             onMarkerClick?.(day.day);
             onActivityClick?.({
               activity: act,

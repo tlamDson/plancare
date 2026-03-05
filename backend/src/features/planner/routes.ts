@@ -9,6 +9,8 @@ import {
   undoTrip,
   reGeocodeTrip,
   updateTripLifecycle,
+  reorderActivities,
+  regenActivity,
 } from "./controllers/trip.controller";
 import { requireUserAuth } from "../../middlewares/auth";
 import { tripCreationLimiter } from "../../middlewares/rate-limiter";
@@ -190,5 +192,17 @@ router.patch("/trips/:tripId/lifecycle", requireUserAuth, updateTripLifecycle);
  * Use when a trip was generated before API keys were configured.
  */
 router.post("/trips/:tripId/regeocode", requireUserAuth, reGeocodeTrip);
+
+/**
+ * PATCH /api/trips/:tripId/reorder-activities — Reorder activities within a day (drag-and-drop)
+ * Body: { dayIndex: number, orderedActivityIds: string[] }
+ */
+router.patch("/trips/:tripId/reorder-activities", requireUserAuth, reorderActivities);
+
+/**
+ * POST /api/trips/:tripId/regen-activity — Regenerate a single activity with a new AI suggestion
+ * Body: { dayIndex: number, activityId: string }
+ */
+router.post("/trips/:tripId/regen-activity", requireUserAuth, regenActivity);
 
 export default router;
