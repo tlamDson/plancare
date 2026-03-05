@@ -10,6 +10,17 @@ import { intentParserService, type TripIntents } from "./intent-parser.service";
 
 export class AIAgentService {
   private model: any;
+  /**
+   * rawModel: same Gemini model but WITHOUT systemInstruction.
+   * Used for supplementary/regen queries that need a plain JSON array response.
+   *
+   * WHY: The trip-generation systemInstruction forces the model to ALWAYS output
+   * { "day1": { "morning": [...] } } format. When we ask for ["query1", "query2"],
+   * the model ignores our request and outputs the structured object — the
+   * JSON array regex then fails to parse it, returning [] silently.
+   * A raw model with no systemInstruction follows the user-turn prompt faithfully.
+   */
+  private rawModel: any;
 
   constructor() {
     if (!env.GEMINI_API_KEY) {
@@ -24,6 +35,9 @@ export class AIAgentService {
         // System instruction = persona + rules (higher compliance than user turn)
         systemInstruction: TRIP_PLANNER_SYSTEM_INSTRUCTION,
       });
+      // No systemInstruction — accepts ad-hoc prompts and returns exactly what's requested
+      this.rawModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      logger.info("✅ [AI] Both model (with system instruction) and rawModel initialized");
     } catch (error: any) {
       logger.error(
         { error: error.message },
@@ -109,7 +123,12 @@ export class AIAgentService {
     destination: string,
     existingPlaceNames: string[],
   ): Promise<string[]> {
-    if (!this.model) return [];
+    // rawModel MUST be used here — this.model has a systemInstruction that forces
+    // structured { day1: { morning: [...] } } output and will ignore the plain array request.
+    if (!this.rawModel) {
+      logger.warn({ destination }, "⚠️ [REGEN] rawModel not initialized — GEMINI_API_KEY missing?");
+      return [];
+    }
 
     const avoidList =
       existingPlaceNames.length > 0
@@ -120,26 +139,75 @@ export class AIAgentService {
       `Generate exactly ${count} specific location search queries for places to visit in ${destination}. ` +
       `Each query must name a real district, landmark, or neighborhood in ${destination}. ` +
       `${avoidList} ` +
-      `Return ONLY a valid JSON array of strings, no markdown, no explanation: ["query1", "query2", ...]`;
+      `Return ONLY a valid JSON array of strings, no markdown, no explanation. Example: ["Hoan Kiem Lake Hanoi", "Old Quarter Hanoi"]`;
 
     try {
-      const result = await this.model.generateContent(prompt);
+      const result = await this.rawModel.generateContent(prompt);
       const text: string = result.response.text();
 
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) return [];
+      logger.info(
+        { destination, count, rawText: text.slice(0, 300) },
+        "🔍 [REGEN] Raw Gemini response for supplementary queries",
+      );
+
+      const jsonMatch = text.match(/\[[\s\S]*?\]/);
+      if (!jsonMatch) {
+        logger.warn({ destination, rawText: text.slice(0, 200) }, "⚠️ [REGEN] No JSON array found in Gemini response");
+        return [];
+      }
 
       const parsed: unknown = JSON.parse(jsonMatch[0]);
-      if (!Array.isArray(parsed)) return [];
+      if (!Array.isArray(parsed)) {
+        logger.warn({ destination, matched: jsonMatch[0].slice(0, 100) }, "⚠️ [REGEN] Parsed value is not an array");
+        return [];
+      }
 
-      return (parsed as unknown[])
+      const results = (parsed as unknown[])
         .filter((q): q is string => typeof q === "string" && q.trim().length > 0)
         .slice(0, count);
+
+      logger.info({ destination, results }, "✅ [REGEN] Supplementary queries parsed");
+      return results;
     } catch (error: any) {
       logger.warn(
         { error: error.message, destination, count },
         "⚠️ Supplementary query generation failed — continuing without fill",
       );
+      return [];
+    }
+  }
+
+  /**
+   * Run an arbitrary prompt and parse the response as a JSON string array.
+   * Used by ActivityRegenService for hint-aware queries.
+   * Must use rawModel (no systemInstruction) so the plain array format is respected.
+   */
+  async generateSupplementaryQueriesRaw(prompt: string): Promise<string[]> {
+    if (!this.rawModel) {
+      logger.warn("⚠️ [REGEN-RAW] rawModel not initialized");
+      return [];
+    }
+    try {
+      const result = await this.rawModel.generateContent(prompt);
+      const text: string = result.response.text();
+
+      logger.info(
+        { rawText: text.slice(0, 300) },
+        "🔍 [REGEN-RAW] Raw Gemini response",
+      );
+
+      const jsonMatch = text.match(/\[[\s\S]*?\]/);
+      if (!jsonMatch) {
+        logger.warn({ rawText: text.slice(0, 200) }, "⚠️ [REGEN-RAW] No JSON array in response");
+        return [];
+      }
+      const parsed: unknown = JSON.parse(jsonMatch[0]);
+      if (!Array.isArray(parsed)) return [];
+      return (parsed as unknown[]).filter(
+        (q): q is string => typeof q === "string" && q.trim().length > 0,
+      );
+    } catch (error: any) {
+      logger.warn({ error: error.message }, "⚠️ [REGEN-RAW] Failed to generate");
       return [];
     }
   }

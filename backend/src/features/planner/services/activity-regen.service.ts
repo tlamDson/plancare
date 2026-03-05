@@ -13,6 +13,7 @@
 
 import { aiAgentService } from "./ai-agent.service";
 import { validationService } from "./validation.service";
+import { geoValidatorService } from "./geo-validator.service";
 import { logger } from "../../../lib/logger";
 import type { IActivity } from "../models/Trip.types";
 
@@ -20,21 +21,51 @@ interface RegenOneParams {
   target: IActivity;
   destination: string;
   existingNames: string[];
+  hint?: string;
+}
+
+/**
+ * Recalculates distanceFromPrevious and requiresTransport for every activity
+ * in a day after an insertion/replacement. Mutates the array in-place.
+ */
+export function recalcDayDistances(activities: IActivity[]): void {
+  for (let i = 1; i < activities.length; i++) {
+    const prev = activities[i - 1] as any;
+    const curr = activities[i] as any;
+
+    if (prev?.location?.coordinates && curr?.location?.coordinates) {
+      const result = geoValidatorService.validateDistance(
+        prev.location.coordinates as [number, number],
+        curr.location.coordinates as [number, number],
+        "walking",
+      );
+      curr.distanceFromPrevious = result.km;
+      curr.requiresTransport = result.requiresTransport;
+    } else {
+      // Clear stale distance data if coordinates are missing
+      delete curr.distanceFromPrevious;
+      delete curr.requiresTransport;
+    }
+  }
 }
 
 const MAX_ATTEMPTS = 3;
 
 export class ActivityRegenService {
-  async regenOne({ target, destination, existingNames }: RegenOneParams): Promise<IActivity> {
+  async regenOne({ target, destination, existingNames, hint }: RegenOneParams): Promise<IActivity> {
     const existingNamesLower = existingNames.map((n) => n.toLowerCase().trim());
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      // 1. Generate a single replacement query, excluding all current places
-      const queries = await aiAgentService.generateSupplementaryQueries(
-        1,
-        destination,
-        existingNames,
-      );
+      // 1. Generate a single replacement query, excluding all current places.
+      //    If the user provided a hint, prepend it so the AI generates a targeted query.
+      const queryCount = 1;
+      const queries = hint
+        ? await this.generateHintedQuery(hint, destination, existingNames)
+        : await aiAgentService.generateSupplementaryQueries(
+            queryCount,
+            destination,
+            existingNames,
+          );
 
       if (queries.length === 0) {
         logger.warn(
@@ -102,10 +133,44 @@ export class ActivityRegenService {
     }
 
     logger.error(
-      { destination, existingCount: existingNames.length },
+      {
+        destination,
+        existingCount: existingNames.length,
+        hint: hint ?? null,
+        msg: "All 3 attempts returned no AI queries — check rawModel init and Gemini API key",
+      },
       "❌ [REGEN] Exhausted all attempts — no unique alternative found",
     );
     throw new Error("NO_ALTERNATIVE_FOUND");
+  }
+
+  /**
+   * Uses user's hint to generate a targeted search query via Gemini.
+   * Falls back to generic supplementary query if AI fails.
+   */
+  private async generateHintedQuery(
+    hint: string,
+    destination: string,
+    existingNames: string[],
+  ): Promise<string[]> {
+    try {
+      const avoidList =
+        existingNames.length > 0
+          ? `Avoid: ${existingNames.slice(0, 15).join(", ")}.`
+          : "";
+
+      const prompt =
+        `Generate 1 specific location search query for a place to visit in ${destination}. ` +
+        `User requirement: "${hint}". ` +
+        `${avoidList} ` +
+        `Return ONLY a valid JSON array with 1 string, no markdown: ["query"]`;
+
+      const results = await aiAgentService.generateSupplementaryQueriesRaw(prompt);
+      if (results.length > 0) return results;
+    } catch {
+      // fall through to generic
+    }
+    return aiAgentService.generateSupplementaryQueries(1, destination, existingNames);
   }
 }
 

@@ -14,7 +14,7 @@ export const generateTrip = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth?.()?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -65,7 +65,7 @@ export const generateTrip = async (
       },
     });
   } catch (error: any) {
-    const userId: string = req.auth?.userId ?? "";
+    const userId: string = req.auth?.()?.userId ?? "";
     logger.error({ error, userId }, "Failed to generate trip");
     res.status(400).json({
       success: false,
@@ -82,7 +82,7 @@ export const getTripById = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth?.()?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -122,7 +122,7 @@ export const getUserTrips = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth?.()?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -137,7 +137,7 @@ export const getUserTrips = async (
 
     res.json({ success: true, trips, count: trips.length });
   } catch (error: any) {
-    const userId: string = req.auth?.userId ?? "";
+    const userId: string = req.auth?.()?.userId ?? "";
     logger.error({ error, userId }, "Failed to get user trips");
     res.status(500).json({ message: "Failed to retrieve trips" });
   }
@@ -151,7 +151,7 @@ export const deleteTripById = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth?.()?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -193,7 +193,7 @@ export const updateTripById = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth?.()?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -249,7 +249,7 @@ export const undoTrip = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth?.()?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -295,13 +295,18 @@ export const reorderActivities = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth?.()?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
 
     const { tripId } = req.params;
+    if (!tripId) {
+      res.status(400).json({ message: "Trip ID is required" });
+      return;
+    }
+
     const { dayIndex, orderedActivityIds } = req.body;
 
     if (
@@ -393,13 +398,18 @@ export const regenActivity = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth?.()?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
 
     const { tripId } = req.params;
+    if (!tripId) {
+      res.status(400).json({ message: "Trip ID is required" });
+      return;
+    }
+
     const { dayIndex, activityId } = req.body;
 
     if (typeof dayIndex !== "number" || typeof activityId !== "string") {
@@ -446,7 +456,12 @@ export const regenActivity = async (
       (trip as any).destination ??
       "";
 
-    const { activityRegenService } = await import(
+    const hint: string | undefined =
+      typeof req.body.hint === "string" && req.body.hint.trim().length > 0
+        ? req.body.hint.trim()
+        : undefined;
+
+    const { activityRegenService, recalcDayDistances } = await import(
       "../services/activity-regen.service"
     );
 
@@ -454,21 +469,31 @@ export const regenActivity = async (
       target: day.activities[activityIdx] as any,
       destination,
       existingNames,
+      ...(hint !== undefined && { hint }),
     });
 
     // Snapshot before mutation
     await tripRepository.saveSnapshot(tripId);
 
     trip.itinerary[dayIndex]!.activities[activityIdx] = newActivity as any;
+
+    // Recalculate distanceFromPrevious + requiresTransport for the whole day
+    recalcDayDistances(trip.itinerary[dayIndex]!.activities as any[]);
+
+    trip.markModified("itinerary");
     await trip.save();
 
     logger.info(
-      { tripId, userId, dayIndex, activityId, newName: newActivity.name },
+      { tripId, userId, dayIndex, activityId, newName: newActivity.name, hint: !!hint },
       "✅ Activity regenerated",
     );
     res.json({ success: true, activity: newActivity, itinerary: trip.itinerary });
   } catch (error: any) {
-    logger.error({ error, tripId: req.params.tripId }, "Failed to regen activity");
+    // Pino serializes Error objects under 'err', not 'error'
+    logger.error(
+      { err: error, errMessage: error?.message, tripId: req.params.tripId },
+      "Failed to regen activity",
+    );
     if (error.message === "NO_ALTERNATIVE_FOUND") {
       res.status(422).json({ message: "Could not find a unique alternative activity. Try again." });
       return;
@@ -488,7 +513,7 @@ export const updateTripLifecycle = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth?.()?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -562,7 +587,7 @@ export const reGeocodeTrip = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const userId = req.auth?.userId;
+    const userId = req.auth?.()?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
