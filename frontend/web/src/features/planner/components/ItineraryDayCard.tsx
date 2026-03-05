@@ -22,15 +22,33 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { ItineraryDay, Activity } from "@/utils/schemas";
 import { getGoogleMapsUrl } from "../utils/maps";
-import { formatDate } from "@/utils/format";
+import {
+  formatDate,
+  convertCurrency,
+  formatPriceLevel,
+  formatPriceCategory,
+} from "@/utils/format";
 import { useTranslationStore } from "@/stores/useTranslationStore";
-import { useState, useEffect } from "react";
+
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableActivityRow } from "./SortableActivityRow";
 
 // ─── Types ────────────────────────────────────────────────
 
 interface ItineraryDayCardProps {
   day: ItineraryDay;
+  dayIndex: number;
   currency?: string;
+  isDragDisabled?: boolean;
+  regenningActivityId?: string | null;
+  onRegenActivity?: (
+    dayIndex: number,
+    activityId: string,
+    hint?: string,
+  ) => void;
 }
 
 // ─── Activity type metadata ────────────────────────────────
@@ -165,12 +183,16 @@ function ActivityRow({
   currency = "USD",
   isLast,
   distanceUnit = "Km",
+  preferredCurrency = "USD",
+  language,
 }: {
   activity: Activity;
   derivedEndTime?: string;
   currency?: string;
   isLast: boolean;
   distanceUnit?: "Miles" | "Km";
+  preferredCurrency?: string;
+  language?: any;
 }) {
   const meta = TYPE_META[activity.type] ?? TYPE_META.custom;
   const Icon = meta.icon;
@@ -280,18 +302,14 @@ function ActivityRow({
               aria-label={`Price level: ${activity.priceLevel} out of 4`}
             >
               <span>
-                {activity.priceLevel === 1 && "Under $25"}
-                {activity.priceLevel === 2 && "$25 - $50"}
-                {activity.priceLevel === 3 && "$50 - $100"}
-                {activity.priceLevel >= 4 && "$100+"}
+                {formatPriceLevel(
+                  activity.priceLevel,
+                  preferredCurrency,
+                  language,
+                )}
               </span>
               <span className="w-1 h-1 rounded-full bg-emerald-600/30 dark:bg-emerald-400/30" />
-              <span>
-                {activity.priceLevel === 1 && "Budget"}
-                {activity.priceLevel === 2 && "Moderate"}
-                {activity.priceLevel === 3 && "Expensive"}
-                {activity.priceLevel >= 4 && "Luxury"}
-              </span>
+              <span>{formatPriceCategory(activity.priceLevel, language)}</span>
             </div>
           )}
 
@@ -360,7 +378,14 @@ function ActivityRow({
               {activity.cost != null && activity.cost > 0 && (
                 <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
                   <DollarSign className="h-3 w-3" aria-hidden="true" />
-                  {activity.cost.toLocaleString()} {currency}
+                  {convertCurrency(
+                    activity.cost,
+                    currency || "USD",
+                    preferredCurrency,
+                  ).toLocaleString(undefined, {
+                    maximumFractionDigits: preferredCurrency === "VND" ? 0 : 2,
+                  })}{" "}
+                  {preferredCurrency}
                 </span>
               )}
             </div>
@@ -380,18 +405,19 @@ function ActivityRow({
 
 // ─── Main component ───────────────────────────────────────
 
-export function ItineraryDayCard({ day, currency }: ItineraryDayCardProps) {
-  const { language } = useTranslationStore();
-  const [distanceUnit, setDistanceUnit] = useState<"Miles" | "Km">("Km");
-
-  useEffect(() => {
-    try {
-      const prefs = JSON.parse(
-        localStorage.getItem("user-preferences") || "{}",
-      );
-      if (prefs.distance) setDistanceUnit(prefs.distance);
-    } catch {}
-  }, []);
+export function ItineraryDayCard({
+  day,
+  dayIndex,
+  currency,
+  isDragDisabled = false,
+  regenningActivityId = null,
+  onRegenActivity,
+}: ItineraryDayCardProps) {
+  const {
+    language,
+    distanceUnit,
+    currency: preferredCurrency,
+  } = useTranslationStore();
 
   const dateLabel = (() => {
     try {
@@ -438,16 +464,41 @@ export function ItineraryDayCard({ day, currency }: ItineraryDayCardProps) {
               if (a.time && b.time) return a.time.localeCompare(b.time);
               return a.order - b.order;
             });
-            return sorted.map((activity, idx) => (
-              <ActivityRow
-                key={activity._id ?? idx}
-                activity={activity}
-                currency={currency}
-                derivedEndTime={deriveEndTime(activity, sorted[idx + 1]?.time)}
-                isLast={idx === sorted.length - 1}
-                distanceUnit={distanceUnit}
-              />
-            ));
+            // Only include activities that have an _id (Mongo subdocuments always do)
+            const sortableIds = sorted
+              .filter((a) => !!a._id)
+              .map((a) => a._id!);
+            return (
+              <SortableContext
+                items={sortableIds}
+                strategy={verticalListSortingStrategy}
+              >
+                {sorted.map((activity, idx) => (
+                  <SortableActivityRow
+                    key={activity._id ?? idx}
+                    activity={activity}
+                    isDragDisabled={isDragDisabled}
+                    isRegenning={regenningActivityId === activity._id}
+                    onRegen={(activityId, hint) =>
+                      onRegenActivity?.(dayIndex, activityId, hint)
+                    }
+                  >
+                    <ActivityRow
+                      activity={activity}
+                      currency={currency}
+                      derivedEndTime={deriveEndTime(
+                        activity,
+                        sorted[idx + 1]?.time,
+                      )}
+                      isLast={idx === sorted.length - 1}
+                      distanceUnit={distanceUnit}
+                      preferredCurrency={preferredCurrency}
+                      language={language}
+                    />
+                  </SortableActivityRow>
+                ))}
+              </SortableContext>
+            );
           })()
         )}
       </div>

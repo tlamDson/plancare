@@ -16,6 +16,12 @@ import { useEffect, useRef, useCallback } from "react";
 import type { Map as MapboxMap, Marker } from "mapbox-gl";
 import type { ItineraryDay, Activity } from "@/utils/schemas";
 import { getDayColor } from "../utils/dayColors";
+import {
+  convertCurrency,
+  formatPriceLevel,
+  getLocaleCode,
+} from "@/utils/format";
+import type { Language } from "@/stores/useTranslationStore";
 
 // Inject ping keyframe CSS once into the document
 const PING_STYLE_ID = "mapbox-ping-style";
@@ -51,6 +57,8 @@ interface UseTripMarkersOptions {
   itinerary: ItineraryDay[];
   onActivityClick?: (selected: SelectedActivity) => void;
   onMarkerClick?: (dayNumber: number) => void;
+  currency?: string;
+  language?: Language;
 }
 
 // Sort activities within a day by order field, fallback to time string
@@ -83,6 +91,8 @@ export function useTripMarkers({
   itinerary,
   onActivityClick,
   onMarkerClick,
+  currency = "USD",
+  language,
 }: UseTripMarkersOptions) {
   const markerInstancesRef = useRef<Marker[]>([]);
   // Map from activityId → { el, color, activity, dayNumber, stopIndex }
@@ -291,9 +301,18 @@ export function useTripMarkers({
 
           let costText = "";
           if (act.cost != null) {
-            costText = act.cost > 0 ? `$${act.cost}` : "Free";
+            const converted = convertCurrency(act.cost, "USD", currency);
+            const formatter = new Intl.NumberFormat(getLocaleCode(language), {
+              style: "currency",
+              currency: currency,
+              maximumFractionDigits: currency === "VND" ? 0 : 2,
+            });
+            costText = act.cost > 0 ? formatter.format(converted) : "Free";
           } else if (act.priceLevel != null) {
-            costText = act.priceLevel > 0 ? "$".repeat(act.priceLevel) : "Free";
+            costText =
+              act.priceLevel > 0
+                ? formatPriceLevel(act.priceLevel, currency, language)
+                : "Free";
           }
 
           const ratingText =

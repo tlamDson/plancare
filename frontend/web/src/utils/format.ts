@@ -144,3 +144,111 @@ export function getLocalizedTripTitle(
 
   return title;
 }
+
+/**
+ * Static Exchange Rates (Fallback)
+ * In a real app, this should be fetched from a live API.
+ * Base: USD
+ */
+const EXCHANGE_RATES: Record<string, number> = {
+  USD: 1,
+  EUR: 0.92,
+  VND: 25000,
+};
+
+/**
+ * Converts an amount from one currency to another using static rates.
+ */
+export function convertCurrency(
+  amount: number,
+  fromCurrency: string,
+  toCurrency: string,
+): number {
+  if (fromCurrency === toCurrency) return amount;
+
+  const fromRate = EXCHANGE_RATES[fromCurrency] || 1;
+  const toRate = EXCHANGE_RATES[toCurrency] || 1;
+
+  // Convert to base (USD) then to target
+  const amountInUSD = amount / fromRate;
+  return amountInUSD * toRate;
+}
+
+/**
+ * Format Google Places Price Level natively into a currency range string
+ */
+export function formatPriceLevel(
+  level: number,
+  currencyCode: string,
+  lang?: Language,
+): string {
+  const c25 = convertCurrency(25, "USD", currencyCode);
+  const c50 = convertCurrency(50, "USD", currencyCode);
+  const c100 = convertCurrency(100, "USD", currencyCode);
+
+  const tUnder =
+    lang === "Vietnamese" ? "Dưới" : lang === "French" ? "Moins de" : "Under";
+  const tOver =
+    lang === "Vietnamese" ? "Trên" : lang === "French" ? "Plus de" : "Over";
+
+  const compactFormat = (val: number) =>
+    new Intl.NumberFormat(getLocaleCode(lang), {
+      style: "currency",
+      currency: currencyCode || "USD",
+      maximumFractionDigits: 0,
+    }).format(val);
+
+  switch (level) {
+    case 1:
+      return `${tUnder} ${compactFormat(c25)}`;
+    case 2:
+      return `${compactFormat(c25)} - ${compactFormat(c50)}`;
+    case 3:
+      return `${compactFormat(c50)} - ${compactFormat(c100)}`;
+    case 4:
+      return `${tOver} ${compactFormat(c100)}`;
+    default:
+      return "";
+  }
+}
+
+/**
+ * Format Google Places Price Level into a locale category
+ */
+export function formatPriceCategory(level: number, lang?: Language): string {
+  if (lang === "Vietnamese") {
+    switch (level) {
+      case 1:
+        return "Bình dân";
+      case 2:
+        return "Trung bình";
+      case 3:
+        return "Cao cấp";
+      case 4:
+        return "Sang trọng";
+    }
+  }
+  if (lang === "French") {
+    switch (level) {
+      case 1:
+        return "Économique";
+      case 2:
+        return "Modéré";
+      case 3:
+        return "Haut de gamme";
+      case 4:
+        return "Luxe";
+    }
+  }
+  switch (level) {
+    case 1:
+      return "Budget";
+    case 2:
+      return "Moderate";
+    case 3:
+      return "Upscale";
+    case 4:
+      return "Luxury";
+  }
+  return "";
+}

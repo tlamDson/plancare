@@ -24,6 +24,11 @@ import {
 } from "lucide-react";
 import { WidgetError } from "@/components/WidgetError";
 import type { Trip, ItineraryDay, Activity } from "@/utils/schemas";
+import {
+  convertCurrency,
+  formatPriceLevel,
+  getLocaleCode,
+} from "@/utils/format";
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -72,7 +77,7 @@ interface TripMapViewProps {
 }
 
 export function TripMapView({ trip }: TripMapViewProps) {
-  const { t } = useTranslationStore();
+  const { t, currency, language } = useTranslationStore();
   const [activeDay, setActiveDay] = useState<number | null>(null);
   const [selectedActivity, setSelectedActivity] =
     useState<SelectedActivity | null>(null);
@@ -93,6 +98,8 @@ export function TripMapView({ trip }: TripMapViewProps) {
     map,
     isLoaded,
     itinerary: trip.itinerary,
+    currency,
+    language,
     onMarkerClick: setActiveDay,
     onActivityClick: (sel) => {
       setSelectedActivity(sel);
@@ -272,15 +279,47 @@ export function TripMapView({ trip }: TripMapViewProps) {
                                         {act.time}
                                       </span>
                                     )}
-                                    {act.cost && (
+                                    {act.cost != null && (
                                       <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
                                         <DollarSign
                                           className="h-2.5 w-2.5"
                                           aria-hidden="true"
                                         />
-                                        {act.cost}
+                                        {act.cost > 0
+                                          ? new Intl.NumberFormat(
+                                              getLocaleCode(language),
+                                              {
+                                                style: "currency",
+                                                currency: currency,
+                                                maximumFractionDigits:
+                                                  currency === "VND" ? 0 : 2,
+                                              },
+                                            ).format(
+                                              convertCurrency(
+                                                act.cost,
+                                                "USD",
+                                                currency,
+                                              ),
+                                            )
+                                          : "Free"}
                                       </span>
                                     )}
+                                    {act.cost == null &&
+                                      act.priceLevel != null && (
+                                        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                                          <DollarSign
+                                            className="h-2.5 w-2.5"
+                                            aria-hidden="true"
+                                          />
+                                          {act.priceLevel > 0
+                                            ? formatPriceLevel(
+                                                act.priceLevel,
+                                                currency,
+                                                language,
+                                              )
+                                            : "Free"}
+                                        </span>
+                                      )}
                                   </div>
                                 )}
                               </div>
