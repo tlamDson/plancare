@@ -4,7 +4,11 @@ export type Language = "English (US)" | "French" | "Vietnamese";
 
 interface TranslationState {
   language: Language;
+  currency: string;
+  distanceUnit: "Km" | "Miles";
   setLanguage: (lang: Language) => void;
+  setCurrency: (curr: string) => void;
+  setDistanceUnit: (unit: "Km" | "Miles") => void;
   t: (key: string) => string;
 }
 
@@ -1151,37 +1155,58 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
 };
 
 // Initialize from localStorage
-const getInitialLanguage = (): Language => {
+const getPrefs = () => {
   try {
-    const prefs = JSON.parse(localStorage.getItem("user-preferences") || "{}");
-    if (
-      prefs.language &&
-      ["English (US)", "French", "Vietnamese"].includes(prefs.language)
-    ) {
-      return prefs.language as Language;
-    }
-  } catch (e) {
-    // ignore
+    return JSON.parse(localStorage.getItem("user-preferences") || "{}");
+  } catch {
+    return {};
+  }
+};
+
+const getInitialLanguage = (): Language => {
+  const prefs = getPrefs();
+  if (
+    prefs.language &&
+    ["English (US)", "French", "Vietnamese"].includes(prefs.language)
+  ) {
+    return prefs.language as Language;
   }
   return "English (US)";
 };
 
 export const useTranslationStore = create<TranslationState>((set, get) => ({
   language: getInitialLanguage(),
+  currency: getPrefs().currency || "USD",
+  distanceUnit: getPrefs().distance || "Km",
   setLanguage: (lang) => {
     set({ language: lang });
-    // Also sync to localStorage
     try {
-      const prefs = JSON.parse(
-        localStorage.getItem("user-preferences") || "{}",
-      );
+      const prefs = getPrefs();
       localStorage.setItem(
         "user-preferences",
         JSON.stringify({ ...prefs, language: lang }),
       );
-    } catch (e) {
-      console.error("Failed to save language to localStorage", e);
-    }
+    } catch (e) {}
+  },
+  setCurrency: (curr) => {
+    set({ currency: curr });
+    try {
+      const prefs = getPrefs();
+      localStorage.setItem(
+        "user-preferences",
+        JSON.stringify({ ...prefs, currency: curr }),
+      );
+    } catch (e) {}
+  },
+  setDistanceUnit: (unit) => {
+    set({ distanceUnit: unit });
+    try {
+      const prefs = getPrefs();
+      localStorage.setItem(
+        "user-preferences",
+        JSON.stringify({ ...prefs, distance: unit }),
+      );
+    } catch (e) {}
   },
   t: (key: string) => {
     const lang = get().language;

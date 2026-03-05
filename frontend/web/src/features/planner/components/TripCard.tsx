@@ -30,6 +30,7 @@ import {
   formatDateRange,
   getTripDuration,
   formatCurrency,
+  convertCurrency,
   getLocalizedTripTitle,
 } from "@/utils/format";
 import type { Trip } from "@/utils/schemas";
@@ -70,16 +71,28 @@ export function TripCard({ trip }: TripCardProps) {
   const { mutate: deleteTrip, isPending: isDeleting } = useDeleteTrip();
   const { mutate: updateLifecycle, isPending: isUpdating } =
     useUpdateTripLifecycle();
-  const { language, t } = useTranslationStore();
+  const { language, t, currency: preferredCurrency } = useTranslationStore();
 
   const coverSrc =
     trip.coverImage ||
     getCountryImage((trip as any).destination || trip.title, trip._id) ||
     null;
 
+  const convertedSpent = convertCurrency(
+    trip.budget.totalSpent,
+    trip.budget.currency,
+    preferredCurrency,
+  );
+
+  const convertedLimit = convertCurrency(
+    trip.budget.totalLimit,
+    trip.budget.currency,
+    preferredCurrency,
+  );
+
   const budgetPercentage =
-    trip.budget.totalLimit > 0
-      ? Math.round((trip.budget.totalSpent / trip.budget.totalLimit) * 100)
+    convertedLimit > 0
+      ? Math.round((convertedSpent / convertedLimit) * 100)
       : 0;
 
   const isAiDone = trip.status === "COMPLETED";
@@ -222,14 +235,14 @@ export function TripCard({ trip }: TripCardProps) {
                     <span className="text-muted-foreground">Budget</span>
                     <span>
                       {formatCurrency(
-                        trip.budget.totalSpent,
-                        trip.budget.currency,
+                        convertedSpent,
+                        preferredCurrency,
                         language,
                       )}
                       {" / "}
                       {formatCurrency(
-                        trip.budget.totalLimit,
-                        trip.budget.currency,
+                        convertedLimit,
+                        preferredCurrency,
                         language,
                       )}
                     </span>

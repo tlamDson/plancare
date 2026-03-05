@@ -7,7 +7,12 @@ import { toast } from "sonner";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 
 export function LocalizationSettings() {
-  const { t, setLanguage: setGlobalLanguage } = useTranslationStore();
+  const {
+    t,
+    setLanguage: setGlobalLanguage,
+    setCurrency: setGlobalCurrency,
+    setDistanceUnit: setGlobalDistance,
+  } = useTranslationStore();
 
   const [temperature, setTemperature] = useState<"C" | "F">("C");
   const [distance, setDistance] = useState<"Miles" | "Km">("Miles");
@@ -47,8 +52,11 @@ export function LocalizationSettings() {
           autoTranslate,
         }),
       );
-      // Immediately apply translation globally
+      // Immediately apply translation and units globally
       setGlobalLanguage(language as "English (US)" | "French" | "Vietnamese");
+      setGlobalCurrency(currency);
+      setGlobalDistance(distance as "Miles" | "Km");
+
       toast.success(t("loc.toastSave"));
     } catch (e) {
       toast.error(t("loc.toastFail"));
