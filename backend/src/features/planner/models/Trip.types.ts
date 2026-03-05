@@ -94,6 +94,7 @@ export interface ICityStop {
 export interface ITrip extends Document {
   userId: string;
   title: string;
+  destination?: string;
   description?: string;
   startDate: Date;
   endDate: Date;

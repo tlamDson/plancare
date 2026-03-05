@@ -134,6 +134,7 @@ const TripSchema = new Schema<ITrip>(
       index: true,
     },
     title: { type: String, required: true },
+    destination: { type: String },
     description: String,
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },

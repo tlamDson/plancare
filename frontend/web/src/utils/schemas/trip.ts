@@ -91,6 +91,7 @@ export const tripSchema = z.object({
   _id: z.string(),
   userId: z.string(),
   title: z.string(),
+  destination: z.string().optional(),
   description: z.string().optional(),
   startDate: z.string().datetime(),
   endDate: z.string().datetime(),

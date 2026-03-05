@@ -62,6 +62,7 @@ export class PlannerService {
       const tripData: any = {
         userId,
         title: params.title || `Trip to ${preferences.destination}`,
+        destination: preferences.destination,
         description: `${tripDays}-day trip`,
         startDate,
         endDate,

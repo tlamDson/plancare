@@ -73,7 +73,9 @@ export function TripCard({ trip }: TripCardProps) {
   const { language, t } = useTranslationStore();
 
   const coverSrc =
-    trip.coverImage || getCountryImage(trip.title, trip._id) || null;
+    trip.coverImage ||
+    getCountryImage((trip as any).destination || trip.title, trip._id) ||
+    null;
 
   const budgetPercentage =
     trip.budget.totalLimit > 0
