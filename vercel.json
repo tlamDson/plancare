@@ -1,0 +1,5 @@
+{
+  "buildCommand": "npx turbo run build --filter=web",
+  "outputDirectory": "frontend/web/dist",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
