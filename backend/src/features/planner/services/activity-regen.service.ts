@@ -33,6 +33,13 @@ export function recalcDayDistances(
   activities: IActivity[],
   mode: TransportMode = "walking",
 ): void {
+  // First activity has no "previous" — clear any stale distance from a prior position
+  if (activities.length > 0) {
+    const first = activities[0] as any;
+    delete first.distanceFromPrevious;
+    delete first.requiresTransport;
+  }
+
   for (let i = 1; i < activities.length; i++) {
     const prev = activities[i - 1] as any;
     const curr = activities[i] as any;

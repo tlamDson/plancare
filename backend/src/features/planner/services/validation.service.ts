@@ -1,6 +1,5 @@
 import { placeCacheRepository } from "../repositories/place-cache.repository";
-import { mapboxBreaker } from "../tools/circuit-breaker";
-import { placesService } from "./places.service";
+import { mapboxBreaker, placesTextBreaker } from "../tools/circuit-breaker";
 import { logger } from "../../../lib/logger";
 
 export interface ValidatedPlace {
@@ -19,6 +18,19 @@ export interface ValidatedPlace {
 }
 
 const BROAD_MAPBOX_TYPES = new Set(["place", "region", "country"]);
+
+/**
+ * Returns search radius (metres) based on trip pace and transport mode.
+ * Used to geo-bias Place searches — packed/car trips can span wider areas.
+ */
+export function dynamicRadius(
+  pace?: "relaxed" | "balanced" | "packed",
+  transport?: string,
+): number {
+  const byCar = transport === "car" || transport === "driving";
+  if (byCar) return pace === "packed" ? 3000 : 2000;
+  return pace === "packed" ? 1500 : 800; // walking / default
+}
 
 export class ValidationService {
   private isBroadCachedPlace(place: any): boolean {
@@ -82,7 +94,10 @@ export class ValidationService {
         { intent, geoConstrainedQuery },
         "Validation: Querying Google Places v1 Text Search",
       );
-      const place = await placesService.searchByText(geoConstrainedQuery);
+      // Use circuit breaker — falls back to Mapbox if Google Places fails 3+ times
+      const place = await placesTextBreaker
+        .fire(geoConstrainedQuery)
+        .catch(() => null);
 
       if (place && place.location) {
         const [lat, lng] = [place.location.lat, place.location.lng];
