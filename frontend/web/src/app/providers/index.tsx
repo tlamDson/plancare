@@ -19,6 +19,7 @@ import { ThemeProvider } from "./ThemeProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useEffect, type ReactNode } from "react";
 import { registerAuthTokenGetter } from "@/lib/axios";
+import { UpgradeModal } from "@/components/pro/UpgradeModal";
 
 // Get Clerk publishable key from environment
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -52,6 +53,7 @@ export function AppProviders({ children }: AppProvidersProps) {
               {children}
               <Toaster />
               <Sonner />
+              <UpgradeModal />
             </TooltipProvider>
           </ThemeProvider>
           {/* Only show devtools in development */}
