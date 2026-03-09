@@ -3,6 +3,7 @@ import { tripGeneratorProcessor } from "./features/planner/jobs/trip.processor";
 import { logger } from "./lib/logger";
 import mongoose from "mongoose";
 import { env } from "./config/env";
+import { userRepository } from "./features/user/repositories/user.repository";
 
 const startWorker = async () => {
   try {
@@ -17,8 +18,27 @@ const startWorker = async () => {
       logger.info({ jobId: job.id }, "Job completed");
     });
     // Logs a error mesesage with the jobId
-    worker.on("failed", (job, err) => {
+    worker.on("failed", async (job, err) => {
       logger.error({ jobId: job?.id, err }, "Job failed");
+
+      if (!job) return;
+      const maxAttempts = job.opts?.attempts ?? 1;
+      const exhausted = job.attemptsMade >= maxAttempts;
+
+      if (exhausted && job.data?.userTier === "pro" && job.data?.userId) {
+        try {
+          await userRepository.incrementCredit(job.data.userId);
+          logger.info(
+            { userId: job.data.userId, jobId: job.id },
+            "Credit refunded after exhausted retries",
+          );
+        } catch (refundErr) {
+          logger.error(
+            { refundErr, userId: job.data.userId },
+            "Failed to refund credit — manual intervention required",
+          );
+        }
+      }
     });
 
     logger.info("Worker started and listening for jobs...");
