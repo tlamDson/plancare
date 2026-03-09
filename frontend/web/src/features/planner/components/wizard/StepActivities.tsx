@@ -4,6 +4,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useTripWizardStore } from "@/stores/trip-wizard.store";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 import { toast } from "sonner";
+import { ProBadge } from "@/components/pro/ProBadge";
+import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -101,6 +103,7 @@ type ConstraintKey = (typeof CONSTRAINT_OPTIONS)[number]["id"];
 export function StepActivities() {
   const { data, setData } = useTripWizardStore();
   const { t } = useTranslationStore();
+  const { isPro, openUpgradeModal } = useSubscriptionStore();
 
   // ── Focus toggle with conflict handling ──────────────────────────────────
   const handleFocusChange = (newFocus: string[]) => {
@@ -183,13 +186,24 @@ export function StepActivities() {
                 name="pace"
                 value={option.value}
                 checked={data.pace === option.value}
-                onChange={() => setData({ pace: option.value })}
+                onChange={() => {
+                  const isProOnly =
+                    option.value === "relaxed" || option.value === "packed";
+                  if (isProOnly && !isPro) {
+                    openUpgradeModal("advanced-ai-tuning");
+                    return;
+                  }
+                  setData({ pace: option.value });
+                }}
                 className="mt-0.5 accent-primary"
               />
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{option.icon}</span>
                   <span className="font-medium">{t(option.labelKey)}</span>
+                  {(option.value === "relaxed" || option.value === "packed") && (
+                    <ProBadge />
+                  )}
                 </div>
                 <p className="mt-0.5 text-sm text-muted-foreground">
                   {t(option.descriptionKey)}

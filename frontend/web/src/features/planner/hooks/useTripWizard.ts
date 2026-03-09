@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { queryKeys } from "@/lib/query-client";
 import { createTripFromWizard } from "../api/trip-wizard.api";
 import type { TripPreferences } from "@travelplan/shared";
+import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
 
 export type UseTripWizardOptions = {
   onSuccess?: (tripId: string, jobId: string) => void;
@@ -16,6 +17,7 @@ export type UseTripWizardOptions = {
 
 export function useTripWizard(options: UseTripWizardOptions = {}) {
   const queryClient = useQueryClient();
+  const { setSubscriptionSnapshot } = useSubscriptionStore();
 
   return useMutation({
     mutationFn: ({
@@ -29,6 +31,22 @@ export function useTripWizard(options: UseTripWizardOptions = {}) {
     }) => createTripFromWizard(preferences, language, title),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.trips.lists() });
+      if (response.quota) {
+        const remaining = response.quota.remaining ?? 0;
+        const limit = response.quota.limit ?? 10;
+        const used =
+          response.quota.tripsUsedThisCycle ??
+          Math.max(0, (limit > 0 ? limit : 10) - remaining);
+        setSubscriptionSnapshot({
+          isPro: response.tier === "pro",
+          tripsUsedThisCycle: used,
+          tripLimit: limit,
+          quotaResetsAt:
+            typeof response.quota.resetAt === "string"
+              ? response.quota.resetAt
+              : null,
+        });
+      }
       toast.success("Trip queued! Your agent is getting started.");
       options.onSuccess?.(response.tripId, response.jobId);
     },

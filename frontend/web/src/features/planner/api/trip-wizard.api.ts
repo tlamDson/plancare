@@ -11,11 +11,21 @@ import {
   type TripPreferences,
 } from "@travelplan/shared";
 import { z } from "zod";
+import { v4 as uuidv4 } from "uuid";
 
 const tripWizardSuccessSchema = z.object({
   success: z.literal(true),
   jobId: z.string(),
   tripId: z.string(),
+  tier: z.enum(["free", "pro"]).optional(),
+  quota: z
+    .object({
+      remaining: z.number(),
+      limit: z.number().optional(),
+      tripsUsedThisCycle: z.number().optional(),
+      resetAt: z.string().or(z.date()).optional(),
+    })
+    .optional(),
   message: z.string().optional(),
 });
 
@@ -44,11 +54,12 @@ export async function createTripFromWizard(
 
   console.log("🚀 [TRIP WIZARD] Sending preferences to API:", validation.data);
 
-  const response = await apiClient.post("/trips", {
-    preferences: validation.data,
-    language,
-    title,
-  });
+  const idempotencyKey = uuidv4();
+  const response = await apiClient.post(
+    "/trips",
+    { preferences: validation.data, language, title },
+    { headers: { "X-Idempotency-Key": idempotencyKey } },
+  );
 
   const parsed = validateAPI(
     tripWizardResponseSchema,

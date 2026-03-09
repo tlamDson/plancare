@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -5,12 +6,14 @@ import { useTripWizardStore } from "@/stores/trip-wizard.store";
 import { DatePicker } from "./DatePicker";
 import { addDays } from "date-fns";
 import { useTranslationStore } from "@/stores/useTranslationStore";
+import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
 
 const MIN_DESTINATION = 2;
 
 export function StepBasics() {
   const { data, setData, setTravelers } = useTripWizardStore();
   const { t } = useTranslationStore();
+  const { isPro } = useSubscriptionStore();
 
   const destinationError =
     data.destination.trim().length > 0 &&
@@ -21,6 +24,13 @@ export function StepBasics() {
   const start = data.startDate ? new Date(data.startDate) : null;
   const end = data.endDate ? new Date(data.endDate) : null;
   const dateError = start && end && end <= start ? t("wizard.dateError") : null;
+  const tripDays = useMemo(() => {
+    if (!start || !end || end <= start) return 0;
+    const diffTime = end.getTime() - start.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }, [start, end]);
+  const isAtFreeCap = !isPro && tripDays === 5;
+  const isOverFreeCap = !isPro && tripDays > 5;
 
   const updateTravelers = (key: "adults" | "children", delta: number) => {
     const nextValue = Math.max(
@@ -86,6 +96,16 @@ export function StepBasics() {
         </div>
       </div>
       {dateError && <p className="text-sm text-destructive">{dateError}</p>}
+      {!dateError && isAtFreeCap && (
+        <div className="rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
+          {"\u{1F4A1} You're at the Free plan maximum (5 days). Upgrade to Pro for longer trips."}
+        </div>
+      )}
+      {!dateError && isOverFreeCap && (
+        <div className="rounded-md border border-purple-300 bg-gradient-to-r from-purple-50 to-orange-50 p-3 text-sm text-purple-800">
+          {`\u2728 ${tripDays}-day itineraries are available on Pro (up to 30 days).`}
+        </div>
+      )}
 
       {/* Travelers */}
       <div className="space-y-2">

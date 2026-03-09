@@ -22,6 +22,7 @@ import { StepRequirements } from "./wizard/StepRequirements";
 import { useTripWizard } from "../hooks/useTripWizard";
 import type { TripPreferences } from "@travelplan/shared";
 import { useTranslationStore } from "@/stores/useTranslationStore";
+import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
 
 const TOTAL_STEPS = 6;
 const MIN_DAILY_BUDGET = 20;
@@ -89,6 +90,7 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
   const navigate = useNavigate();
   const { data, reset, initWizard } = useTripWizardStore();
   const { t, language, currency: preferredCurrency } = useTranslationStore();
+  const { isPro, openUpgradeModal } = useSubscriptionStore();
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
 
@@ -103,6 +105,8 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
 
   const stepMeta = steps[stepIndex];
   const progressValue = ((stepIndex + 1) / TOTAL_STEPS) * 100;
+  const selectedTripDays = getTripDays(data.startDate, data.endDate) ?? 0;
+  const isTripOverFreeCap = !isPro && selectedTripDays > 5;
 
   const stepValid = useMemo(() => {
     const tripDays = getTripDays(data.startDate, data.endDate);
@@ -150,6 +154,10 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
   }, [data, stepIndex]);
 
   const handleNext = () => {
+    if (stepIndex === 0 && isTripOverFreeCap) {
+      openUpgradeModal("trip-duration");
+      return;
+    }
     if (stepIndex < TOTAL_STEPS - 1) {
       setStepIndex((prev) => prev + 1);
     }
@@ -233,8 +241,18 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
             {t("wizard.btnBack")}
           </Button>
           {stepIndex < TOTAL_STEPS - 1 ? (
-            <Button onClick={handleNext} disabled={!stepValid}>
-              {t("wizard.btnNext")}
+            <Button
+              onClick={handleNext}
+              disabled={!stepValid}
+              className={
+                stepIndex === 0 && isTripOverFreeCap
+                  ? "bg-gradient-to-r from-purple-600 to-orange-500 text-white hover:from-purple-700 hover:to-orange-600"
+                  : ""
+              }
+            >
+              {stepIndex === 0 && isTripOverFreeCap
+                ? "\u2728 Upgrade to Continue"
+                : t("wizard.btnNext")}
             </Button>
           ) : (
             <Button onClick={handleSubmit} disabled={!stepValid || isPending}>
