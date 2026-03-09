@@ -22,4 +22,9 @@ export const env = cleanEnv(process.env, {
     desc: "Frontend URL for CORS",
     default: "http://localhost:5173",
   }),
+  STRIPE_SECRET_KEY: str({ desc: "Stripe Secret Key", default: "" }),
+  STRIPE_WEBHOOK_SECRET: str({
+    desc: "Stripe Webhook Secret for Local Dev",
+    default: "",
+  }),
 });

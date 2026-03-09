@@ -9,6 +9,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import connectDB from "./config/db";
 import webhookRoutes from "./features/auth/routes";
+import stripeWebhookRoutes from "./features/billing/webhook.routes";
 import { clerkMiddleware } from "@clerk/express";
 import { logger } from "./lib/logger";
 import { env } from "./config/env";
@@ -20,6 +21,8 @@ import swaggerJsdoc from "swagger-jsdoc";
 import assistantRoutes from "./features/assistant/routes";
 import plannerRoutes from "./features/planner/routes";
 import userRoutes from "./features/user/routes";
+import billingRoutes from "./features/billing/routes";
+import devRoutes from "./features/dev/routes";
 
 // Swagger configuration
 const swaggerOptions = {
@@ -58,14 +61,20 @@ app.use(
     ],
     credentials: true, // Required for Clerk / Auth headers
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "x-idempotency-key",
+    ],
   }),
 );
 //2. Webhook routes - BEFORE express.json() for signature verification
 app.use(
   "/api/webhooks",
   express.raw({ type: "application/json" }),
-  webhookRoutes,
+  webhookRoutes, // Auth (clerk) hooks inside here use /clerk
+  stripeWebhookRoutes, // Billing (stripe) hooks inside here use /stripe
 );
 
 // 3. Clerk middleware - After webhooks
@@ -86,6 +95,8 @@ app.get("/", (req: Request, res: Response) => {
 // 6. API Routes
 app.use("/api/ai", assistantRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/billing", billingRoutes);
+app.use("/api/dev", devRoutes);
 app.use("/api", plannerRoutes);
 
 //7. Health checks
