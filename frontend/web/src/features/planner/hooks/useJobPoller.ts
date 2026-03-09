@@ -37,6 +37,11 @@ export interface UseJobPollerOptions {
   mockProgress?: number;
   /** Mock current step for testing */
   mockCurrentStep?: string;
+  /**
+   * Keep polling even when the browser tab is hidden (Pro users).
+   * Default: false (pauses when tab is not visible).
+   */
+  keepAliveInBackground?: boolean;
 }
 
 export interface JobPollerState {
@@ -88,6 +93,9 @@ async function fetchJobStatus(jobId: string): Promise<Job> {
  *   mockCurrentStep: "Analyzing weather data...",
  * });
  */
+// BullMQ statuses that mean "still working" — includes DELAYED (waiting for retry backoff)
+const ACTIVE_STATUSES = new Set(["QUEUED", "PROCESSING", "DELAYED", "WAITING"]);
+
 export function useJobPoller({
   jobId,
   interval = 2000,
@@ -96,6 +104,7 @@ export function useJobPoller({
   mockStatus,
   mockProgress,
   mockCurrentStep,
+  keepAliveInBackground = false,
 }: UseJobPollerOptions): JobPollerState {
   const queryClient = useQueryClient();
 
@@ -109,16 +118,16 @@ export function useJobPoller({
     enabled: !isMockMode && !!jobId,
     refetchInterval: (query) => {
       const data = query.state.data;
-      // Stop polling when job is complete or failed
+      // Stop only when truly COMPLETED or FAILED (not DELAYED — that means retry pending)
       if (data?.status === "COMPLETED" || data?.status === "FAILED") {
         return false;
       }
       return interval;
     },
-    refetchIntervalInBackground: false,
+    refetchIntervalInBackground: keepAliveInBackground,
   });
 
-  // Derive completion from job data
+  // Derive completion from job data — DELAYED is NOT complete (BullMQ retry pending)
   const isComplete = job?.status === "COMPLETED" || job?.status === "FAILED";
 
   // Handle completion callbacks
@@ -173,10 +182,18 @@ export function useJobPoller({
     };
   }
 
+  // Normalise DELAYED → PROCESSING for UI (user sees "working" not "delayed")
+  const rawStatus = job?.status || (isLoading ? "QUEUED" : "IDLE");
+  const displayStatus: JobStatus =
+    rawStatus === "DELAYED" || rawStatus === "WAITING" ? "PROCESSING" : rawStatus as JobStatus;
+
   return {
-    status: job?.status || (isLoading ? "QUEUED" : "IDLE"),
+    status: displayStatus,
     progress: job?.progress || 0,
-    currentStep: job?.currentStep || null,
+    currentStep:
+      rawStatus === "DELAYED"
+        ? "AI timed out — retrying automatically..."
+        : job?.currentStep || null,
     result: job?.result || null,
     error: job?.error || null,
     isPolling: !isComplete && !!jobId,

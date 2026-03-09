@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { queryKeys } from "@/lib/query-client";
 import { apiClient } from "@/lib/axios";
 import type { Trip } from "../api/trips.api";
+import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
 
 interface RegenParams {
   tripId: string;
@@ -27,30 +28,68 @@ async function regenActivityApi({
   dayIndex,
   activityId,
   hint,
-}: RegenParams): Promise<Trip["itinerary"]> {
+}: RegenParams): Promise<{
+  itinerary: Trip["itinerary"];
+  regenCount?: number;
+  regenLimit?: number;
+}> {
   const res = await apiClient.post(`/trips/${tripId}/regen-activity`, {
     dayIndex,
     activityId,
     ...(hint ? { hint } : {}),
   });
-  return res.data.itinerary;
+  return {
+    itinerary: res.data.itinerary,
+    regenCount: res.data.regenCount,
+    regenLimit: res.data.regenLimit,
+  };
 }
 
 export function useRegenActivity() {
   const queryClient = useQueryClient();
+  const {
+    isPro,
+    canUseRegen,
+    incrementRegenUsage,
+    setRegenUsage,
+    openUpgradeModal,
+  } = useSubscriptionStore();
 
   return useMutation({
-    mutationFn: regenActivityApi,
+    mutationFn: async (params: RegenParams) => {
+      if (!isPro && !canUseRegen(params.tripId)) {
+        openUpgradeModal("regen-limit");
+        throw new Error("FREE_REGEN_LIMIT_REACHED");
+      }
+      return regenActivityApi(params);
+    },
 
-    onSuccess: (newItinerary, { tripId }) => {
+    onSuccess: (payload, { tripId }) => {
       queryClient.setQueryData<Trip>(queryKeys.trips.detail(tripId), (old) => {
         if (!old) return old;
-        return { ...old, itinerary: newItinerary };
+        return { ...old, itinerary: payload.itinerary };
       });
+      if (payload.regenCount !== undefined) {
+        setRegenUsage(tripId, payload.regenCount);
+      } else {
+        incrementRegenUsage(tripId);
+      }
+      const usage = payload.regenCount ?? 0;
+      if (!isPro && (usage === 4 || usage === 5)) {
+        const left = 5 - usage;
+        toast.info(
+          left > 0
+            ? `You have ${left} free regeneration left for this trip.`
+            : "You have 1 free regeneration left for this trip.",
+        );
+      }
       toast.success("Activity replaced with a new suggestion!");
     },
 
     onError: (err: any) => {
+      if (err?.message === "FREE_REGEN_LIMIT_REACHED") {
+        return;
+      }
       const msg =
         err?.response?.data?.message ||
         "Could not find a unique replacement. Try again.";
