@@ -29,6 +29,8 @@ import {
 import { useTranslationStore } from "@/stores/useTranslationStore";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AgentLockBanner } from "../components/AgentLockBanner";
+import { BackgroundProcessingModal } from "../components/BackgroundProcessingModal";
+import { useActiveJobStore } from "@/stores/useActiveJobStore";
 import { ItineraryDayCard } from "../components/ItineraryDayCard";
 import { DataError } from "@/components/DataError";
 import { PageLoader } from "@/components/PageLoader";
@@ -69,8 +71,11 @@ export default function TripDetailPage() {
   const { mutate: updateTrip, isPending: isUpdatingTrip } = useUpdateTrip();
   const { mutate: reorderActivities, isPending: isReordering } =
     useReorderActivities();
-  const { mutate: regenActivity, isPending: isRegening, variables: regenVariables } =
-    useRegenActivity();
+  const {
+    mutate: regenActivity,
+    isPending: isRegening,
+    variables: regenVariables,
+  } = useRegenActivity();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitleValue, setEditTitleValue] = useState("");
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -80,13 +85,15 @@ export default function TripDetailPage() {
   const [isReGeocoding, setIsReGeocoding] = useState(false);
   const [canUndo, setCanUndo] = useState(true);
   const { autoLoadLongTripChunks } = useSubscriptionStore();
+  const { setActiveJob } = useActiveJobStore();
 
   useEffect(() => {
-    if (trip?.isAgentProcessing && trip.agentJobId) {
+    if (trip?.isAgentProcessing && trip.agentJobId && tripId) {
       setActiveJobId(trip.agentJobId);
+      setActiveJob(trip.agentJobId, tripId);
       setJobError(null);
     }
-  }, [trip?.agentJobId, trip?.isAgentProcessing]);
+  }, [trip?.agentJobId, trip?.isAgentProcessing, tripId, setActiveJob]);
 
   // ── Debug: log trip data whenever it loads or is refreshed ──
   useEffect(() => {
@@ -251,13 +258,11 @@ export default function TripDetailPage() {
       const day = trip.itinerary[dayIndex];
       if (!day) return;
 
-      const sorted = day.activities
-        .slice()
-        .sort((a, b) => {
-          if (a.order !== b.order) return a.order - b.order;
-          if (a.time && b.time) return a.time.localeCompare(b.time);
-          return 0;
-        });
+      const sorted = day.activities.slice().sort((a, b) => {
+        if (a.order !== b.order) return a.order - b.order;
+        if (a.time && b.time) return a.time.localeCompare(b.time);
+        return 0;
+      });
 
       const oldIndex = sorted.findIndex((a) => a._id === active.id);
       const newIndex = sorted.findIndex((a) => a._id === over.id);
@@ -350,6 +355,7 @@ export default function TripDetailPage() {
   })();
 
   const totalDays = getTripDuration(trip.startDate, trip.endDate);
+  const isFallback = trip?.status === "FALLBACK";
 
   return (
     <DashboardLayout>
@@ -368,6 +374,13 @@ export default function TripDetailPage() {
           jobId={activeJobId}
           onRetry={activeJobId ? handleRetry : undefined}
           isRetrying={isRetrying}
+          isFallback={isFallback}
+          fallbackCity={trip?.destination?.split(",")[0]}
+        />
+
+        <BackgroundProcessingModal
+          isProcessing={trip.isAgentProcessing}
+          currentStep={jobState.currentStep}
         />
 
         {/* Trip Header */}
@@ -509,7 +522,8 @@ export default function TripDetailPage() {
           <h2 className="text-xl font-semibold mb-4">{t("trip.itinerary")}</h2>
           {isChunkedTrip && (
             <div className="mb-4 rounded-lg border border-purple-200 bg-purple-50/70 p-3 text-sm text-purple-800">
-              Long-trip generation may take longer. You can leave this page and come back later.
+              Long-trip generation may take longer. You can leave this page and
+              come back later.
             </div>
           )}
 
@@ -535,13 +549,20 @@ export default function TripDetailPage() {
                     >
                       <DndContext
                         sensors={sensors}
-                        onDragEnd={(event) => handleDragEnd(event, dayIndex)}
+                        onDragEnd={(event: DragEndEvent) =>
+                          handleDragEnd(event, dayIndex)
+                        }
                       >
                         <ItineraryDayCard
                           day={day}
                           dayIndex={dayIndex}
                           currency={trip.budget.currency}
-                          isDragDisabled={trip.isAgentProcessing || isReordering || isRegening}
+                          isDragDisabled={
+                            trip.isAgentProcessing ||
+                            isReordering ||
+                            isRegening ||
+                            isFallback
+                          }
                           regenningActivityId={
                             isRegening && regenVariables?.dayIndex === dayIndex
                               ? regenVariables.activityId

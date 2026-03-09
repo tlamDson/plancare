@@ -45,6 +45,11 @@ const statusConfig: Record<TripStatus, { label: string; className: string }> = {
     label: "Failed",
     className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   },
+  FALLBACK: {
+    label: "Dự phòng",
+    className:
+      "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+  },
 };
 
 export function TripStatusBadge({ status, className }: TripStatusBadgeProps) {

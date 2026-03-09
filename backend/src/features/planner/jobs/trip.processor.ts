@@ -9,6 +9,7 @@ import { processChunkedTrip } from "../services/itinerary-chunker.service";
 import type { TripPreferences } from "@travelplan/shared";
 import type { TripIntents } from "../services/intent-parser.service";
 import { CityCost } from "../models/CityCost";
+import { getStaticTemplate } from "../services/static-template.service";
 import {
   buildItinerary,
   getProgressPercent,
@@ -91,9 +92,10 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
   // Route Pro trips > 5 days to the chunker (eager pre-fetch strategy)
   const startDate = new Date(preferences.startDate);
   const endDate = new Date(preferences.endDate);
-  const tripDays = Math.ceil(
-    (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-  ) + 1;
+  const tripDays =
+    Math.ceil(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+    ) + 1;
 
   if (userTier === "pro" && tripDays > 5) {
     logger.info(
@@ -249,16 +251,23 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
     const deficit = intentList.length - validated.length;
     if (deficit > 0 && validated.length > 0) {
       logger.warn(
-        { jobId: job.id, tripId, deficit, validated: validated.length, total: intentList.length },
+        {
+          jobId: job.id,
+          tripId,
+          deficit,
+          validated: validated.length,
+          total: intentList.length,
+        },
         "⚠️ [DEFICIT] Validation yield below intent count — requesting supplementary places",
       );
 
       const existingNames = validated.map((p) => p.name);
-      const supplementaryQueries = await aiAgentService.generateSupplementaryQueries(
-        deficit,
-        preferences.destination,
-        existingNames,
-      );
+      const supplementaryQueries =
+        await aiAgentService.generateSupplementaryQueries(
+          deficit,
+          preferences.destination,
+          existingNames,
+        );
 
       if (supplementaryQueries.length > 0) {
         const supplementaryValidated = await validationService.validateBatch(
@@ -267,7 +276,12 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
         );
         validated = [...validated, ...supplementaryValidated];
         logger.info(
-          { jobId: job.id, tripId, added: supplementaryValidated.length, newTotal: validated.length },
+          {
+            jobId: job.id,
+            tripId,
+            added: supplementaryValidated.length,
+            newTotal: validated.length,
+          },
           "✅ [DEFICIT] Supplementary places added",
         );
       }
@@ -304,11 +318,12 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
       );
 
       const existingNames = validated.map((p) => p.name);
-      const supplementaryQueries = await aiAgentService.generateSupplementaryQueries(
-        postDedupeDeficit,
-        preferences.destination,
-        existingNames,
-      );
+      const supplementaryQueries =
+        await aiAgentService.generateSupplementaryQueries(
+          postDedupeDeficit,
+          preferences.destination,
+          existingNames,
+        );
 
       if (supplementaryQueries.length > 0) {
         const supplementaryValidated = await validationService.validateBatch(
@@ -360,6 +375,31 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
       { jobId: job.id, tripId, error: error.message, stack: error.stack },
       "❌ Trip generation failed",
     );
+
+    if (userTier === "free") {
+      const template = getStaticTemplate(preferences.destination);
+      if (template) {
+        logger.info(
+          { jobId: job.id, tripId },
+          "🛡️ Applying static fallback template for Free user",
+        );
+        try {
+          await tripRepository.update(tripId, {
+            itinerary: template,
+          });
+          await tripRepository.updateStatus(tripId, "FALLBACK");
+          await tripRepository.releaseLock(tripId, job.id as string);
+          await updateJobProgress(job, 100, "Completed with fallback");
+          // DO NOT THROW error here. Return success to BullMQ so job is complete.
+          return { success: true, tripId, status: "FALLBACK" };
+        } catch (fallbackError: any) {
+          logger.error(
+            { jobId: job.id, tripId, error: fallbackError.message },
+            "❌ Failed to apply fallback template",
+          );
+        }
+      }
+    }
 
     try {
       await updateJobProgress(

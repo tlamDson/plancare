@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SettingsModal } from "@/features/settings/components/SettingsModal";
+import { GlobalJobWatcher } from "@/features/planner/components/GlobalJobWatcher";
 import {
   LayoutDashboard,
   Map,
@@ -74,7 +75,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const progressPercent =
     isPro || !usage?.tripLimit || usage.tripLimit < 0
       ? 0
-      : Math.min(100, Math.round((usage.tripsUsedThisCycle / usage.tripLimit) * 100));
+      : Math.min(
+          100,
+          Math.round((usage.tripsUsedThisCycle / usage.tripLimit) * 100),
+        );
   const resetDays = usage?.quotaResetsAt
     ? Math.max(
         0,
@@ -224,7 +228,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="p-4 lg:p-6">{children}</div>
       </main>
 
-      {/* Global Modals */}
+      {/* Global Modals & Watchers */}
+      <GlobalJobWatcher />
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}

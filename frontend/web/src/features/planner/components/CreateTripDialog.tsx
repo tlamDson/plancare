@@ -23,6 +23,7 @@ import { useTripWizard } from "../hooks/useTripWizard";
 import type { TripPreferences } from "@travelplan/shared";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
+import { useActiveJobStore } from "@/stores/useActiveJobStore";
 
 const TOTAL_STEPS = 6;
 const MIN_DAILY_BUDGET = 20;
@@ -91,11 +92,13 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
   const { data, reset, initWizard } = useTripWizardStore();
   const { t, language, currency: preferredCurrency } = useTranslationStore();
   const { isPro, openUpgradeModal } = useSubscriptionStore();
+  const { setActiveJob } = useActiveJobStore();
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
 
   const { mutate, isPending } = useTripWizard({
-    onSuccess: (tripId) => {
+    onSuccess: (tripId, jobId) => {
+      setActiveJob(jobId, tripId);
       setOpen(false);
       reset();
       setStepIndex(0);

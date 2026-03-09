@@ -6,6 +6,7 @@ export const TripStatusValues = [
   "PROCESSING_STEP_2",
   "COMPLETED",
   "FAILED",
+  "FALLBACK",
 ] as const;
 
 export type TripStatus = (typeof TripStatusValues)[number];
