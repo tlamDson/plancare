@@ -187,6 +187,11 @@ const TripSchema = new Schema<ITrip>(
     agentJobId: String,
     agentLockedAt: Date,
 
+    // Chunked generation tracking (Pro trips > 5 days)
+    totalChunks: { type: Number, default: 0 },
+    chunksReady: { type: [Boolean], default: [] },
+    regenCount: { type: Number, default: 0, min: 0 },
+
     version: { type: Number, default: 1 },
 
     // Undo history: stores up to 5 itinerary snapshots for undo/redo

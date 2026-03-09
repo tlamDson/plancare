@@ -5,6 +5,7 @@ import { aiAgentService } from "../services/ai-agent.service";
 import { intentParserService } from "../services/intent-parser.service";
 import { validationService } from "../services/validation.service";
 import { geoValidatorService } from "../services/geo-validator.service";
+import { processChunkedTrip } from "../services/itinerary-chunker.service";
 import type { TripPreferences } from "@travelplan/shared";
 import type { TripIntents } from "../services/intent-parser.service";
 import { CityCost } from "../models/CityCost";
@@ -19,6 +20,7 @@ interface TripJobData {
   userId: string;
   preferences: TripPreferences;
   language?: string;
+  userTier?: "free" | "pro";
 }
 
 const MIN_DUPLICATE_DISTANCE_KM = 0.1; // ~100m: treat ultra-close POIs as duplicates
@@ -84,7 +86,35 @@ function dedupeValidatedPlaces(validated: any[]) {
  * Progress: 20% → 50% → 80% → 90% → 100%
  */
 export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
-  const { tripId, userId, preferences, language } = job.data;
+  const { tripId, userId, preferences, language, userTier } = job.data;
+
+  // Route Pro trips > 5 days to the chunker (eager pre-fetch strategy)
+  const startDate = new Date(preferences.startDate);
+  const endDate = new Date(preferences.endDate);
+  const tripDays = Math.ceil(
+    (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+  ) + 1;
+
+  if (userTier === "pro" && tripDays > 5) {
+    logger.info(
+      { tripId, userId, tripDays, userTier },
+      "🧩 [CHUNK] Pro trip > 5 days — routing to chunker",
+    );
+    try {
+      await processChunkedTrip(job, tripId, preferences, language);
+      await tripRepository.releaseLock(tripId, job.id as string);
+      await updateJobProgress(job, 100, "Completed");
+      return { success: true, tripId, status: "COMPLETED" };
+    } catch (error: any) {
+      logger.error(
+        { jobId: job.id, tripId, error: error.message },
+        "❌ Chunked trip generation failed",
+      );
+      await tripRepository.releaseLock(tripId, job.id as string);
+      await tripRepository.updateStatus(tripId, "FAILED");
+      throw error;
+    }
+  }
 
   logger.info(
     { jobId: job.id, tripId, userId, preferences },

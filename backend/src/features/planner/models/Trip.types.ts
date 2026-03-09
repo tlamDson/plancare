@@ -131,6 +131,11 @@ export interface ITrip extends Document {
   agentJobId?: string;
   agentLockedAt?: Date;
 
+  // 4b. CHUNKED GENERATION (Pro trips > 5 days)
+  totalChunks?: number;
+  chunksReady?: boolean[];
+  regenCount?: number;
+
   // 5. OPTIMISTIC CONCURRENCY CONTROL
   version: number;
 
