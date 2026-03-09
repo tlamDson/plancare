@@ -20,7 +20,15 @@ export const userProfileSchema = z.object({
   lastName: z.string(),
   avatarUrl: z.string().url().optional().nullable(),
   gender: z.string().optional(),
+  tier: z.enum(["free", "pro"]).optional().default("free"),
   dateOfBirth: z.string().datetime().optional().nullable(),
+  usage: z
+    .object({
+      tripsUsedThisCycle: z.number().int().nonnegative(),
+      tripLimit: z.number().int(),
+      quotaResetsAt: z.string(),
+    })
+    .optional(),
   preferences: z
     .object({
       currency: z.string().length(3),
