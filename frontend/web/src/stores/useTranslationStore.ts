@@ -21,7 +21,27 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "nav.appearance": "Appearance",
     "nav.ai": "AI Assistant",
     "nav.preferences": "Travel Preferences",
+    "nav.subscription": "Upgrade to Pro",
     "settings.title": "Settings",
+
+    // Subscription Settings
+    "sub.pageTitle": "Subscription & Billing",
+    "sub.pageSubtitle":
+      "Manage your travel plan subscription and usage limits.",
+    "sub.currentPlan": "Current Plan",
+    "sub.freePlan": "Free Tier",
+    "sub.proPlan": "TravelPlan Pro",
+    "sub.upgradeButton": "Upgrade to Pro",
+    "sub.manageButton": "Manage Subscription",
+    "sub.usageTitle": "Usage This Cycle",
+    "sub.tripsUsed": "Trips Used",
+    "sub.unlimited": "Unlimited",
+    "sub.resetsAt": "Resets at",
+    "sub.proBadge": "PRO",
+    "sub.freeLimitsDesc":
+      "You are currently on the Free Tier which has limitations on the number of generated trips and generation depth.",
+    "sub.proLimitsDesc":
+      "You are on the Pro Tier. Enjoy unlimited features and priority generation.",
 
     // Localization Settings
     "loc.pageTitle": "Localization & Units",
@@ -398,7 +418,26 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "nav.appearance": "Apparence",
     "nav.ai": "Assistant IA",
     "nav.preferences": "Préférences de Voyage",
+    "nav.subscription": "Passer au statut Pro",
     "settings.title": "Paramètres",
+
+    // Subscription Settings
+    "sub.pageTitle": "Abonnement et Facturation",
+    "sub.pageSubtitle": "Gérez votre abonnement et vos limites d'utilisation.",
+    "sub.currentPlan": "Forfait Actuel",
+    "sub.freePlan": "Forfait Gratuit",
+    "sub.proPlan": "TravelPlan Pro",
+    "sub.upgradeButton": "Passer au statut Pro",
+    "sub.manageButton": "Gérer l'abonnement",
+    "sub.usageTitle": "Utilisation ce cycle",
+    "sub.tripsUsed": "Voyages Utilisés",
+    "sub.unlimited": "Illimité",
+    "sub.resetsAt": "Réinitialisation le",
+    "sub.proBadge": "PRO",
+    "sub.freeLimitsDesc":
+      "Vous êtes actuellement sur le forfait gratuit qui limite le nombre de voyages générés et la profondeur de génération.",
+    "sub.proLimitsDesc":
+      "Vous êtes sur le forfait Pro. Profitez de fonctionnalités illimitées et d'une génération prioritaire.",
 
     // Localization Settings
     "loc.pageTitle": "Localisation et Unités",
@@ -784,7 +823,26 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "nav.appearance": "Giao diện",
     "nav.ai": "Trợ lý AI",
     "nav.preferences": "Sở thích Du lịch",
+    "nav.subscription": "Gói Cước & Pro",
     "settings.title": "Cài đặt",
+
+    // Subscription Settings
+    "sub.pageTitle": "Gói cước & Thanh toán",
+    "sub.pageSubtitle": "Quản lý gói cước đăng ký và giới hạn sử dụng của bạn.",
+    "sub.currentPlan": "Gói Cước Hiện Tại",
+    "sub.freePlan": "Gói Miễn Phí",
+    "sub.proPlan": "TravelPlan Pro",
+    "sub.upgradeButton": "Nâng cấp lên Pro",
+    "sub.manageButton": "Quản lý Đăng ký",
+    "sub.usageTitle": "Sử Dụng Trong Chu Kỳ",
+    "sub.tripsUsed": "Chuyến Đi Đã Dùng",
+    "sub.unlimited": "Không giới hạn",
+    "sub.resetsAt": "Làm mới vào",
+    "sub.proBadge": "PRO",
+    "sub.freeLimitsDesc":
+      "Bạn hiện đang ở Gói Miễn Phí, trong đó có giới hạn về số lượng chuyến đi được tạo cũng như độ chuyên sâu của lịch trình.",
+    "sub.proLimitsDesc":
+      "Bạn đã đăng ký Gói Pro. Tận hưởng tất cả các tính năng không giới hạn và ưu tiên tạo lịch trình.",
 
     // Localization Settings
     "loc.pageTitle": "Định vị & Đơn vị",

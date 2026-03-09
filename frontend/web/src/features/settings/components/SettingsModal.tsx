@@ -7,6 +7,7 @@ import {
   Palette,
   Bot,
   PlaneTakeoff,
+  Zap,
 } from "lucide-react";
 
 // Import the dumb UI components
@@ -16,7 +17,10 @@ import { LocalizationSettings } from "../pages/LocalizationSettings";
 import { AppearanceSettings } from "../pages/AppearanceSettings";
 import { AiAssistantSettings } from "../pages/AiAssistantSettings";
 import { TravelPreferencesSettings } from "../pages/TravelPreferencesSettings";
+import { SubscriptionSettings } from "../pages/SubscriptionSettings";
 import { useTranslationStore } from "@/stores/useTranslationStore";
+import { Switch } from "@/components/ui/switch";
+import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
 
 const SETTINGS_TABS = [
   {
@@ -55,6 +59,12 @@ const SETTINGS_TABS = [
     icon: PlaneTakeoff,
     Component: TravelPreferencesSettings,
   },
+  {
+    id: "subscription",
+    nameKey: "nav.subscription",
+    icon: Zap,
+    Component: SubscriptionSettings,
+  },
 ] as const;
 
 type TabId = (typeof SETTINGS_TABS)[number]["id"];
@@ -67,6 +77,8 @@ interface SettingsModalProps {
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>("personal");
   const { t } = useTranslationStore();
+  const { autoLoadLongTripChunks, setAutoLoadLongTripChunks } =
+    useSubscriptionStore();
 
   const ActiveComponent =
     SETTINGS_TABS.find((tab) => tab.id === activeTab)?.Component ||
@@ -109,6 +121,23 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto p-6 lg:p-10 relative">
           <div className="max-w-2xl mx-auto pb-8">
+            <div className="mb-6 rounded-lg border bg-muted/30 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">
+                    Auto-load long trip days
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    If enabled, we load upcoming chunks automatically. This may
+                    take longer, and you can return later.
+                  </p>
+                </div>
+                <Switch
+                  checked={autoLoadLongTripChunks}
+                  onCheckedChange={setAutoLoadLongTripChunks}
+                />
+              </div>
+            </div>
             <ActiveComponent />
           </div>
         </main>
