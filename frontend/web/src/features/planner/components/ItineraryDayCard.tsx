@@ -181,6 +181,7 @@ function ActivityRow({
   activity,
   derivedEndTime,
   currency = "USD",
+  isFirst,
   isLast,
   distanceUnit = "Km",
   preferredCurrency = "USD",
@@ -189,6 +190,7 @@ function ActivityRow({
   activity: Activity;
   derivedEndTime?: string;
   currency?: string;
+  isFirst: boolean;
   isLast: boolean;
   distanceUnit?: "Miles" | "Km";
   preferredCurrency?: string;
@@ -206,10 +208,15 @@ function ActivityRow({
     return km.toFixed(1) + " km";
   };
 
+  const showDistance =
+    !isFirst &&
+    (activity as any).distanceFromPrevious !== undefined &&
+    (activity as any).distanceFromPrevious > 0;
+
   return (
     <div className="relative flex gap-3 pb-4">
       {/* Distance from previous indicator (placed on the timeline above the icon) */}
-      {(activity as any).distanceFromPrevious !== undefined && (
+      {showDistance && (
         <div className="absolute -top-3 left-[0.1rem] flex items-center z-20">
           <div className="bg-background px-1 text-[10px] font-medium text-muted-foreground border rounded-full shadow-sm flex items-center gap-0.5">
             <span className="text-[9px]">📍</span>
@@ -493,6 +500,7 @@ export function ItineraryDayCard({
                         activity,
                         sorted[idx + 1]?.time,
                       )}
+                      isFirst={idx === 0}
                       isLast={idx === sorted.length - 1}
                       distanceUnit={distanceUnit}
                       preferredCurrency={preferredCurrency}
