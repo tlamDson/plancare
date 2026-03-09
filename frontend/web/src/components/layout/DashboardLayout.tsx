@@ -10,6 +10,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -32,6 +33,9 @@ import {
   User,
 } from "lucide-react";
 import { useTranslationStore } from "@/stores/useTranslationStore";
+import { useUserMe } from "@/features/user/hooks/useUser";
+import { useEffect } from "react";
+import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -49,9 +53,37 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { t } = useTranslationStore();
+  const { data: me } = useUserMe();
+  const { isPro, setSubscriptionSnapshot } = useSubscriptionStore();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!me) return;
+    const usage = (me as any).usage;
+    setSubscriptionSnapshot({
+      isPro: (me as any).tier === "pro",
+      tripsUsedThisCycle: usage?.tripsUsedThisCycle ?? 0,
+      tripLimit: usage?.tripLimit ?? 10,
+      quotaResetsAt: usage?.quotaResetsAt ?? null,
+    });
+  }, [me, setSubscriptionSnapshot]);
+
+  const usage = (me as any)?.usage;
+  const progressPercent =
+    isPro || !usage?.tripLimit || usage.tripLimit < 0
+      ? 0
+      : Math.min(100, Math.round((usage.tripsUsedThisCycle / usage.tripLimit) * 100));
+  const resetDays = usage?.quotaResetsAt
+    ? Math.max(
+        0,
+        Math.ceil(
+          (new Date(usage.quotaResetsAt).getTime() - Date.now()) /
+            (1000 * 60 * 60 * 24),
+        ),
+      )
+    : null;
 
   const handleSignOut = async () => {
     await signOut();
@@ -131,6 +163,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </Link>
               );
             })}
+            {!isPro && usage?.tripLimit > 0 && (
+              <div className="mx-2 mt-4 rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs font-medium text-foreground">
+                  {`${usage.tripsUsedThisCycle}/${usage.tripLimit} Free Trips Used`}
+                </p>
+                <Progress className="mt-2 h-2" value={progressPercent} />
+                {resetDays !== null && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {`Resets in ${resetDays} day${resetDays === 1 ? "" : "s"}.`}
+                  </p>
+                )}
+              </div>
+            )}
           </nav>
 
           {/* User section */}

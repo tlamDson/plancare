@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,13 +7,73 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { WidgetError } from "@/components/WidgetError";
 import { useTrips } from "@/features/planner/hooks/useTrips";
 import { TripCard } from "@/features/planner/components/TripCard";
-import { Plus, Plane, MapPin, CreditCard, Users, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Plane,
+  MapPin,
+  CreditCard,
+  Users,
+  Loader2,
+  Zap,
+} from "lucide-react";
 import { CreateTripDialog } from "@/features/planner/components";
 import { useTranslationStore } from "@/stores/useTranslationStore";
+import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
+import { getUserMe } from "@/features/user/api/user.api";
+import { apiClient } from "@/lib/axios";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
   const { data: trips, isLoading, error } = useTrips();
   const { t } = useTranslationStore();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [showConfetti, setShowConfetti] = useState(false);
+  const { canCreateTrip, openUpgradeModal, isPro } = useSubscriptionStore();
+  const { setSubscriptionSnapshot, closeUpgradeModal } = useSubscriptionStore();
+  const blockedByFreeLimit = !isPro && !canCreateTrip();
+
+  useEffect(() => {
+    const success = searchParams.get("success") === "true";
+    const canceled = searchParams.get("canceled") === "true";
+    if (!success && !canceled) return;
+
+    if (canceled) {
+      toast.info("Upgrade canceled. You are still on the Free plan.");
+      searchParams.delete("canceled");
+      setSearchParams(searchParams, { replace: true });
+      return;
+    }
+
+    const syncAfterCheckout = async () => {
+      try {
+        const user = await getUserMe();
+        const usage = (user as any).usage;
+        setSubscriptionSnapshot({
+          isPro: (user as any).tier === "pro",
+          tripsUsedThisCycle: usage?.tripsUsedThisCycle ?? 0,
+          tripLimit: usage?.tripLimit ?? 10,
+          quotaResetsAt: usage?.quotaResetsAt ?? null,
+        });
+        closeUpgradeModal();
+        setShowConfetti(true);
+        toast.success(
+          "Welcome to TravelPlan Pro! Your limits have been removed.",
+        );
+        window.setTimeout(() => setShowConfetti(false), 3000);
+      } catch {
+        toast.info("Upgrade processed. Refreshing your subscription status...");
+      } finally {
+        searchParams.delete("success");
+        setSearchParams(searchParams, { replace: true });
+      }
+    };
+    void syncAfterCheckout();
+  }, [
+    searchParams,
+    setSearchParams,
+    closeUpgradeModal,
+    setSubscriptionSnapshot,
+  ]);
 
   // Computed Metrics
   const totalPlaces =
@@ -42,6 +103,21 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
+      {showConfetti && (
+        <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
+          {Array.from({ length: 80 }).map((_, i) => (
+            <span
+              key={i}
+              className="absolute h-2 w-2 animate-bounce rounded-full bg-gradient-to-r from-purple-500 to-orange-500"
+              style={{
+                left: `${(i * 13) % 100}%`,
+                top: `${(i * 7) % 30}%`,
+                animationDelay: `${(i % 10) * 60}ms`,
+              }}
+            />
+          ))}
+        </div>
+      )}
       <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -49,14 +125,42 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold">{t("dash.welcome")}</h1>
             <p className="text-muted-foreground">{t("dash.subtitle")}</p>
           </div>
-          <CreateTripDialog
-            trigger={
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                {t("dash.planNew")}
-              </Button>
-            }
-          />
+          {import.meta.env.MODE === "development" && (
+            <Button
+              variant="outline"
+              className="border-dashed border-2 border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white mr-2"
+              onClick={async () => {
+                try {
+                  await apiClient.post("/dev/toggle-pro");
+                  toast.success("Toggled Pro mode! Reloading page...");
+                  window.location.reload();
+                } catch (e) {
+                  toast.error("Failed to toggle pro status");
+                }
+              }}
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Dev: Toggle Pro
+            </Button>
+          )}
+
+          {blockedByFreeLimit ? (
+            <Button
+              className="bg-gradient-to-r from-purple-600 to-orange-500 text-white hover:from-purple-700 hover:to-orange-600"
+              onClick={() => openUpgradeModal("monthly-trip-limit")}
+            >
+              ✨ Get Pro for Unlimited Trips
+            </Button>
+          ) : (
+            <CreateTripDialog
+              trigger={
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t("dash.planNew")}
+                </Button>
+              }
+            />
+          )}
         </div>
 
         {/* Stats */}
