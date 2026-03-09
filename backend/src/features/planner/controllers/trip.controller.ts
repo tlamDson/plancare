@@ -38,6 +38,10 @@ export const generateTrip = async (
     const validation = TripPreferencesSchema.safeParse(req.body.preferences);
 
     if (!validation.success) {
+      logger.error(
+        { errors: validation.error.issues, body: req.body },
+        "Trip validation failed",
+      );
       res.status(400).json({
         success: false,
         message: "Invalid trip preferences",
@@ -346,7 +350,10 @@ export const reorderActivities = async (
     ) {
       res
         .status(400)
-        .json({ message: "dayIndex (number) and orderedActivityIds (string[]) are required" });
+        .json({
+          message:
+            "dayIndex (number) and orderedActivityIds (string[]) are required",
+        });
       return;
     }
 
@@ -362,13 +369,17 @@ export const reorderActivities = async (
     }
 
     if (trip.isAgentProcessing) {
-      res.status(409).json({ message: "Trip is being processed by AI — try again shortly" });
+      res
+        .status(409)
+        .json({ message: "Trip is being processed by AI — try again shortly" });
       return;
     }
 
     const day = trip.itinerary[dayIndex];
     if (!day) {
-      res.status(400).json({ message: `Day index ${dayIndex} not found in itinerary` });
+      res
+        .status(400)
+        .json({ message: `Day index ${dayIndex} not found in itinerary` });
       return;
     }
 
@@ -380,7 +391,9 @@ export const reorderActivities = async (
     // Verify every supplied ID belongs to this day
     for (const id of orderedActivityIds) {
       if (!activityMap.has(id)) {
-        res.status(400).json({ message: `Activity ${id} not found in day ${dayIndex}` });
+        res
+          .status(400)
+          .json({ message: `Activity ${id} not found in day ${dayIndex}` });
         return;
       }
     }
@@ -404,9 +417,8 @@ export const reorderActivities = async (
     // Snapshot current itinerary for undo before mutation
     await tripRepository.saveSnapshot(tripId);
 
-    const { recalcDayDistances } = await import(
-      "../services/activity-regen.service"
-    );
+    const { recalcDayDistances } =
+      await import("../services/activity-regen.service");
 
     trip.itinerary[dayIndex]!.activities = reordered;
     recalcDayDistances(trip.itinerary[dayIndex]!.activities as any[]);
@@ -419,7 +431,10 @@ export const reorderActivities = async (
     );
     res.json({ success: true, itinerary: trip.itinerary });
   } catch (error: any) {
-    logger.error({ error, tripId: req.params.tripId }, "Failed to reorder activities");
+    logger.error(
+      { error, tripId: req.params.tripId },
+      "Failed to reorder activities",
+    );
     res.status(500).json({ message: "Failed to reorder activities" });
   }
 };
@@ -449,7 +464,11 @@ export const regenActivity = async (
     const { dayIndex, activityId } = req.body;
 
     if (typeof dayIndex !== "number" || typeof activityId !== "string") {
-      res.status(400).json({ message: "dayIndex (number) and activityId (string) are required" });
+      res
+        .status(400)
+        .json({
+          message: "dayIndex (number) and activityId (string) are required",
+        });
       return;
     }
 
@@ -467,14 +486,17 @@ export const regenActivity = async (
     }
 
     if (trip.isAgentProcessing) {
-      res.status(409).json({ message: "Trip is being processed by AI — try again shortly" });
+      res
+        .status(409)
+        .json({ message: "Trip is being processed by AI — try again shortly" });
       return;
     }
 
     const regenCount = (trip as any).regenCount ?? 0;
     if (user?.tier !== "pro" && regenCount >= 5) {
       res.status(402).json({
-        message: "Free plan includes up to 5 regenerations per trip. Upgrade to Pro for unlimited regenerations.",
+        message:
+          "Free plan includes up to 5 regenerations per trip. Upgrade to Pro for unlimited regenerations.",
         regenCount,
         regenLimit: 5,
       });
@@ -496,22 +518,20 @@ export const regenActivity = async (
     }
 
     // Collect all existing place names across the entire trip for dedup
-    const existingNames = trip.itinerary
-      .flatMap((d: any) => d.activities.map((a: any) => a.name as string));
+    const existingNames = trip.itinerary.flatMap((d: any) =>
+      d.activities.map((a: any) => a.name as string),
+    );
 
     const destination =
-      (trip as any).preferences?.destination ??
-      (trip as any).destination ??
-      "";
+      (trip as any).preferences?.destination ?? (trip as any).destination ?? "";
 
     const hint: string | undefined =
       typeof req.body.hint === "string" && req.body.hint.trim().length > 0
         ? req.body.hint.trim()
         : undefined;
 
-    const { activityRegenService, recalcDayDistances } = await import(
-      "../services/activity-regen.service"
-    );
+    const { activityRegenService, recalcDayDistances } =
+      await import("../services/activity-regen.service");
 
     const newActivity = await activityRegenService.regenOne({
       target: day.activities[activityIdx] as any,
@@ -533,7 +553,14 @@ export const regenActivity = async (
     await trip.save();
 
     logger.info(
-      { tripId, userId, dayIndex, activityId, newName: newActivity.name, hint: !!hint },
+      {
+        tripId,
+        userId,
+        dayIndex,
+        activityId,
+        newName: newActivity.name,
+        hint: !!hint,
+      },
       "✅ Activity regenerated",
     );
     res.json({
@@ -551,7 +578,11 @@ export const regenActivity = async (
       "Failed to regen activity",
     );
     if (error.message === "NO_ALTERNATIVE_FOUND") {
-      res.status(422).json({ message: "Could not find a unique alternative activity. Try again." });
+      res
+        .status(422)
+        .json({
+          message: "Could not find a unique alternative activity. Try again.",
+        });
       return;
     }
     res.status(500).json({ message: "Failed to regenerate activity" });
@@ -658,7 +689,9 @@ export const getTripChunk = async (
     const chunkIndex = parseInt(req.params.chunkIndex ?? "0", 10);
 
     if (!tripId || isNaN(chunkIndex) || chunkIndex < 0) {
-      res.status(400).json({ message: "Valid tripId and chunkIndex are required" });
+      res
+        .status(400)
+        .json({ message: "Valid tripId and chunkIndex are required" });
       return;
     }
 
@@ -676,12 +709,18 @@ export const getTripChunk = async (
     const totalChunks = (trip as any).totalChunks as number | undefined;
 
     if (!chunksReady || !totalChunks) {
-      res.status(400).json({ message: "This trip does not use chunked generation" });
+      res
+        .status(400)
+        .json({ message: "This trip does not use chunked generation" });
       return;
     }
 
     if (chunkIndex >= totalChunks) {
-      res.status(404).json({ message: `Chunk ${chunkIndex} does not exist (totalChunks: ${totalChunks})` });
+      res
+        .status(404)
+        .json({
+          message: `Chunk ${chunkIndex} does not exist (totalChunks: ${totalChunks})`,
+        });
       return;
     }
 
@@ -699,7 +738,10 @@ export const getTripChunk = async (
     // Return the 3 days that belong to this chunk
     const CHUNK_SIZE = 3;
     const startDayIdx = chunkIndex * CHUNK_SIZE;
-    const chunkDays = trip.itinerary.slice(startDayIdx, startDayIdx + CHUNK_SIZE);
+    const chunkDays = trip.itinerary.slice(
+      startDayIdx,
+      startDayIdx + CHUNK_SIZE,
+    );
 
     res.json({
       ready: true,
@@ -709,7 +751,10 @@ export const getTripChunk = async (
       days: chunkDays,
     });
   } catch (error: any) {
-    logger.error({ error, tripId: req.params.tripId }, "Failed to get trip chunk");
+    logger.error(
+      { error, tripId: req.params.tripId },
+      "Failed to get trip chunk",
+    );
     res.status(500).json({ message: "Failed to retrieve chunk" });
   }
 };

@@ -134,7 +134,10 @@ export class PlannerService {
         tripId: trip._id.toString(),
       };
     } catch (error: any) {
-      logger.error({ error, userId }, "Failed to create trip generation job");
+      logger.error(
+        { error: error.message, stack: error.stack, userId },
+        "Failed to create trip generation job",
+      );
       throw error;
     }
   }
