@@ -2,6 +2,7 @@ import { createQueue } from "../../../lib/queue";
 import { Job } from "bullmq";
 import { logger } from "../../../lib/logger";
 import { tripRepository } from "../repositories/trip.repository";
+import { userRepository } from "../../user/repositories/user.repository";
 import { budgetValidatorService } from "./budget-validator.service";
 import { TripPreferences } from "../schemas/trip-request.schema";
 import {
@@ -58,6 +59,15 @@ export class PlannerService {
         throw new Error(budgetCheck.reason || "Budget validation failed");
       }
 
+      // Enforce per-tier day cap before creating DB record
+      const user = await userRepository.findByClerkId(userId);
+      const maxDays = user?.tier === "pro" ? 30 : 5;
+      if (tripDays > maxDays) {
+        throw new Error(
+          `Your plan allows a maximum of ${maxDays} days per trip. Upgrade to Pro for up to 30 days.`,
+        );
+      }
+
       // DB-FIRST: Create trip record BEFORE queueing
       const tripData: any = {
         userId,
@@ -86,12 +96,24 @@ export class PlannerService {
 
       const trip = await tripRepository.create(tripData);
 
-      const job: Job = await tripQueue.add("generate-trip", {
-        userId,
-        tripId: trip._id.toString(),
-        preferences,
-        language: params.language,
-      });
+      // Pro users get priority 1 (processed first), free users get priority 10
+      const priority = user?.tier === "pro" ? 1 : 10;
+
+      const job: Job = await tripQueue.add(
+        "generate-trip",
+        {
+          userId,
+          tripId: trip._id.toString(),
+          preferences,
+          language: params.language,
+          userTier: user?.tier ?? "free",
+        },
+        {
+          priority,
+          attempts: 3,
+          backoff: { type: "exponential", delay: 5000 },
+        },
+      );
 
       await tripRepository.acquireLock(trip._id, job.id as string);
 
@@ -101,6 +123,8 @@ export class PlannerService {
           tripId: trip._id,
           userId,
           budgetPerDay: budgetCheck.dailyBudgetPerPerson,
+          priority,
+          tier: user?.tier ?? "free",
         },
         "Trip generation job queued (CFO validation passed)",
       );

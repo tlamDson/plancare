@@ -1,5 +1,6 @@
 import { tripRepository } from "../repositories/trip.repository";
 import { logger } from "../../../lib/logger";
+import { userRepository } from "../../user/repositories/user.repository";
 
 export interface QuotaCheckResult {
   allowed: boolean;
@@ -9,26 +10,30 @@ export interface QuotaCheckResult {
 }
 
 export class UserQuotaService {
-  private readonly DEFAULT_LIMIT = 10;
+  private readonly FREE_LIMIT = 10;
 
   async canCreateTrip(userId: string): Promise<QuotaCheckResult> {
     const now = new Date();
-    const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const user = await userRepository.findByClerkId(userId);
+    const isPro = user?.tier === "pro";
+    const cycleStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const resetAt = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+    );
 
-    const count = await tripRepository.countByUserIdSince(userId, last24h);
-
-    const limit = this.DEFAULT_LIMIT;
-    const remaining = Math.max(0, limit - count);
+    const count = await tripRepository.countByUserIdSince(userId, cycleStart);
+    const limit = isPro ? Number.MAX_SAFE_INTEGER : this.FREE_LIMIT;
+    const remaining = isPro ? Number.MAX_SAFE_INTEGER : Math.max(0, limit - count);
 
     logger.debug(
-      { userId, count, limit, remaining },
+      { userId, count, limit, remaining, isPro, cycleStart, resetAt },
       "User quota check",
     );
 
     return {
-      allowed: remaining > 0,
+      allowed: isPro ? true : remaining > 0,
       remaining,
-      resetAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+      resetAt,
       limit,
     };
   }

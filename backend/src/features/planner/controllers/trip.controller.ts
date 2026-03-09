@@ -5,6 +5,8 @@ import { TripPreferencesSchema } from "../schemas/trip-request.schema";
 import { logger } from "../../../lib/logger";
 import { userQuotaService } from "../services/user-quota.service";
 import { tripRepository } from "../repositories/trip.repository";
+import { userRepository } from "../../user/repositories/user.repository";
+import IdempotencyLog from "../../user/models/IdempotencyLog";
 
 /**
  * POST /api/trips - Generate new trip
@@ -24,8 +26,8 @@ export const generateTrip = async (
     const quota = await userQuotaService.canCreateTrip(userId);
     if (!quota.allowed) {
       res.status(429).json({
-        error: "Daily trip limit exceeded",
-        message: "Free tier users can create 10 trips per day.",
+        error: "Monthly trip limit exceeded",
+        message: "Free tier users can create up to 10 trips per billing cycle.",
         remaining: quota.remaining,
         resetAt: quota.resetAt,
       });
@@ -46,6 +48,11 @@ export const generateTrip = async (
 
     const preferences = validation.data;
     const { language, title } = req.body;
+    const idempotencyKey = req.headers["x-idempotency-key"] as
+      | string
+      | undefined;
+
+    const user = await userRepository.findByClerkId(userId);
 
     // Create job (with CFO validation)
     const result = await plannerService.createTripGenerationJob({
@@ -55,12 +62,35 @@ export const generateTrip = async (
       title,
     });
 
+    // Persist idempotency log so duplicate requests return the same result
+    if (idempotencyKey) {
+      try {
+        await IdempotencyLog.create({
+          key: idempotencyKey,
+          userId,
+          tripId: result.tripId,
+          jobId: result.jobId,
+        });
+      } catch {
+        // Unique constraint violation = race condition — safe to ignore
+      }
+    }
+
     res.status(202).json({
       success: true,
       message: "Trip generation started",
       ...result,
+      tier: user?.tier ?? "free",
       quota: {
-        remaining: quota.remaining - 1,
+        remaining:
+          quota.limit === Number.MAX_SAFE_INTEGER
+            ? Number.MAX_SAFE_INTEGER
+            : Math.max(0, quota.remaining - 1),
+        limit: quota.limit,
+        tripsUsedThisCycle:
+          quota.limit === Number.MAX_SAFE_INTEGER
+            ? 0
+            : Math.max(0, quota.limit - quota.remaining + 1),
         resetAt: quota.resetAt,
       },
     });
@@ -423,6 +453,8 @@ export const regenActivity = async (
       return;
     }
 
+    const user = await userRepository.findByClerkId(userId);
+
     const trip = await tripRepository.findById(tripId);
     if (!trip) {
       res.status(404).json({ message: "Trip not found" });
@@ -436,6 +468,16 @@ export const regenActivity = async (
 
     if (trip.isAgentProcessing) {
       res.status(409).json({ message: "Trip is being processed by AI — try again shortly" });
+      return;
+    }
+
+    const regenCount = (trip as any).regenCount ?? 0;
+    if (user?.tier !== "pro" && regenCount >= 5) {
+      res.status(402).json({
+        message: "Free plan includes up to 5 regenerations per trip. Upgrade to Pro for unlimited regenerations.",
+        regenCount,
+        regenLimit: 5,
+      });
       return;
     }
 
@@ -487,13 +529,21 @@ export const regenActivity = async (
     recalcDayDistances(trip.itinerary[dayIndex]!.activities as any[]);
 
     trip.markModified("itinerary");
+    (trip as any).regenCount = ((trip as any).regenCount ?? 0) + 1;
     await trip.save();
 
     logger.info(
       { tripId, userId, dayIndex, activityId, newName: newActivity.name, hint: !!hint },
       "✅ Activity regenerated",
     );
-    res.json({ success: true, activity: newActivity, itinerary: trip.itinerary });
+    res.json({
+      success: true,
+      activity: newActivity,
+      itinerary: trip.itinerary,
+      regenCount: (trip as any).regenCount ?? 1,
+      regenLimit: user?.tier === "pro" ? -1 : 5,
+      tier: user?.tier ?? "free",
+    });
   } catch (error: any) {
     // Pino serializes Error objects under 'err', not 'error'
     logger.error(
@@ -587,6 +637,82 @@ export const updateTripLifecycle = async (
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { validationService } from "../services/validation.service";
+
+/**
+ * GET /api/trips/:tripId/chunks/:chunkIndex
+ * Returns the days belonging to a specific 3-day chunk (for chunked Pro trips).
+ * If the chunk is not yet ready, returns 202 (still generating).
+ */
+export const getTripChunk = async (
+  req: ClerkRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.auth?.()?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const { tripId } = req.params;
+    const chunkIndex = parseInt(req.params.chunkIndex ?? "0", 10);
+
+    if (!tripId || isNaN(chunkIndex) || chunkIndex < 0) {
+      res.status(400).json({ message: "Valid tripId and chunkIndex are required" });
+      return;
+    }
+
+    const trip = await tripRepository.findById(tripId);
+    if (!trip) {
+      res.status(404).json({ message: "Trip not found" });
+      return;
+    }
+    if (trip.userId !== userId) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    const chunksReady = (trip as any).chunksReady as boolean[] | undefined;
+    const totalChunks = (trip as any).totalChunks as number | undefined;
+
+    if (!chunksReady || !totalChunks) {
+      res.status(400).json({ message: "This trip does not use chunked generation" });
+      return;
+    }
+
+    if (chunkIndex >= totalChunks) {
+      res.status(404).json({ message: `Chunk ${chunkIndex} does not exist (totalChunks: ${totalChunks})` });
+      return;
+    }
+
+    if (!chunksReady[chunkIndex]) {
+      res.status(202).json({
+        ready: false,
+        message: "Chunk is still being generated",
+        chunkIndex,
+        totalChunks,
+        chunksReady,
+      });
+      return;
+    }
+
+    // Return the 3 days that belong to this chunk
+    const CHUNK_SIZE = 3;
+    const startDayIdx = chunkIndex * CHUNK_SIZE;
+    const chunkDays = trip.itinerary.slice(startDayIdx, startDayIdx + CHUNK_SIZE);
+
+    res.json({
+      ready: true,
+      chunkIndex,
+      totalChunks,
+      chunksReady,
+      days: chunkDays,
+    });
+  } catch (error: any) {
+    logger.error({ error, tripId: req.params.tripId }, "Failed to get trip chunk");
+    res.status(500).json({ message: "Failed to retrieve chunk" });
+  }
+};
 
 export const reGeocodeTrip = async (
   req: ClerkRequest,

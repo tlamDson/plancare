@@ -11,9 +11,11 @@ import {
   updateTripLifecycle,
   reorderActivities,
   regenActivity,
+  getTripChunk,
 } from "./controllers/trip.controller";
 import { requireUserAuth } from "../../middlewares/auth";
 import { tripCreationLimiter } from "../../middlewares/rate-limiter";
+import { idempotencyMiddleware } from "../../middlewares/idempotency.middleware";
 
 const router = Router();
 
@@ -44,7 +46,7 @@ const router = Router();
  *       401:
  *         description: Unauthorized
  */
-router.post("/trips", requireUserAuth, tripCreationLimiter, generateTrip);
+router.post("/trips", requireUserAuth, tripCreationLimiter, idempotencyMiddleware, generateTrip);
 
 /**
  * @swagger
@@ -204,5 +206,11 @@ router.patch("/trips/:tripId/reorder-activities", requireUserAuth, reorderActivi
  * Body: { dayIndex: number, activityId: string }
  */
 router.post("/trips/:tripId/regen-activity", requireUserAuth, regenActivity);
+
+/**
+ * GET /api/trips/:tripId/chunks/:chunkIndex — Get a specific 3-day chunk (Pro chunked trips)
+ * Returns 202 if chunk is not yet ready (still being generated).
+ */
+router.get("/trips/:tripId/chunks/:chunkIndex", requireUserAuth, getTripChunk);
 
 export default router;

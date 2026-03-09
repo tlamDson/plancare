@@ -22,7 +22,8 @@ export const generalLimiter = rateLimit({
 
 export const tripCreationLimiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000,
-  max: 10,
+  // Anti-spam limiter only. Plan limits are enforced by userQuotaService.
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req, res) => {
@@ -40,9 +41,8 @@ export const tripCreationLimiter = rateLimit({
   }),
   handler: (req, res) => {
     res.status(429).json({
-      error: "Daily trip creation limit exceeded",
-      message:
-        "Free tier users can create 10 trips per day. Please try again tomorrow.",
+      error: "Too many trip creation attempts",
+      message: "Please wait a moment and try again.",
       retryAfter: res.getHeader("Retry-After"),
     });
   },
