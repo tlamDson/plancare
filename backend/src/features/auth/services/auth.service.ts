@@ -53,11 +53,11 @@ export class AuthService {
           travelStyle: [],
         },
         notificationPreferences: {
-          tripReminders: { type: true, default: true },
-          budgetAlerts: { type: true, default: true },
-          tripInvites: { type: true, default: true },
-          aiSuggestions: { type: true, default: true },
-          doNotDisturb: { type: true, default: false },
+          tripReminders: true,
+          budgetAlerts: true,
+          tripInvites: true,
+          aiSuggestions: true,
+          doNotDisturb: false,
         },
       } as any); // Type assertion needed or fix User model interface to allow partials better or map correctly
 

@@ -31,6 +31,22 @@ export class UserRepository {
   ): Promise<IUser | null> {
     return User.findOneAndUpdate({ clerkUserId }, updateData, { new: true });
   }
+
+  async decrementCredit(clerkUserId: string): Promise<IUser | null> {
+    return User.findOneAndUpdate(
+      { clerkUserId, credits: { $gt: 0 } },
+      { $inc: { credits: -1 } },
+      { new: true },
+    );
+  }
+
+  async incrementCredit(clerkUserId: string): Promise<IUser | null> {
+    return User.findOneAndUpdate(
+      { clerkUserId },
+      { $inc: { credits: 1 } },
+      { new: true },
+    );
+  }
 }
 
 export const userRepository = new UserRepository();

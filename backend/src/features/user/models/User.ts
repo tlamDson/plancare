@@ -8,6 +8,9 @@ export interface IUser extends Document {
   avatarUrl?: string;
   gender: string;
   dateOfBirth: Date;
+  tier: "free" | "pro";
+  credits: number;
+  quotaResetsAt?: Date;
   preferences: {
     currency: string;
     budgetRange?: number;
@@ -64,6 +67,26 @@ const UserSchema = new Schema<IUser>(
       default: "not_specified",
     },
     avatarUrl: String,
+    tier: {
+      type: String,
+      enum: ["free", "pro"],
+      default: "free",
+    },
+    credits: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    quotaResetsAt: {
+      type: Date,
+      default: () => {
+        const nextMonth = new Date();
+        nextMonth.setUTCDate(1);
+        nextMonth.setUTCHours(0, 0, 0, 0);
+        nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
+        return nextMonth;
+      },
+    },
     notificationPreferences: {
       tripReminders: { type: Boolean, default: true },
       budgetAlerts: { type: Boolean, default: true },
