@@ -4,7 +4,7 @@
  * Main planner view for a single trip — shows a rich itinerary timeline.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   useJobPoller,
@@ -12,6 +12,7 @@ import {
   useReorderActivities,
   useRegenActivity,
 } from "@/features/planner/hooks";
+import { useLoadNextChunk } from "@/features/planner/hooks/useLoadNextChunk";
 import {
   DndContext,
   PointerSensor,
@@ -55,6 +56,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
 import { useUpdateTrip, useUpdateTripLifecycle } from "../hooks/useTrips";
 import { apiClient } from "@/lib/axios";
+import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -77,6 +79,7 @@ export default function TripDetailPage() {
   const [isUndoing, setIsUndoing] = useState(false);
   const [isReGeocoding, setIsReGeocoding] = useState(false);
   const [canUndo, setCanUndo] = useState(true);
+  const { autoLoadLongTripChunks } = useSubscriptionStore();
 
   useEffect(() => {
     if (trip?.isAgentProcessing && trip.agentJobId) {
@@ -281,6 +284,42 @@ export default function TripDetailPage() {
     [trip, regenActivity],
   );
 
+  // Chunk loading for Pro trips > 5 days
+  const totalChunks = (trip as any)?.totalChunks ?? 0;
+  const isChunkedTrip = totalChunks > 1;
+  const { allChunksLoaded, isLoadingChunk, loadNextChunk } = useLoadNextChunk(
+    tripId,
+    totalChunks,
+    isChunkedTrip ? Math.ceil((trip?.itinerary?.length ?? 0) / 3) : 0,
+  );
+
+  // IntersectionObserver: fire loadNextChunk when user scrolls near the last day
+  const lastDayRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (
+      !autoLoadLongTripChunks ||
+      !isChunkedTrip ||
+      allChunksLoaded ||
+      !lastDayRef.current
+    ) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadNextChunk();
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(lastDayRef.current);
+    return () => observer.disconnect();
+  }, [
+    autoLoadLongTripChunks,
+    isChunkedTrip,
+    allChunksLoaded,
+    loadNextChunk,
+    trip?.itinerary?.length,
+  ]);
+
   if (isLoading) return <PageLoader />;
 
   if (error || !trip) {
@@ -468,6 +507,11 @@ export default function TripDetailPage() {
         {/* Itinerary */}
         <div>
           <h2 className="text-xl font-semibold mb-4">{t("trip.itinerary")}</h2>
+          {isChunkedTrip && (
+            <div className="mb-4 rounded-lg border border-purple-200 bg-purple-50/70 p-3 text-sm text-purple-800">
+              Long-trip generation may take longer. You can leave this page and come back later.
+            </div>
+          )}
 
           {trip.itinerary.length === 0 ? (
             <div className="rounded-xl border bg-muted/30 p-8 text-center">
@@ -482,26 +526,57 @@ export default function TripDetailPage() {
               {trip.itinerary
                 .slice()
                 .sort((a, b) => a.day - b.day)
-                .map((day, dayIndex) => (
-                  <DndContext
-                    key={day._id ?? day.day}
-                    sensors={sensors}
-                    onDragEnd={(event) => handleDragEnd(event, dayIndex)}
-                  >
-                    <ItineraryDayCard
-                      day={day}
-                      dayIndex={dayIndex}
-                      currency={trip.budget.currency}
-                      isDragDisabled={trip.isAgentProcessing || isReordering || isRegening}
-                      regenningActivityId={
-                        isRegening && regenVariables?.dayIndex === dayIndex
-                          ? regenVariables.activityId
-                          : null
-                      }
-                      onRegenActivity={handleRegenActivity}
-                    />
-                  </DndContext>
-                ))}
+                .map((day, dayIndex, arr) => {
+                  const isLast = dayIndex === arr.length - 1;
+                  return (
+                    <div
+                      key={day._id ?? day.day}
+                      ref={isLast && isChunkedTrip ? lastDayRef : undefined}
+                    >
+                      <DndContext
+                        sensors={sensors}
+                        onDragEnd={(event) => handleDragEnd(event, dayIndex)}
+                      >
+                        <ItineraryDayCard
+                          day={day}
+                          dayIndex={dayIndex}
+                          currency={trip.budget.currency}
+                          isDragDisabled={trip.isAgentProcessing || isReordering || isRegening}
+                          regenningActivityId={
+                            isRegening && regenVariables?.dayIndex === dayIndex
+                              ? regenVariables.activityId
+                              : null
+                          }
+                          onRegenActivity={handleRegenActivity}
+                        />
+                      </DndContext>
+                    </div>
+                  );
+                })}
+
+              {/* Chunked trip: show skeleton while next chunk loads */}
+              {isChunkedTrip && !allChunksLoaded && (
+                <div className="rounded-xl border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+                  <p className={isLoadingChunk ? "animate-pulse" : ""}>
+                    {isLoadingChunk
+                      ? "Loading more days..."
+                      : autoLoadLongTripChunks
+                        ? "Auto-loading next days..."
+                        : "Click to load more days."}
+                  </p>
+                  {!autoLoadLongTripChunks && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-3"
+                      onClick={() => void loadNextChunk()}
+                      disabled={isLoadingChunk}
+                    >
+                      Load more days
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
