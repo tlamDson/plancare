@@ -6,6 +6,7 @@ export const jobStatusSchema = z.enum([
   "PROCESSING",
   "COMPLETED",
   "FAILED",
+  "CANCELLED",
 ]);
 
 export const jobSchema = z.object({

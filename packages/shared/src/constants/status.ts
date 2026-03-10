@@ -7,6 +7,7 @@ export const TripStatusValues = [
   "COMPLETED",
   "FAILED",
   "FALLBACK",
+  "CANCELLED",
 ] as const;
 
 export type TripStatus = (typeof TripStatusValues)[number];
