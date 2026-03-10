@@ -99,3 +99,49 @@ export const retryJob = async (
     res.status(500).json({ message: "Failed to retry job" });
   }
 };
+
+/**
+ * POST /api/jobs/:jobId/cancel - Cancel a pending/processing job
+ */
+export const cancelJob = async (
+  req: ClerkRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.auth?.()?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const jobId = req.params.jobId;
+    if (!jobId) {
+      res.status(400).json({ message: "Job ID is required" });
+      return;
+    }
+
+    const result = await plannerService.cancelTripJobForUser(jobId, userId);
+    res.status(200).json({
+      message: "Job cancelled successfully",
+      ...result,
+    });
+  } catch (error: any) {
+    if (error?.message === "FORBIDDEN_JOB_ACCESS") {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    if (error?.message === "JOB_ALREADY_FINISHED") {
+      res.status(400).json({ message: "Job has already finished processing" });
+      return;
+    }
+
+    if (error?.message === "JOB_NOT_FOUND") {
+      res.status(404).json({ message: "Job not found" });
+      return;
+    }
+
+    logger.error({ error, jobId: req.params.jobId }, "Failed to cancel job");
+    res.status(500).json({ message: "Failed to cancel job" });
+  }
+};

@@ -10,6 +10,8 @@ import {
   retryTripJobForUser,
   getTripByIdFromRepo,
   getUserTripsList,
+  cancelTripJobForUser,
+  cancelTripForUser,
 } from "./trip-status.service";
 
 const tripQueue = createQueue("trip-generation");
@@ -188,9 +190,11 @@ export class PlannerService {
     return updated;
   }
 
-  // Delegate status/retry/query operations to trip-status.service
+  // Delegate status/retry/query/cancel operations to trip-status.service
   getJobStatusForUser = getJobStatusForUser;
   retryTripJobForUser = retryTripJobForUser;
+  cancelTripJobForUser = cancelTripJobForUser;
+  cancelTripForUser = cancelTripForUser;
   getTripById = getTripByIdFromRepo;
   getUserTrips = getUserTripsList;
 }

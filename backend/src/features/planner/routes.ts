@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { getJobStatus, retryJob } from "./controllers/planner.controller";
+import {
+  getJobStatus,
+  retryJob,
+  cancelJob,
+} from "./controllers/planner.controller";
 import {
   generateTrip,
   getTripById,
@@ -12,6 +16,7 @@ import {
   reorderActivities,
   regenActivity,
   getTripChunk,
+  cancelTrip,
 } from "./controllers/trip.controller";
 import { requireUserAuth } from "../../middlewares/auth";
 import { tripCreationLimiter } from "../../middlewares/rate-limiter";
@@ -46,7 +51,13 @@ const router = Router();
  *       401:
  *         description: Unauthorized
  */
-router.post("/trips", requireUserAuth, tripCreationLimiter, idempotencyMiddleware, generateTrip);
+router.post(
+  "/trips",
+  requireUserAuth,
+  tripCreationLimiter,
+  idempotencyMiddleware,
+  generateTrip,
+);
 
 /**
  * @swagger
@@ -152,6 +163,60 @@ router.post("/jobs/:jobId/retry", requireUserAuth, retryJob);
 
 /**
  * @swagger
+ * /api/jobs/{jobId}/cancel:
+ *   post:
+ *     summary: Cancel a running/queued job
+ *     description: Removes a trip generation job from BullMQ and marks it CANCELLED
+ *     tags: [Jobs]
+ *     security:
+ *       - ClerkAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job cancelled
+ *       400:
+ *         description: Job already finished
+ *       404:
+ *         description: Job not found
+ *       403:
+ *         description: Forbidden
+ */
+router.post("/jobs/:jobId/cancel", requireUserAuth, cancelJob);
+
+/**
+ * @swagger
+ * /api/trips/{tripId}/cancel:
+ *   post:
+ *     summary: Cancel trip generation
+ *     description: Cancels an ongoing AI trip generation by tripId
+ *     tags: [Trips]
+ *     security:
+ *       - ClerkAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: tripId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Trip cancelled
+ *       400:
+ *         description: Trip not currently processing
+ *       404:
+ *         description: Trip not found
+ *       403:
+ *         description: Forbidden
+ */
+router.post("/trips/:tripId/cancel", requireUserAuth, cancelTrip);
+
+/**
+ * @swagger
  * /api/trips/{tripId}:
  *   delete:
  *     summary: Delete a trip
@@ -199,7 +264,11 @@ router.post("/trips/:tripId/regeocode", requireUserAuth, reGeocodeTrip);
  * PATCH /api/trips/:tripId/reorder-activities — Reorder activities within a day (drag-and-drop)
  * Body: { dayIndex: number, orderedActivityIds: string[] }
  */
-router.patch("/trips/:tripId/reorder-activities", requireUserAuth, reorderActivities);
+router.patch(
+  "/trips/:tripId/reorder-activities",
+  requireUserAuth,
+  reorderActivities,
+);
 
 /**
  * POST /api/trips/:tripId/regen-activity — Regenerate a single activity with a new AI suggestion

@@ -348,12 +348,10 @@ export const reorderActivities = async (
       !Array.isArray(orderedActivityIds) ||
       orderedActivityIds.length === 0
     ) {
-      res
-        .status(400)
-        .json({
-          message:
-            "dayIndex (number) and orderedActivityIds (string[]) are required",
-        });
+      res.status(400).json({
+        message:
+          "dayIndex (number) and orderedActivityIds (string[]) are required",
+      });
       return;
     }
 
@@ -464,11 +462,9 @@ export const regenActivity = async (
     const { dayIndex, activityId } = req.body;
 
     if (typeof dayIndex !== "number" || typeof activityId !== "string") {
-      res
-        .status(400)
-        .json({
-          message: "dayIndex (number) and activityId (string) are required",
-        });
+      res.status(400).json({
+        message: "dayIndex (number) and activityId (string) are required",
+      });
       return;
     }
 
@@ -578,11 +574,9 @@ export const regenActivity = async (
       "Failed to regen activity",
     );
     if (error.message === "NO_ALTERNATIVE_FOUND") {
-      res
-        .status(422)
-        .json({
-          message: "Could not find a unique alternative activity. Try again.",
-        });
+      res.status(422).json({
+        message: "Could not find a unique alternative activity. Try again.",
+      });
       return;
     }
     res.status(500).json({ message: "Failed to regenerate activity" });
@@ -716,11 +710,9 @@ export const getTripChunk = async (
     }
 
     if (chunkIndex >= totalChunks) {
-      res
-        .status(404)
-        .json({
-          message: `Chunk ${chunkIndex} does not exist (totalChunks: ${totalChunks})`,
-        });
+      res.status(404).json({
+        message: `Chunk ${chunkIndex} does not exist (totalChunks: ${totalChunks})`,
+      });
       return;
     }
 
@@ -756,6 +748,50 @@ export const getTripChunk = async (
       "Failed to get trip chunk",
     );
     res.status(500).json({ message: "Failed to retrieve chunk" });
+  }
+};
+
+/**
+ * POST /api/trips/:tripId/cancel - Cancel a trip generation
+ */
+export const cancelTrip = async (
+  req: ClerkRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.auth?.()?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const { tripId } = req.params;
+    if (!tripId) {
+      res.status(400).json({ message: "Trip ID is required" });
+      return;
+    }
+
+    const result = await plannerService.cancelTripForUser(tripId, userId);
+    res.status(200).json({
+      message: "Trip cancelled successfully",
+      ...result,
+    });
+  } catch (error: any) {
+    if (error?.message === "FORBIDDEN_TRIP_ACCESS") {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+    if (error?.message === "TRIP_NOT_FOUND") {
+      res.status(404).json({ message: "Trip not found" });
+      return;
+    }
+    if (error?.message === "TRIP_NOT_PROCESSING") {
+      res.status(400).json({ message: "Trip is not currently processing" });
+      return;
+    }
+
+    logger.error({ error, tripId: req.params.tripId }, "Failed to cancel trip");
+    res.status(500).json({ message: "Failed to cancel trip" });
   }
 };
 

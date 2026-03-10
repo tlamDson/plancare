@@ -15,4 +15,4 @@ export {
   undoTrip,
   reGeocodeTrip,
 } from "./trip.controller";
-export { getJobStatus, retryJob } from "./job.controller";
+export { getJobStatus, retryJob, cancelJob } from "./job.controller";
