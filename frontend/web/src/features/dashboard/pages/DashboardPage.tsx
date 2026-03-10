@@ -251,8 +251,12 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {trips?.slice(0, 6).map((trip) => (
-                    <TripCard key={trip._id} trip={trip} />
+                  {trips?.slice(0, 6).map((trip, index) => (
+                    <TripCard
+                      key={trip._id}
+                      trip={trip}
+                      priority={index === 0}
+                    />
                   ))}
                 </div>
               )}

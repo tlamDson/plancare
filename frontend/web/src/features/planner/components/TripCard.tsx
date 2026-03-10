@@ -39,6 +39,7 @@ import { useTranslationStore } from "@/stores/useTranslationStore";
 
 interface TripCardProps {
   trip: Trip;
+  priority?: boolean;
 }
 
 const AI_STATUS_COLORS: Record<string, string> = {
@@ -64,7 +65,7 @@ const LIFECYCLE_COLORS: Record<string, string> = {
   CANCELLED: "bg-red-700/80 text-red-100",
 };
 
-export function TripCard({ trip }: TripCardProps) {
+export function TripCard({ trip, priority = false }: TripCardProps) {
   const duration = getTripDuration(trip.startDate, trip.endDate);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { mutate: deleteTrip, isPending: isDeleting } = useDeleteTrip();
@@ -119,7 +120,8 @@ export function TripCard({ trip }: TripCardProps) {
                   src={coverSrc}
                   alt={getLocalizedTripTitle(trip.title, t)}
                   className="w-full h-full object-cover"
-                  loading="lazy"
+                  loading={priority ? undefined : "lazy"}
+                  fetchPriority={priority ? "high" : "auto"}
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-muted" />
