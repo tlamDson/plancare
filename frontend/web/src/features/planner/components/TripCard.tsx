@@ -13,7 +13,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -283,7 +282,6 @@ export function TripCard({ trip }: TripCardProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
               disabled={isDeleting || trip.isAgentProcessing}
