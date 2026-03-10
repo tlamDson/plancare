@@ -58,6 +58,21 @@ The Frontend expects immediate feedback. We never block the HTTP request for lon
 - **Progress:** You **MUST** call `job.progress(number)` at every step (25%, 50%, 75%) so the UI spinner updates.
 - **Partial Results:** Save intermediate steps to Redis/Mongo so the user sees "Drafts" appearing in real-time.
 
+### 3.3 Warning: Polling vs BullMQ Statuses (The "IDLE" Bug)
+
+BullMQ has diverse internal statuses (`active`, `waiting`, `delayed`, `prioritized`, etc.).
+**Crucial Lesson:** If you prioritize jobs (e.g., Pro users vs Free users), jobs may enter the `"prioritized"` state instead of `"waiting"`. If your API polling endpoint fails to map this specific state, it may default to returning `"IDLE"` to the frontend.
+**Required:** Ensure your job state mapper explicitly includes:
+
+```typescript
+const JOB_STATE_TO_STATUS: Record<string, JobStatus> = {
+  // ... other states
+  prioritized: "QUEUED",
+};
+```
+
+Otherwise, the UI will report 0% IDLE while the job is actually queued and the user will think the system is broken.
+
 ## 4. Resilience, Logging & Self-Healing
 
 Distributed systems fail. We design for failure.

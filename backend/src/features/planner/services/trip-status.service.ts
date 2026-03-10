@@ -15,6 +15,7 @@ const JOB_STATE_TO_STATUS: Record<string, JobStatus> = {
   delayed: "QUEUED",
   paused: "QUEUED",
   "waiting-children": "QUEUED",
+  prioritized: "QUEUED",
 };
 
 export function mapJobState(state: string): JobStatus {
