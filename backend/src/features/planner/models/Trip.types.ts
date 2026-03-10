@@ -151,6 +151,9 @@ export interface ITrip extends Document {
   coverImage?: string;
   tags?: string[];
 
+  /** Google Calendar event IDs — key = activity._id (Entity ID), value = Google eventId */
+  googleEventIds?: Record<string, string>;
+
   createdAt: Date;
   updatedAt: Date;
 }

@@ -10,6 +10,7 @@ import type { TripPreferences } from "@travelplan/shared";
 import type { TripIntents } from "../services/intent-parser.service";
 import { CityCost } from "../models/CityCost";
 import { getStaticTemplate } from "../services/static-template.service";
+import { isMVPDestination } from "../utils/destination-utils";
 import {
   buildItinerary,
   getProgressPercent,
@@ -164,9 +165,11 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
 
     const destName =
       preferences.destination.split(",")[0] || preferences.destination;
-    const cityCost = await CityCost.findOne({
-      cityName: { $regex: new RegExp(destName, "i") },
-    }).lean();
+    const cityCost = isMVPDestination(destName)
+      ? await CityCost.findOne({
+          cityName: { $regex: new RegExp(destName, "i") },
+        }).lean()
+      : null;
 
     if (cityCost) {
       logger.info(
@@ -376,7 +379,7 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
       "❌ Trip generation failed",
     );
 
-    if (userTier === "free") {
+    if (userTier === "free" && isMVPDestination(preferences.destination)) {
       const template = getStaticTemplate(preferences.destination);
       if (template) {
         logger.info(

@@ -220,6 +220,9 @@ const TripSchema = new Schema<ITrip>(
     },
     coverImage: String,
     tags: [String],
+
+    /** Google Calendar event IDs — key = activity._id, value = Google eventId */
+    googleEventIds: { type: Schema.Types.Mixed, default: {} },
   },
   {
     timestamps: true,

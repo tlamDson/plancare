@@ -1,5 +1,6 @@
 import { createWorker } from "./lib/queue";
 import { tripGeneratorProcessor } from "./features/planner/jobs/trip.processor";
+import { calendarSyncProcessor } from "./features/calendar/jobs/calendar-sync.processor";
 import { logger } from "./lib/logger";
 import mongoose from "mongoose";
 import { env } from "./config/env";
@@ -42,6 +43,19 @@ const startWorker = async () => {
     });
 
     logger.info("Worker started and listening for jobs...");
+
+    // Calendar Sync Worker
+    const calendarWorker = createWorker(
+      "sync-google-calendar",
+      calendarSyncProcessor,
+      { concurrency: 3 },
+    );
+    calendarWorker.on("completed", (job) => {
+      logger.info({ jobId: job.id }, "Calendar sync job completed");
+    });
+    calendarWorker.on("failed", (job, err) => {
+      logger.error({ jobId: job?.id, err }, "Calendar sync job failed");
+    });
 
     // Tells the worker wait don't just die. Finish what you are doing. Clos Redis connection and MongoDb and then shut down.
     process.on("SIGTERM", async () => {
