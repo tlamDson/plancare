@@ -34,7 +34,7 @@ import { useActiveJobStore } from "@/stores/useActiveJobStore";
 import { ItineraryDayCard } from "../components/ItineraryDayCard";
 import { DataError } from "@/components/DataError";
 import { PageLoader } from "@/components/PageLoader";
-import { retryJob } from "../api/jobs.api";
+import { retryJob, cancelJob } from "../api/jobs.api";
 import { toast } from "sonner";
 import {
   CalendarDays,
@@ -54,7 +54,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
 import { useUpdateTrip, useUpdateTripLifecycle } from "../hooks/useTrips";
 import { apiClient } from "@/lib/axios";
@@ -85,7 +85,7 @@ export default function TripDetailPage() {
   const [isReGeocoding, setIsReGeocoding] = useState(false);
   const [canUndo, setCanUndo] = useState(true);
   const { autoLoadLongTripChunks } = useSubscriptionStore();
-  const { setActiveJob } = useActiveJobStore();
+  const { setActiveJob, clearActiveJob } = useActiveJobStore();
 
   useEffect(() => {
     if (trip?.isAgentProcessing && trip.agentJobId && tripId) {
@@ -178,6 +178,31 @@ export default function TripDetailPage() {
       setIsRetrying(false);
     }
   }, [activeJobId]);
+
+  const { mutate: cancelTripJob, isPending: isCancelling } = useMutation({
+    mutationFn: (id: string) => cancelJob(id),
+    onSuccess: () => {
+      toast.success("Trip generation cancelled.");
+      setActiveJobId(null);
+      clearActiveJob();
+      if (tripId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.trips.detail(tripId),
+        });
+      }
+    },
+    onError: (err: any) => {
+      toast.error(
+        err?.response?.data?.message || "Failed to cancel trip generation.",
+      );
+    },
+  });
+
+  const handleCancelClick = useCallback(() => {
+    if (tripId) {
+      cancelTripJob(tripId);
+    }
+  }, [tripId, cancelTripJob]);
 
   const handleUndo = useCallback(async () => {
     if (!tripId) return;
@@ -374,6 +399,8 @@ export default function TripDetailPage() {
           jobId={activeJobId}
           onRetry={activeJobId ? handleRetry : undefined}
           isRetrying={isRetrying}
+          onCancel={handleCancelClick}
+          isCancelling={isCancelling}
           isFallback={isFallback}
           fallbackCity={trip?.destination?.split(",")[0]}
         />

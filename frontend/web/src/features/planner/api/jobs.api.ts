@@ -20,10 +20,21 @@ export async function retryJob(jobId: string): Promise<{
   tripId: string;
 }> {
   const response = await apiClient.post(`/jobs/${jobId}/retry`);
-  const parsed = validateAPI(
-    retryJobResponseSchema,
-    response.data,
-    "retryJob",
-  );
+  const parsed = validateAPI(retryJobResponseSchema, response.data, "retryJob");
   return { jobId: parsed.jobId, tripId: parsed.tripId };
+}
+
+const cancelJobResponseSchema = z.object({
+  success: z.literal(true),
+  message: z.string().optional(),
+});
+
+export async function cancelJob(tripId: string): Promise<boolean> {
+  const response = await apiClient.post(`/trips/${tripId}/cancel`);
+  const parsed = validateAPI(
+    cancelJobResponseSchema,
+    response.data,
+    "cancelTrip",
+  );
+  return parsed.success;
 }

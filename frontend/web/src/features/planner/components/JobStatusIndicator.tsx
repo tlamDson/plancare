@@ -49,6 +49,11 @@ const statusConfig: Record<
     label: "Failed",
     color: "text-destructive",
   },
+  CANCELLED: {
+    icon: XCircle,
+    label: "Cancelled",
+    color: "text-muted-foreground",
+  },
 };
 
 export function JobStatusIndicator({
@@ -114,6 +119,7 @@ export function JobStatusBadge({
           "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
         status === "FAILED" &&
           "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
+        status === "CANCELLED" && "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
         status === "IDLE" && "bg-muted text-muted-foreground",
       )}
     >

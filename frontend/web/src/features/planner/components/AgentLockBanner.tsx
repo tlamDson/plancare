@@ -14,18 +14,24 @@ import { useEffect, useState } from "react";
 
 // Progressive loading messages — cycle through as seconds pass
 const LOADING_MESSAGES = [
-  { after: 0,  text: "Đang phân tích yêu cầu..." },
-  { after: 4,  text: "Đang tìm các địa điểm phù hợp..." },
+  { after: 0, text: "Đang phân tích yêu cầu..." },
+  { after: 4, text: "Đang tìm các địa điểm phù hợp..." },
   { after: 10, text: "Đang lên lịch trình theo sở thích..." },
   { after: 18, text: "Đang tối ưu hoá hành trình theo khu vực..." },
   { after: 28, text: "Sắp hoàn tất, chờ thêm chút nữa nhé..." },
 ];
 
-function useProgressiveMessage(isActive: boolean, overrideStep?: string | null): string {
+function useProgressiveMessage(
+  isActive: boolean,
+  overrideStep?: string | null,
+): string {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    if (!isActive) { setElapsed(0); return; }
+    if (!isActive) {
+      setElapsed(0);
+      return;
+    }
     const interval = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(interval);
   }, [isActive]);
@@ -47,6 +53,8 @@ interface AgentLockBannerProps {
   jobId?: string | null;
   onRetry?: () => void;
   isRetrying?: boolean;
+  onCancel?: () => void;
+  isCancelling?: boolean;
   /** Show a yellow "fallback template" banner for free users when AI is unavailable */
   isFallback?: boolean;
   fallbackCity?: string;
@@ -61,11 +69,14 @@ export function AgentLockBanner({
   jobId,
   onRetry,
   isRetrying = false,
+  onCancel,
+  isCancelling = false,
   isFallback = false,
   fallbackCity,
 }: AgentLockBannerProps) {
   const showError = Boolean(error);
-  const isProcessing = isLocked && !showError;
+  const isCancelled = status === "CANCELLED";
+  const isProcessing = isLocked && !showError && !isCancelled;
   const progressiveStep = useProgressiveMessage(isProcessing, currentStep);
 
   // Fallback template banner (free user, AI unavailable)
@@ -78,7 +89,8 @@ export function AgentLockBanner({
         </AlertTitle>
         <AlertDescription className="text-yellow-700/80 dark:text-yellow-400/80">
           AI đang bảo trì. Đây là lịch trình tiêu chuẩn
-          {fallbackCity ? ` cho ${fallbackCity}` : ""}. Một số tính năng bị giới hạn.
+          {fallbackCity ? ` cho ${fallbackCity}` : ""}. Một số tính năng bị giới
+          hạn.
         </AlertDescription>
       </Alert>
     );
@@ -86,8 +98,10 @@ export function AgentLockBanner({
 
   if (!isLocked && !showError) return null;
 
-  const resolvedStatus: JobStatus = status || (showError ? "FAILED" : "PROCESSING");
-  const canRetry = Boolean(onRetry) && (showError || resolvedStatus === "FAILED");
+  const resolvedStatus: JobStatus =
+    status || (showError ? "FAILED" : "PROCESSING");
+  const canRetry =
+    Boolean(onRetry) && (showError || resolvedStatus === "FAILED");
 
   return (
     <Alert
@@ -103,12 +117,12 @@ export function AgentLockBanner({
         <Loader2 className="h-4 w-4 animate-spin text-primary" />
       )}
       <AlertTitle className={showError ? "text-destructive" : "text-primary"}>
-        {showError ? "AI failed to generate your trip" : "AI is working on your trip"}
+        {showError
+          ? "AI failed to generate your trip"
+          : "AI is working on your trip"}
       </AlertTitle>
       <AlertDescription className="text-muted-foreground">
-        {showError
-          ? error
-          : progressiveStep}
+        {showError ? error : progressiveStep}
       </AlertDescription>
 
       <div className="mt-3 space-y-2">
@@ -130,6 +144,19 @@ export function AgentLockBanner({
               disabled={isRetrying}
             >
               {isRetrying ? "Retrying..." : "Retry"}
+            </Button>
+          </div>
+        )}
+        {status !== "COMPLETED" && !showError && !isCancelled && onCancel && (
+          <div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isCancelling}
+              className="mt-2 text-muted-foreground hover:text-destructive"
+            >
+              {isCancelling ? "Cancelling..." : "Cancel Generation"}
             </Button>
           </div>
         )}

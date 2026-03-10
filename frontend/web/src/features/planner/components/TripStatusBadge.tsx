@@ -50,6 +50,10 @@ const statusConfig: Record<TripStatus, { label: string; className: string }> = {
     className:
       "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
   },
+  CANCELLED: {
+    label: "Đã hủy",
+    className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+  },
 };
 
 export function TripStatusBadge({ status, className }: TripStatusBadgeProps) {
