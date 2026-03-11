@@ -16,6 +16,7 @@ import {
   getProgressPercent,
   updateJobProgress,
 } from "./itinerary-builder";
+import { getCityInsight } from "../../destinations/services/destination-lookup.service";
 
 interface TripJobData {
   tripId: string;
@@ -205,10 +206,36 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
         }
       : undefined;
 
+    // ─── RAG: Fetch local insight for this destination ────────────────────
+    let localInsight: string | null = null;
+    try {
+      localInsight = await getCityInsight(preferences.destination, {
+        ...(preferences.countryIdKey
+          ? { countryIdKey: preferences.countryIdKey }
+          : {}),
+        ...(preferences.cityIdKey ? { cityIdKey: preferences.cityIdKey } : {}),
+      });
+      if (localInsight) {
+        logger.info(
+          { destination: preferences.destination, chars: localInsight.length },
+          "📚 RAG: Local insight loaded — injecting into AI prompt",
+        );
+      } else {
+        logger.info(
+          { destination: preferences.destination },
+          "📚 RAG: No local insight found — using generalized AI prompt",
+        );
+      }
+    } catch (ragErr) {
+      logger.warn({ ragErr }, "📚 RAG: Failed to fetch insight — continuing without it");
+    }
+
     const intents = await aiAgentService.generateIntentsWithRetry(
       preferences,
       language,
       cityCostContext,
+      4,
+      localInsight,
     );
     const intentList = intentParserService.flattenIntents(intents);
     logger.info(

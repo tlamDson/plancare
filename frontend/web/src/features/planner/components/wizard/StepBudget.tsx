@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { useTripWizardStore } from "@/stores/trip-wizard.store";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 import { convertCurrency } from "@/utils/format";
+import { differenceInDays } from "date-fns";
 
 const BASE_MIN_USD = 200;
 const BASE_MAX_USD = 10_000;
@@ -14,9 +15,9 @@ function getTripDays(startDate: string, endDate: string) {
   const start = new Date(startDate);
   const end = new Date(endDate);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
-  const diffTime = end.getTime() - start.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays >= 1 ? diffDays : null;
+  // +1 to count both start and end as activity days (consistent with getTripDuration)
+  const days = differenceInDays(end, start) + 1;
+  return days >= 1 ? days : null;
 }
 
 export function StepBudget() {
