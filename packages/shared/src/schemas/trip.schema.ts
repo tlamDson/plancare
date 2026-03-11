@@ -80,6 +80,11 @@ export const TripPreferencesSchema = z.object({
     .enum(["hostel", "airbnb", "hotel", "resort", "any"])
     .optional()
     .default("any"),
+  // ─── Destination idKeys — sent by frontend when user selects from dropdown ─
+  /** Country DB idKey — enables precise RAG lookup without string parsing */
+  countryIdKey: z.string().optional(),
+  /** City DB idKey — enables precise RAG lookup without string parsing */
+  cityIdKey: z.string().optional(),
 });
 
 export type TripPreferences = z.infer<typeof TripPreferencesSchema>;

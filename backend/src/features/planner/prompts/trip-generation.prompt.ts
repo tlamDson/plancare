@@ -24,7 +24,8 @@ RULES (follow exactly):
 - Return ONLY a valid JSON object — no markdown, no code fences, no explanations, no comments.
 - Keys must be exactly "day1", "day2", etc. (lowercase, no spaces).
 - Group activities geographically. All activities within the same day MUST be located in the same neighborhood or reasonably close to each other to minimize travel distance.
-- Each day must have structured slots like "morning", "afternoon", "evening".
+- Each day must have structured slots (e.g. "morning", "late morning", "afternoon", "late afternoon", "evening", "night") — use exactly the slot names provided in the prompt.
+- CRITICAL: Every slot MUST be a PLACE TO VISIT (attraction, landmark, museum, park, viewpoint, market, etc.). Do NOT use restaurants or cafés as main activities — food suggestions are added automatically nearby each activity.
 - Every query must be actionable and location-specific (e.g., "best rooftop bar Midtown Manhattan New York").
 - Never use vague queries like "visit a museum" — always include a city, district, or landmark.
 - CRITICAL: Do NOT suggest activities that are in a different city from the destination. For example, if destination is "Hanoi", do NOT suggest "Halong Bay tour", "Sapa trip", or any day trip that requires leaving the city. Only suggest things TO DO IN THE DESTINATION CITY ITSELF.
@@ -39,6 +40,7 @@ export function buildTripPrompt(
   preferences: TripPreferences,
   language?: string,
   cityCost?: any,
+  localInsight?: string | null,
 ): string {
   const {
     destination,
@@ -65,22 +67,23 @@ export function buildTripPrompt(
   const activitiesPerDay = paceConfig.activitiesPerDay;
 
   // ─── Focus → slot pattern ───────────────────────────────────────────────
+  // All slots = PLACES TO VISIT. Food/restaurant suggestions are added automatically nearby each activity.
   type SlotPattern = { m: string; a: string; e: string };
   const FOCUS_SLOT_MAP: Record<string, SlotPattern> = {
     Culture: {
       m: "museum or historical site",
       a: "art gallery or heritage walk",
-      e: "cultural show or local dinner",
+      e: "cultural show or evening performance venue",
     },
     Nature: {
       m: "park, beach, or trail entrance",
       a: "viewpoint or nature activity",
-      e: "seafood or dinner near nature area",
+      e: "sunset viewpoint or nature lookout",
     },
     Gastronomy: {
-      m: "local market or street food area",
-      a: "landmark or attraction (NOT a restaurant)",
-      e: "restaurant or rooftop bar",
+      m: "local market or food hall (place to explore, NOT a sit-down restaurant)",
+      a: "landmark or attraction",
+      e: "rooftop bar with view or observation deck",
     },
     Lifestyle: {
       m: "boutique shopping street",
@@ -244,6 +247,11 @@ export function buildTripPrompt(
     ? `Priorities: Money (${priorities.money}/10), Comfort (${priorities.comfort}/10), Unique (${priorities.unique}/10).`
     : "";
 
+  // ─── Local Insight (RAG) block ─────────────────────────────────────────
+  const localKnowledgeBlock = localInsight
+    ? `\n[LOCAL KNOWLEDGE — HIGH PRIORITY]:\n${localInsight}\n\nIMPORTANT: Use the local knowledge above to inspire hidden gems, must-try local food spots, and authentic experiences. Prioritize these suggestions over generic tourist traps.`
+    : "";
+
   return `
 Trip details:
 - Destination: ${destination}
@@ -258,9 +266,11 @@ ${dealBreakersContext}
 ${constraintsBlock}
 ${specialReqBlock}
 ${baseCostContext}
+${localKnowledgeBlock}
 
 CRITICAL: You MUST output exactly ${days} day entries (day1 through day${days}). Do NOT stop early.
 CRITICAL: Do NOT suggest any location outside ${destination} city.
+CRITICAL: Every slot must be a PLACE TO VISIT (attraction, landmark, museum, park, market, viewpoint). Do NOT use "restaurant" or "café" as main activities — nearby food suggestions are added automatically.
 ${languageInstruction}
 
 Replace every placeholder with a real, specific query. Follow the slot descriptors exactly. Return ALL ${days} keys:

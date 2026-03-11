@@ -214,6 +214,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.destError": "Destination must be at least 2 characters",
     "wizard.selectCountry": "Select country",
     "wizard.selectCity": "Select city",
+    "wizard.otherDestination": "Other country",
+    "wizard.otherCity": "Other city",
     "wizard.cityPlaceholder": "Enter city name (e.g. Tokyo, Bangkok)",
     "wizard.mvpHint":
       "We are optimizing AI generation exclusively for Vietnam, the United States, and France. Other destinations will be planned using a generalized AI model.",
@@ -619,6 +621,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.destError": "La destination doit comporter au moins 2 caractères",
     "wizard.selectCountry": "Choisissez le pays",
     "wizard.selectCity": "Choisissez la ville",
+    "wizard.otherDestination": "Autre pays",
+    "wizard.otherCity": "Autre ville",
     "wizard.cityPlaceholder": "Saisir le nom de la ville (ex: Tokyo, Bangkok)",
     "wizard.mvpHint":
       "Nous optimisons la génération d'IA de manière ciblée pour le Vietnam, les États-Unis et la France. D'autres destinations seront planifiées via un modèle d'IA généralisé.",
@@ -1027,6 +1031,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.destError": "Điểm đến phải có ít nhất 2 ký tự",
     "wizard.selectCountry": "Chọn quốc gia",
     "wizard.selectCity": "Chọn thành phố",
+    "wizard.otherDestination": "Quốc gia khác",
+    "wizard.otherCity": "Thành phố khác",
     "wizard.cityPlaceholder": "Nhập tên thành phố (vd: Tokyo, Bangkok)",
     "wizard.mvpHint":
       "Chúng tôi đang tối ưu cho Việt Nam, Hoa Kỳ và Pháp. Các điểm đến khác được lên lịch trình dựa trên AI tổng quát.",

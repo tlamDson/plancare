@@ -1,6 +1,9 @@
 import { Job } from "bullmq";
 import sanitizeHtml from "sanitize-html";
-import type { TripIntents } from "../services/intent-parser.service";
+import {
+  type TripIntents,
+  SLOT_ORDER as INTENT_SLOT_ORDER,
+} from "../services/intent-parser.service";
 import type { ValidatedPlace } from "../services/validation.service";
 import type { TripPreferences } from "@travelplan/shared";
 import type { IActivity } from "../models/Trip.types";
@@ -11,25 +14,22 @@ import type { TransportMode } from "../services/geo-validator.service";
 
 // ─── Slot-aware geographic clustering ────────────────────────────────────────
 // Strategy: cluster places by proximity (so nearby places share a day) AND
-// sort within each cluster by original slot order (morning→afternoon→evening)
-// so that intent semantics — "morning museum", "evening restaurant" — are
-// preserved even after geographic re-grouping.
+// sort within each cluster by original slot order (morning→…→night)
+// so that intent semantics are preserved even after geographic re-grouping.
 
-const SLOT_ORDER: Record<string, number> = {
-  morning: 0,
-  afternoon: 1,
-  evening: 2,
-};
+const SLOT_ORDER_MAP: Record<string, number> = Object.fromEntries(
+  INTENT_SLOT_ORDER.map((s, i) => [s, i]),
+);
 
 interface TaggedPlace {
   place: ValidatedPlace;
-  slotType: "morning" | "afternoon" | "evening";
-  slotOrder: number; // 0 / 1 / 2 — used for in-cluster sort
+  slotType: string;
+  slotOrder: number;
 }
 
 // Reconstruct the (slot, ValidatedPlace) correspondence by iterating intents
 // in the same order as flattenIntents so that validated[i] maps to the correct
-// (day, slot) pair.
+// (day, slot) pair. Supports 2–6 slots per day.
 function buildTaggedPlaces(
   intents: TripIntents,
   validated: ValidatedPlace[],
@@ -37,17 +37,18 @@ function buildTaggedPlaces(
   const tagged: TaggedPlace[] = [];
   let idx = 0;
 
-  for (const dayKey of Object.keys(intents)) {
+  for (const dayKey of Object.keys(intents).sort()) {
     const slots = intents[dayKey];
-    if (!slots) continue;
+    if (!slots || typeof slots !== "object") continue;
 
-    for (const slotType of ["morning", "afternoon", "evening"] as const) {
-      if (!slots[slotType]) continue;
+    for (const slotType of INTENT_SLOT_ORDER) {
+      const q = slots[slotType];
+      if (!q || typeof q !== "string" || !q.trim()) continue;
       if (idx < validated.length) {
         tagged.push({
           place: validated[idx]!,
           slotType,
-          slotOrder: SLOT_ORDER[slotType] ?? 0,
+          slotOrder: SLOT_ORDER_MAP[slotType] ?? 0,
         });
       }
       idx++;
@@ -261,16 +262,8 @@ export async function buildItinerary(
 
     if (slots) {
       for (const slot of timeSlots) {
-        // Map sub-slots to the AI's 3-key schema (morning/afternoon/evening)
-        const aiSlotKey =
-          slot === "morning" || slot === "late morning"
-            ? "morning"
-            : slot === "afternoon" || slot === "late afternoon"
-              ? "afternoon"
-              : "evening";
-
-        const query = slots[aiSlotKey as keyof typeof slots];
-        if (!query) continue;
+        const query = slots[slot];
+        if (!query || typeof query !== "string" || !query.trim()) continue;
 
         const place = dayTagged[dayTagIdx++]?.place;
 

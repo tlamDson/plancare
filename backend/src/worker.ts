@@ -1,10 +1,13 @@
 import { createWorker } from "./lib/queue";
 import { tripGeneratorProcessor } from "./features/planner/jobs/trip.processor";
 import { calendarSyncProcessor } from "./features/calendar/jobs/calendar-sync.processor";
+import { insightWorker } from "./features/destinations/jobs/insight-worker";
+import { scheduleInsightScraping } from "./features/destinations/jobs/insight-queue";
 import { logger } from "./lib/logger";
 import mongoose from "mongoose";
 import { env } from "./config/env";
 import { userRepository } from "./features/user/repositories/user.repository";
+import cron from "node-cron";
 
 const startWorker = async () => {
   try {
@@ -57,9 +60,30 @@ const startWorker = async () => {
       logger.error({ jobId: job?.id, err }, "Calendar sync job failed");
     });
 
+    // Insight Scraper Worker — processes 1 city per job at max 1 req/2s
+    insightWorker.on("completed", (job) => {
+      logger.info({ jobId: job.id, result: job.returnvalue }, "Insight scrape completed");
+    });
+    insightWorker.on("failed", (job, err) => {
+      logger.error({ jobId: job?.id, err }, "Insight scrape failed");
+    });
+
+    // Weekly cron: every Sunday at 2 AM — fans out 1 job per stale city
+    if (env.SERPER_API_KEY) {
+      cron.schedule("0 2 * * 0", async () => {
+        logger.info("Running weekly insight scraping schedule");
+        const { jobsAdded } = await scheduleInsightScraping();
+        logger.info({ jobsAdded }, "Weekly insight schedule complete");
+      });
+      logger.info("Weekly insight cron registered (Sundays 2 AM)");
+    } else {
+      logger.warn("SERPER_API_KEY not set — insight scraping disabled");
+    }
+
     // Tells the worker wait don't just die. Finish what you are doing. Clos Redis connection and MongoDb and then shut down.
     process.on("SIGTERM", async () => {
       await worker.close();
+      await insightWorker.close();
       await mongoose.disconnect();
       process.exit(0);
     });

@@ -24,6 +24,7 @@ import userRoutes from "./features/user/routes";
 import billingRoutes from "./features/billing/routes";
 import devRoutes from "./features/dev/routes";
 import calendarRoutes from "./features/calendar/routes";
+import destinationRoutes from "./features/destinations/routes";
 
 // Swagger configuration
 const swaggerOptions = {
@@ -100,6 +101,7 @@ app.use("/api/billing", billingRoutes);
 app.use("/api/dev", devRoutes);
 app.use("/api", plannerRoutes);
 app.use("/api", calendarRoutes);
+app.use("/api/destinations", destinationRoutes);
 
 //7. Health checks
 app.get("/health", (req: Request, res: Response) => {

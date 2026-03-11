@@ -27,4 +27,8 @@ export const env = cleanEnv(process.env, {
     desc: "Stripe Webhook Secret for Local Dev",
     default: "",
   }),
+  SERPER_API_KEY: str({
+    desc: "Serper.dev API Key for local insight scraping (RAG)",
+    default: "",
+  }),
 });

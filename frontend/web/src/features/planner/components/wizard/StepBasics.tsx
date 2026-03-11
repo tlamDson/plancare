@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,14 +16,12 @@ import { addDays } from "date-fns";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
 import {
-  COUNTRIES,
-  getCitiesForCountry,
-  isMVPCountry,
-} from "../../constants/destinations";
-import type { Country, City } from "../../constants/destinations";
-import { parseDestinationToCountryCity } from "../../utils/destination-parser";
+  fetchDestinations,
+  type DestinationCountry,
+} from "../../api/destinations.api";
 
 const MIN_DESTINATION = 2;
+const OTHER_ID = "other";
 
 export function StepBasics() {
   const { data, setData, setTravelers } = useTripWizardStore();
@@ -30,34 +29,101 @@ export function StepBasics() {
   const { isPro } = useSubscriptionStore();
 
   const [countryId, setCountryId] = useState<string>("");
+  const [cityId, setCityId] = useState<string>("");
+  const [freeText, setFreeText] = useState<string>("");
   const [isInitializing, setIsInitializing] = useState(true);
 
-  // Parse existing destination into country/city on mount
+  // ── Fetch DB-driven destinations from API ────────────────────────────────
+  const { data: countries = [] } = useQuery<DestinationCountry[]>({
+    queryKey: ["destinations"],
+    queryFn: fetchDestinations,
+    staleTime: 1000 * 60 * 10, // 10 min cache
+  });
+
+  const cities = useMemo(
+    () => countries.find((c) => c.idKey === countryId)?.cities ?? [],
+    [countries, countryId],
+  );
+
+  const showFreeText = countryId === OTHER_ID || cityId === OTHER_ID;
+
+  // ── Parse existing destination into dropdowns on mount (edit trip) ───────
   useEffect(() => {
-    if (data.destination) {
-      const parsed = parseDestinationToCountryCity(data.destination);
-      if (parsed.countryId) {
-        setCountryId(parsed.countryId);
+    if (!data.destination || countries.length === 0) {
+      setIsInitializing(false);
+      return;
+    }
+
+    // Prefer idKeys if stored (e.g. from previous selection)
+    if (data.countryIdKey && data.cityIdKey) {
+      setCountryId(data.countryIdKey);
+      setCityId(data.cityIdKey);
+      setIsInitializing(false);
+      return;
+    }
+
+    // Fallback: parse "City, Country" string against DB data
+    const parts = data.destination.split(",").map((s) => s.trim());
+    const cityPart = parts[0] ?? "";
+    const countryPart = parts[1] ?? "";
+
+    const matchedCountry = countries.find(
+      (c) =>
+        c.nameEn.toLowerCase() === countryPart.toLowerCase() ||
+        c.name.toLowerCase() === countryPart.toLowerCase(),
+    );
+    if (matchedCountry) {
+      setCountryId(matchedCountry.idKey);
+      const matchedCity = matchedCountry.cities.find(
+        (city) =>
+          city.nameEn.toLowerCase() === cityPart.toLowerCase() ||
+          city.name.toLowerCase() === cityPart.toLowerCase(),
+      );
+      if (matchedCity) {
+        setCityId(matchedCity.idKey);
+      }
+    } else if (data.destination) {
+      // Legacy free-text destination from before DB feature
+      setCountryId(OTHER_ID);
+      setFreeText(data.destination);
+    }
+
+    setIsInitializing(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countries]);
+
+  // ── Sync selections to store ─────────────────────────────────────────────
+  useEffect(() => {
+    if (isInitializing) return;
+
+    if (showFreeText) {
+      setData({
+        destination: freeText.trim(),
+        countryIdKey: undefined,
+        cityIdKey: undefined,
+      });
+      return;
+    }
+
+    if (countryId && cityId && cityId !== OTHER_ID && countryId !== OTHER_ID) {
+      const country = countries.find((c) => c.idKey === countryId);
+      const city = country?.cities.find((c) => c.idKey === cityId);
+      if (country && city) {
+        setData({
+          destination: `${city.nameEn}, ${country.nameEn}`,
+          countryIdKey: country.idKey,
+          cityIdKey: city.idKey,
+        });
       }
     }
-    setIsInitializing(false);
-  }, [data.destination]);
-
-  const cities = getCitiesForCountry(countryId);
-  const isMVP = isMVPCountry(countryId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countryId, cityId, freeText, showFreeText, isInitializing]);
 
   const onCountryChange = (id: string) => {
     setCountryId(id);
-    setData({ destination: "" });
-  };
-
-  const onCityInput = (value: string) => {
-    const country = COUNTRIES.find((c: Country) => c.id === countryId);
-    if (!country) return;
-    const countryName = country.nameEn;
-    setData({
-      destination: value.trim() ? `${value.trim()}, ${countryName}` : "",
-    });
+    setCityId("");
+    setFreeText("");
+    setData({ destination: "", countryIdKey: undefined, cityIdKey: undefined });
   };
 
   const destinationError =
@@ -100,58 +166,61 @@ export function StepBasics() {
           <p className="text-sm text-destructive">{t("wizard.titleError")}</p>
         )}
       </div>
+
       {/* Destination */}
       <div className="space-y-2">
         <Label>{t("wizard.destination")}</Label>
 
+        {/* Country Select */}
         <Select value={countryId} onValueChange={onCountryChange}>
           <SelectTrigger>
             <SelectValue placeholder={t("wizard.selectCountry")} />
           </SelectTrigger>
           <SelectContent>
-            {COUNTRIES.map((c: Country) => (
-              <SelectItem key={c.id} value={c.id}>
+            {countries.map((c: DestinationCountry) => (
+              <SelectItem key={c.idKey} value={c.idKey}>
+                {c.flagEmoji && `${c.flagEmoji} `}
                 {language === "Vietnamese" ? c.name : c.nameEn}
-                {c.isMVP && " ✨"}
               </SelectItem>
             ))}
+            <SelectItem value={OTHER_ID}>
+              🌍 {t("wizard.otherDestination")}
+            </SelectItem>
           </SelectContent>
         </Select>
 
-        {countryId && (
+        {/* City Select or Free-text */}
+        {countryId && countryId !== OTHER_ID && (
           <div className="pt-2 animate-in fade-in slide-in-from-top-1">
-            {isMVP && cities.length > 0 ? (
-              <Select
-                value={data.destination}
-                onValueChange={(v) => {
-                  const city = cities.find((c) => c.destinationValue === v);
-                  if (city) setData({ destination: city.destinationValue });
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("wizard.selectCity")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {cities.map((c: City) => (
-                    <SelectItem key={c.id} value={c.destinationValue}>
-                      {language === "Vietnamese" ? c.name : c.nameEn}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input
-                placeholder={t("wizard.cityPlaceholder")}
-                defaultValue={data.destination.split(",")[0]?.trim() || ""}
-                onChange={(e) => onCityInput(e.target.value)}
-              />
-            )}
+            <Select value={cityId} onValueChange={setCityId}>
+              <SelectTrigger>
+                <SelectValue placeholder={t("wizard.selectCity")} />
+              </SelectTrigger>
+              <SelectContent>
+                {cities.map((c) => (
+                  <SelectItem key={c.idKey} value={c.idKey}>
+                    {language === "Vietnamese" ? c.name : c.nameEn}
+                  </SelectItem>
+                ))}
+                <SelectItem value={OTHER_ID}>
+                  ✏️ {t("wizard.otherCity")}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
-            {!isMVP && (
-              <p className="text-xs text-muted-foreground mt-2">
-                {t("wizard.mvpHint")}
-              </p>
-            )}
+        {/* Free-text Fallback (Other country or Other city) */}
+        {showFreeText && (
+          <div className="pt-2 animate-in fade-in slide-in-from-top-1">
+            <Input
+              placeholder={t("wizard.cityPlaceholder")}
+              value={freeText}
+              onChange={(e) => setFreeText(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              {t("wizard.mvpHint")}
+            </p>
           </div>
         )}
 
@@ -160,7 +229,7 @@ export function StepBasics() {
         )}
       </div>
 
-      {/* Travel Dates — two side-by-side pickers */}
+      {/* Travel Dates */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="startDate">{t("wizard.startDate")}</Label>

@@ -50,6 +50,7 @@ export class AIAgentService {
     preferences: TripPreferences,
     language?: string,
     cityCost?: any,
+    localInsight?: string | null,
   ): Promise<TripIntents> {
     if (!this.model) {
       logger.error(
@@ -61,7 +62,7 @@ export class AIAgentService {
       );
     }
 
-    const prompt = buildTripPrompt(preferences, language, cityCost);
+    const prompt = buildTripPrompt(preferences, language, cityCost, localInsight);
 
     logger.info(
       {
@@ -217,6 +218,7 @@ export class AIAgentService {
     language?: string,
     cityCost?: any,
     maxRetries = 4,
+    localInsight?: string | null,
   ): Promise<TripIntents> {
     for (let i = 0; i < maxRetries; i++) {
       try {
@@ -231,6 +233,7 @@ export class AIAgentService {
           preferences,
           language,
           cityCost,
+          localInsight,
         );
 
         if (intentParserService.isValidIntentFormat(intents)) {

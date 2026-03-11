@@ -50,6 +50,9 @@ export type TripWizardData = {
   groupType?: "solo" | "couple" | "family_kids" | "friends" | "work";
   transportMode: "walking" | "public_transport" | "car";
   activitiesPerDay: number;
+  // ─── Destination idKeys for RAG lookup ───────────────────────────────────
+  countryIdKey?: string;
+  cityIdKey?: string;
 };
 
 const initialData: TripWizardData = {
@@ -80,6 +83,8 @@ const initialData: TripWizardData = {
   groupType: undefined,
   transportMode: "walking",
   activitiesPerDay: 3,
+  countryIdKey: undefined,
+  cityIdKey: undefined,
 };
 
 type TripWizardState = {

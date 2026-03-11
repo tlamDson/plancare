@@ -1,13 +1,25 @@
 import { z } from "zod";
 import { logger } from "../../../lib/logger";
 
-const TimeSlotSchema = z.object({
-  morning: z.string(),
-  afternoon: z.string(),
-  evening: z.string(),
-});
+/** Slot order for 2–6 activities/day. Used by flattenIntents and itinerary-builder. */
+export const SLOT_ORDER = [
+  "morning",
+  "late morning",
+  "afternoon",
+  "late afternoon",
+  "evening",
+  "night",
+] as const;
 
-export const TripIntentsSchema = z.record(z.string(), TimeSlotSchema);
+export type SlotName = (typeof SLOT_ORDER)[number];
+
+/** Day slots: record of slot name → search query. Supports 2–6 slots per day. */
+const DaySlotsSchema = z.record(z.string(), z.string()).refine(
+  (obj) => Object.keys(obj).length > 0,
+  "At least one slot required",
+);
+
+export const TripIntentsSchema = z.record(z.string(), DaySlotsSchema);
 
 export type TripIntents = z.infer<typeof TripIntentsSchema>;
 
@@ -71,22 +83,20 @@ export class IntentParserService {
     return null;
   }
 
-  private normalizeSlotKey(
-    key: string,
-  ): "morning" | "afternoon" | "evening" | null {
-    const normalized = key.trim().toLowerCase();
+  private normalizeSlotKey(key: string): SlotName | null {
+    const normalized = key.trim().toLowerCase().replace(/\s+/g, " ");
 
-    if (["morning", "am", "a.m.", "morn"].includes(normalized)) {
-      return "morning";
-    }
+    if (["morning", "am", "a.m.", "morn"].includes(normalized)) return "morning";
+    if (["late morning", "mid morning"].includes(normalized))
+      return "late morning";
 
-    if (["afternoon", "noon", "midday", "pm", "p.m."].includes(normalized)) {
+    if (["afternoon", "noon", "midday", "pm", "p.m."].includes(normalized))
       return "afternoon";
-    }
+    if (["late afternoon", "mid afternoon"].includes(normalized))
+      return "late afternoon";
 
-    if (["evening", "night", "dinner"].includes(normalized)) {
-      return "evening";
-    }
+    if (["evening", "dinner"].includes(normalized)) return "evening";
+    if (["night", "late night"].includes(normalized)) return "night";
 
     return null;
   }
@@ -106,12 +116,8 @@ export class IntentParserService {
     return String(value);
   }
 
-  private normalizeSlots(raw: unknown): {
-    morning: string;
-    afternoon: string;
-    evening: string;
-  } {
-    const slots = { morning: "", afternoon: "", evening: "" };
+  private normalizeSlots(raw: unknown): Record<string, string> {
+    const slots: Record<string, string> = {};
 
     if (!raw || typeof raw !== "object") return slots;
 
@@ -119,35 +125,21 @@ export class IntentParserService {
       const slotKey = this.normalizeSlotKey(key);
       if (!slotKey) continue;
       const slotValue = this.normalizeSlotValue(value);
-      if (slotValue) {
-        slots[slotKey] = slotValue;
-      }
+      if (slotValue) slots[slotKey] = slotValue;
     }
 
     return slots;
   }
 
-  private normalizeIntents(raw: unknown): Record<
-    string,
-    {
-      morning: string;
-      afternoon: string;
-      evening: string;
-    }
-  > {
+  private normalizeIntents(raw: unknown): Record<string, Record<string, string>> {
     const root = this.coerceRoot(raw);
-    const normalized: Record<
-      string,
-      { morning: string; afternoon: string; evening: string }
-    > = {};
+    const normalized: Record<string, Record<string, string>> = {};
 
     for (const [key, value] of Object.entries(root)) {
       const dayKey = this.normalizeDayKey(key);
       if (!dayKey) continue;
       const slots = this.normalizeSlots(value);
-      if (slots.morning || slots.afternoon || slots.evening) {
-        normalized[dayKey] = slots;
-      }
+      if (Object.keys(slots).length > 0) normalized[dayKey] = slots;
     }
 
     return normalized;
@@ -203,12 +195,13 @@ export class IntentParserService {
   flattenIntents(intents: TripIntents): string[] {
     const all: string[] = [];
 
-    for (const day of Object.keys(intents)) {
+    for (const day of Object.keys(intents).sort()) {
       const slots = intents[day];
       if (!slots) continue;
-      if (slots.morning) all.push(slots.morning);
-      if (slots.afternoon) all.push(slots.afternoon);
-      if (slots.evening) all.push(slots.evening);
+      for (const slotName of SLOT_ORDER) {
+        const q = slots[slotName];
+        if (q && q.trim()) all.push(q);
+      }
     }
 
     return all;
