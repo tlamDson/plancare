@@ -67,7 +67,12 @@ export function buildTripPrompt(
   const activitiesPerDay = paceConfig.activitiesPerDay;
 
   // ─── Focus → slot pattern ───────────────────────────────────────────────
-  // All slots = PLACES TO VISIT. Food/restaurant suggestions are added automatically nearby each activity.
+  // Default: all slots = PLACES TO VISIT. Food suggestions added automatically nearby.
+  // When foodAsMainActivities + Gastronomy: restaurants/cafés allowed as main activities.
+  const focus = preferences.focus ?? [];
+  const constraints = preferences.constraints ?? {};
+  const foodAsMain = !!constraints.foodAsMainActivities && focus.includes("Gastronomy");
+
   type SlotPattern = { m: string; a: string; e: string };
   const FOCUS_SLOT_MAP: Record<string, SlotPattern> = {
     Culture: {
@@ -78,22 +83,25 @@ export function buildTripPrompt(
     Nature: {
       m: "park, beach, or trail entrance",
       a: "viewpoint or nature activity",
-      e: "sunset viewpoint or nature lookout",
+      e: foodAsMain ? "seafood or dinner near nature area" : "sunset viewpoint or nature lookout",
     },
-    Gastronomy: {
-      m: "local market or food hall (place to explore, NOT a sit-down restaurant)",
-      a: "landmark or attraction",
-      e: "rooftop bar with view or observation deck",
-    },
+    Gastronomy: foodAsMain
+      ? {
+          m: "local market or street food area",
+          a: "landmark or attraction (NOT a restaurant)",
+          e: "restaurant or rooftop bar",
+        }
+      : {
+          m: "local market or food hall (place to explore, NOT a sit-down restaurant)",
+          a: "landmark or attraction",
+          e: "rooftop bar with view or observation deck",
+        },
     Lifestyle: {
       m: "boutique shopping street",
       a: "wellness/spa or local experience",
       e: "bar or nightlife venue",
     },
   };
-
-  const focus = preferences.focus ?? [];
-  const constraints = preferences.constraints ?? {};
 
   // Softened Nature slots when mobility_friendly is set
   if (constraints.mobility_friendly && focus.includes("Nature")) {
@@ -270,7 +278,7 @@ ${localKnowledgeBlock}
 
 CRITICAL: You MUST output exactly ${days} day entries (day1 through day${days}). Do NOT stop early.
 CRITICAL: Do NOT suggest any location outside ${destination} city.
-CRITICAL: Every slot must be a PLACE TO VISIT (attraction, landmark, museum, park, market, viewpoint). Do NOT use "restaurant" or "café" as main activities — nearby food suggestions are added automatically.
+${foodAsMain ? "When Gastronomy slots allow restaurants, you MAY use restaurants/cafés as main activities." : "CRITICAL: Every slot must be a PLACE TO VISIT (attraction, landmark, museum, park, market, viewpoint). Do NOT use \"restaurant\" or \"café\" as main activities — nearby food suggestions are added automatically."}
 ${languageInstruction}
 
 Replace every placeholder with a real, specific query. Follow the slot descriptors exactly. Return ALL ${days} keys:

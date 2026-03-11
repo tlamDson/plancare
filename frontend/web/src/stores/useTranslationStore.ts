@@ -315,6 +315,9 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.infoCrowdsLifestyle":
       "ℹ️ We'll suggest boutique shops instead of big malls and crowded night markets.",
     "wizard.constraintIncompatible": "Incompatible with current focus",
+    "wizard.constraintFoodAsMain": "🍽️ Food as main activities",
+    "wizard.constraintFoodAsMainDesc":
+      "Restaurants & cafés as main stops (instead of just nearby suggestions)",
 
     // Transport Step Options
     "wizard.transportLabel": "How do you want to travel?",
@@ -726,6 +729,9 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.infoCrowdsLifestyle":
       "ℹ️ Nous suggérerons des boutiques plutôt que de grands magasins et les foules.",
     "wizard.constraintIncompatible": "Incompatible avec l'objectif actuel",
+    "wizard.constraintFoodAsMain": "🍽️ Restaurants comme activités principales",
+    "wizard.constraintFoodAsMainDesc":
+      "Restaurants et cafés comme étapes principales (au lieu de simples suggestions à proximité)",
 
     // Transport Step Options
     "wizard.transportLabel": "Comment voulez-vous voyager ?",
@@ -1132,6 +1138,9 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.infoCrowdsLifestyle":
       "ℹ️ Sẽ gợi ý boutique shops thay vì mall lớn và chợ đêm đông.",
     "wizard.constraintIncompatible": "Không tương thích với focus hiện tại",
+    "wizard.constraintFoodAsMain": "🍽️ Quán ăn là hoạt động chính",
+    "wizard.constraintFoodAsMainDesc":
+      "Nhà hàng & quán cà phê là điểm đến chính (thay vì chỉ gợi ý gần địa điểm)",
 
     // Transport Step Options
     "wizard.transportLabel": "Bạn muốn di chuyển bằng phương tiện gì?",

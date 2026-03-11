@@ -33,6 +33,7 @@ export type TripWizardData = {
     indoor_only: boolean;
     no_street_food: boolean;
     no_late_nights: boolean;
+    foodAsMainActivities: boolean;
   };
   specialRequirements: string;
   // ─── Deprecated (kept for backward compat) ────────────────────────────
@@ -74,6 +75,7 @@ const initialData: TripWizardData = {
     indoor_only: false,
     no_street_food: false,
     no_late_nights: false,
+    foodAsMainActivities: false,
   },
   specialRequirements: "",
   mood: "",

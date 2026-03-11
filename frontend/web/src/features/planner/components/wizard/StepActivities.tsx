@@ -260,6 +260,34 @@ export function StepActivities() {
         </ToggleGroup>
       </div>
 
+      {/* B.1 Gastronomy sub-option: Food as main activities */}
+      {data.focus.includes("Gastronomy") && (
+        <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+          <label className="flex cursor-pointer items-start gap-2">
+            <Checkbox
+              checked={data.constraints.foodAsMainActivities}
+              onCheckedChange={(v) =>
+                setData({
+                  constraints: {
+                    ...data.constraints,
+                    foodAsMainActivities: Boolean(v),
+                  },
+                })
+              }
+              className="mt-0.5"
+            />
+            <div>
+              <p className="font-medium">
+                {t("wizard.constraintFoodAsMain")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t("wizard.constraintFoodAsMainDesc")}
+              </p>
+            </div>
+          </label>
+        </div>
+      )}
+
       {/* C. Constraints */}
       <div className="space-y-3">
         <Label className="text-base font-semibold">

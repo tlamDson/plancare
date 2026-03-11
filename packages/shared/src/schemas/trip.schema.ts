@@ -48,6 +48,8 @@ export const TripPreferencesSchema = z.object({
       indoor_only: z.boolean().default(false),
       no_street_food: z.boolean().default(false),
       no_late_nights: z.boolean().default(false),
+      /** When true + Gastronomy focus: restaurants/cafés as main activities (not just nearby suggestions) */
+      foodAsMainActivities: z.boolean().default(false),
     })
     .optional()
     .default(() => ({
@@ -57,6 +59,7 @@ export const TripPreferencesSchema = z.object({
       indoor_only: false,
       no_street_food: false,
       no_late_nights: false,
+      foodAsMainActivities: false,
     })),
   /** Free-text special requirements (diet, accessibility, etc.) */
   specialRequirements: z.string().max(200).optional(),
