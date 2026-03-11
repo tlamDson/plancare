@@ -59,6 +59,7 @@ interface UseTripMarkersOptions {
   onMarkerClick?: (dayNumber: number) => void;
   currency?: string;
   language?: Language;
+  isolatedDayNumber?: number | null;
 }
 
 // Sort activities within a day by order field, fallback to time string
@@ -93,6 +94,7 @@ export function useTripMarkers({
   onMarkerClick,
   currency = "USD",
   language,
+  isolatedDayNumber,
 }: UseTripMarkersOptions) {
   const markerInstancesRef = useRef<Marker[]>([]);
   // Map from activityId → { el, color, activity, dayNumber, stopIndex }
@@ -184,7 +186,10 @@ export function useTripMarkers({
     if (!map || !isLoaded || itinerary.length === 0) return;
 
     const allCoords: [number, number][] = [];
-    const sortedDays = [...itinerary].sort((a, b) => a.day - b.day);
+    const allDays = [...itinerary].sort((a, b) => a.day - b.day);
+    const sortedDays = isolatedDayNumber
+      ? allDays.filter((d) => d.day === isolatedDayNumber)
+      : allDays;
 
     import("mapbox-gl").then(({ default: mapboxgl }) => {
       sortedDays.forEach((day) => {
@@ -416,7 +421,7 @@ export function useTripMarkers({
       cleanup();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, isLoaded, itinerary]);
+  }, [map, isLoaded, itinerary, isolatedDayNumber]);
 
   // ── flyToDay: camera flies to first valid activity of a day ─
   const flyToDay = useCallback(

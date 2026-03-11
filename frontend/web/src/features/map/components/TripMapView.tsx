@@ -21,8 +21,11 @@ import {
   Loader2,
   Clock,
   DollarSign,
+  Filter,
 } from "lucide-react";
 import { WidgetError } from "@/components/WidgetError";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import type { Trip, ItineraryDay, Activity } from "@/utils/schemas";
 import {
   convertCurrency,
@@ -79,6 +82,9 @@ interface TripMapViewProps {
 export function TripMapView({ trip }: TripMapViewProps) {
   const { t, currency, language } = useTranslationStore();
   const [activeDay, setActiveDay] = useState<number | null>(null);
+  const [isIsolatedView, setIsIsolatedView] = useState<boolean>(
+    trip.itinerary.length > 7,
+  );
   const [selectedActivity, setSelectedActivity] =
     useState<SelectedActivity | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
@@ -100,6 +106,7 @@ export function TripMapView({ trip }: TripMapViewProps) {
     itinerary: trip.itinerary,
     currency,
     language,
+    isolatedDayNumber: isIsolatedView ? activeDay : null,
     onMarkerClick: setActiveDay,
     onActivityClick: (sel) => {
       setSelectedActivity(sel);
@@ -170,17 +177,37 @@ export function TripMapView({ trip }: TripMapViewProps) {
         >
           {/* Header */}
           <div className="px-4 pt-4 pb-3 border-b border-border/50">
-            <p className="font-bold text-sm tracking-wide uppercase text-muted-foreground">
-              {t("trip.itinerary")}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {sortedDays.length} days ·{" "}
-              {trip.itinerary.reduce(
-                (s, d) => s + getValidActivities(d).length,
-                0,
-              )}{" "}
-              {t("map.activities")}
-            </p>
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <p className="font-bold text-sm tracking-wide uppercase text-muted-foreground">
+                  {t("trip.itinerary")}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {sortedDays.length} days ·{" "}
+                  {trip.itinerary.reduce(
+                    (s, d) => s + getValidActivities(d).length,
+                    0,
+                  )}{" "}
+                  {t("map.activities")}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between bg-muted/30 rounded-lg p-2 mt-2">
+              <Label
+                htmlFor="isolate-mode"
+                className="text-xs text-muted-foreground flex items-center gap-1.5 cursor-pointer"
+              >
+                <Filter className="h-3 w-3" />
+                {t("map.isolateDay")}
+              </Label>
+              <Switch
+                id="isolate-mode"
+                checked={isIsolatedView}
+                onCheckedChange={setIsIsolatedView}
+                className="scale-75"
+              />
+            </div>
           </div>
 
           {/* Day list */}

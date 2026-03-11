@@ -71,21 +71,37 @@ export function itineraryToGoogleEvents(
         );
       }
 
+      const nextAct = day.activities[actIdx + 1];
+
       const [startHour, startMin] = parseTime(act.time ?? "09:00");
-      const [endHour, endMin] = act.endTime
-        ? parseTime(act.endTime)
-        : [startHour + 1, startMin];
+      let endHour, endMin;
 
-      // Build a "local" Date in the destination timezone using date-fns-tz
-      const startLocal = new Date(y, m, d, startHour, startMin, 0);
-      const endLocal = new Date(y, m, d, endHour, endMin, 0);
+      if (act.endTime) {
+        [endHour, endMin] = parseTime(act.endTime);
+      } else if (nextAct && nextAct.time) {
+        [endHour, endMin] = parseTime(nextAct.time);
+      } else {
+        endHour = startHour + 2;
+        endMin = startMin;
+      }
 
-      // Convert zoned "local" time → UTC instant → format back in tz for Google API
-      const startUtc = fromZonedTime(startLocal, tz);
-      const endUtc = fromZonedTime(endLocal, tz);
+      // Use UTC to isolate year/month/day wall-time values from the server's local timezone (e.g. EDT)
+      const startWall = new Date(Date.UTC(y, m, d, startHour, startMin, 0));
+      const endWall = new Date(Date.UTC(y, m, d, endHour, endMin, 0));
 
-      const startStr = formatInTimeZone(startUtc, tz, "yyyy-MM-dd'T'HH:mm:ss");
-      const endStr = formatInTimeZone(endUtc, tz, "yyyy-MM-dd'T'HH:mm:ss");
+      const startLocalStr = `${startWall.getUTCFullYear()}-${String(startWall.getUTCMonth() + 1).padStart(2, "0")}-${String(startWall.getUTCDate()).padStart(2, "0")}T${String(startWall.getUTCHours()).padStart(2, "0")}:${String(startWall.getUTCMinutes()).padStart(2, "0")}:00`;
+      const endLocalStr = `${endWall.getUTCFullYear()}-${String(endWall.getUTCMonth() + 1).padStart(2, "0")}-${String(endWall.getUTCDate()).padStart(2, "0")}T${String(endWall.getUTCHours()).padStart(2, "0")}:${String(endWall.getUTCMinutes()).padStart(2, "0")}:00`;
+
+      // Assign the destination timezone to the isolated wall-time string
+      const startUtc = fromZonedTime(startLocalStr, tz);
+      const endUtc = fromZonedTime(endLocalStr, tz);
+
+      const startStr = formatInTimeZone(
+        startUtc,
+        tz,
+        "yyyy-MM-dd'T'HH:mm:ssXXX",
+      );
+      const endStr = formatInTimeZone(endUtc, tz, "yyyy-MM-dd'T'HH:mm:ssXXX");
 
       const description = (act.notes ?? "") + footer;
       const location = act.location?.coordinates

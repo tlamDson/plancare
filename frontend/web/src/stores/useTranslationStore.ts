@@ -412,8 +412,9 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "map.activities": "activities",
     "map.noCoords": "No location data for this trip",
     "map.noCoordsDesc":
-      "Locations appear here once the itinerary is generated.",
+      "We couldn't find exact geocoordinates for the places in your itinerary. Please try regenerating the trip or manually editing locations.",
     "map.flyToDay": "Jump to Day",
+    "map.isolateDay": "Isolate day on map",
   },
   French: {
     // Settings Nav
@@ -822,8 +823,9 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "map.activities": "activités",
     "map.noCoords": "Aucune donnée de localisation pour ce voyage",
     "map.noCoordsDesc":
-      "Les lieux apparaissent ici une fois l'itinéraire généré.",
+      "Nous n'avons pas pu trouver de coordonnées géographiques exactes pour les lieux de votre itinéraire. Veuillez essayer de régénérer le voyage ou de modifier manuellement les lieux.",
     "map.flyToDay": "Aller au Jour",
+    "map.isolateDay": "Isoler le jour sur la carte",
   },
   Vietnamese: {
     // Settings Nav
@@ -1222,8 +1224,9 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "map.activities": "hoạt động",
     "map.noCoords": "Không có dữ liệu vị trí cho chuyến đi này",
     "map.noCoordsDesc":
-      "Các địa điểm sẽ hiện ở đây sau khi lịch trình được tạo.",
+      "Chúng tôi không tìm thấy tọa độ địa lý chính xác cho các địa điểm trong lịch trình của bạn. Vui lòng thử tạo lại chuyến đi hoặc chỉnh sửa thủ công vị trí.",
     "map.flyToDay": "Nhảy đến Ngày",
+    "map.isolateDay": "Chỉ hiện ngày đang chọn",
   },
 };
 
