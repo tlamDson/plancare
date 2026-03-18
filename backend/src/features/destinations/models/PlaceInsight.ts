@@ -7,7 +7,7 @@ export interface IPlaceInsight extends Document {
   category: "food" | "history" | "nightlife" | "nature" | "shopping" | "other";
   description: string;
   tags: string[];
-  /** Vector embedding for semantic search. 768 dims (text-embedding-004) */
+  /** Vector embedding for semantic search. 3072 dims (gemini-embedding-001) */
   embedding: number[];
   sourceQuery: string; // e.g. "best local food Tokyo"
   createdAt: Date;

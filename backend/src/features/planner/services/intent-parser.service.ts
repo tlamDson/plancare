@@ -3,10 +3,13 @@ import { logger } from "../../../lib/logger";
 
 /** Slot order for 2–6 activities/day. Used by flattenIntents and itinerary-builder. */
 export const SLOT_ORDER = [
+  "breakfast",
   "morning",
   "late morning",
+  "lunch",
   "afternoon",
   "late afternoon",
+  "dinner",
   "evening",
   "night",
 ] as const;
@@ -86,16 +89,22 @@ export class IntentParserService {
   private normalizeSlotKey(key: string): SlotName | null {
     const normalized = key.trim().toLowerCase().replace(/\s+/g, " ");
 
+    if (["breakfast", "brunch"].includes(normalized)) return "breakfast";
+
     if (["morning", "am", "a.m.", "morn"].includes(normalized)) return "morning";
     if (["late morning", "mid morning"].includes(normalized))
       return "late morning";
+
+    if (["lunch", "noon meal"].includes(normalized)) return "lunch";
 
     if (["afternoon", "noon", "midday", "pm", "p.m."].includes(normalized))
       return "afternoon";
     if (["late afternoon", "mid afternoon"].includes(normalized))
       return "late afternoon";
 
-    if (["evening", "dinner"].includes(normalized)) return "evening";
+    if (["dinner", "supper"].includes(normalized)) return "dinner";
+
+    if (["evening"].includes(normalized)) return "evening";
     if (["night", "late night"].includes(normalized)) return "night";
 
     return null;

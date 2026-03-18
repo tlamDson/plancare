@@ -18,6 +18,7 @@ import {
   Car,
   ChevronDown,
   Utensils,
+  Coffee,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { ItineraryDay, Activity } from "@/utils/schemas";
@@ -213,6 +214,23 @@ function ActivityRow({
     (activity as any).distanceFromPrevious !== undefined &&
     (activity as any).distanceFromPrevious > 0;
 
+  // Detect if this is a meal based on name/notes presence of keywords
+  const isMeal = (() => {
+    // If it's already an accommodation or transport, it's not a meal
+    if (activity.type !== "poi" && activity.type !== "custom") return false;
+    
+    const text = `${activity.name} ${activity.notes || ""}`.toLowerCase();
+    const mealKeywords = ["breakfast", "lunch", "dinner", "restaurant", "cafe", "café", "eatery", "dining", "street food", "bakery", "brunch", "supper"];
+    return mealKeywords.some(kw => text.includes(kw));
+  })();
+
+  // Apply vibrant dining styling inspired by ui-ux-pro-max
+  const iconBg = isMeal ? "bg-red-100 dark:bg-red-950/40" : meta.bg;
+  const iconColor = isMeal ? "text-red-600 dark:text-red-400" : meta.color;
+  const MealIcon = isMeal ? Coffee : Icon;
+  const cardBorder = isMeal ? "border-red-200/60 hover:border-red-400 dark:border-red-900/30 dark:hover:border-red-500/50" : "border-border hover:border-primary/50";
+  const cardBg = isMeal ? "bg-red-50/20 dark:bg-red-950/10" : "bg-card";
+
   return (
     <div className="relative flex gap-3 pb-4">
       {/* Distance from previous indicator (placed on the timeline above the icon) */}
@@ -232,13 +250,13 @@ function ActivityRow({
 
       {/* Icon circle */}
       <div
-        className={`shrink-0 mt-1 h-9 w-9 rounded-full flex items-center justify-center z-10 ${meta.bg}`}
+        className={`shrink-0 mt-1 h-9 w-9 rounded-full flex items-center justify-center z-10 transition-colors ${iconBg}`}
       >
-        <Icon className={`h-4 w-4 ${meta.color}`} aria-hidden="true" />
+        <MealIcon className={`h-4 w-4 ${iconColor}`} aria-hidden="true" />
       </div>
 
       {/* Card body */}
-      <div className="flex-1 min-w-0 flex flex-col sm:flex-row rounded-lg border bg-card shadow-sm overflow-hidden group hover:border-primary/50 transition-colors duration-300 sm:min-h-[200px]">
+      <div className={`flex-1 min-w-0 flex flex-col sm:flex-row rounded-lg border shadow-sm overflow-hidden group transition-colors duration-300 sm:min-h-[200px] ${cardBorder} ${cardBg}`}>
         {/* Photo hero */}
         {activity.photoUrl && (
           <div className="w-full h-48 sm:w-56 sm:h-auto overflow-hidden shrink-0 border-r border-border/10">
@@ -262,16 +280,24 @@ function ActivityRow({
             ) : (
               <span />
             )}
-            <Badge
-              variant={STATUS_VARIANT[activity.status]}
-              className="text-xs capitalize h-5"
-            >
-              {activity.status}
-            </Badge>
+            <div className="flex gap-2 items-center">
+              {isMeal && (
+                <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 border-none text-xs capitalize h-5 gap-1 shadow-sm">
+                  <Utensils className="h-3 w-3" />
+                  Dining
+                </Badge>
+              )}
+              <Badge
+                variant={STATUS_VARIANT[activity.status]}
+                className="text-xs capitalize h-5"
+              >
+                {activity.status}
+              </Badge>
+            </div>
           </div>
 
           {/* Activity name */}
-          <p className="font-medium text-base sm:text-lg leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+          <p className={`font-medium text-base sm:text-lg leading-snug line-clamp-2 transition-colors ${isMeal ? "group-hover:text-red-600 dark:group-hover:text-red-400" : "group-hover:text-primary"}`}>
             {activity.name}
           </p>
 

@@ -191,12 +191,15 @@ function generateTimeSlots(count: number): string[] {
 
 // Default start times mapped to slot names
 const SLOT_START_TIMES: Record<string, string> = {
-  morning: "09:00",
+  breakfast: "08:00",
+  morning: "09:30",
   "late morning": "11:30",
-  afternoon: "14:00",
+  lunch: "12:30",
+  afternoon: "14:30",
   "late afternoon": "16:30",
-  evening: "19:00",
-  night: "21:00",
+  dinner: "18:30",
+  evening: "20:00",
+  night: "21:30",
 };
 
 export async function buildItinerary(
@@ -258,38 +261,39 @@ export async function buildItinerary(
     // Each day consumes its own geographic cluster — no global counter, no wrap repeats.
     // Places are already sorted morning→afternoon→evening within the cluster.
     const dayTagged = clusters[dayNum] ?? [];
-    let dayTagIdx = 0;
 
-    if (slots) {
-      for (const slot of timeSlots) {
-        const query = slots[slot];
-        if (!query || typeof query !== "string" || !query.trim()) continue;
+    for (const taggedPlace of dayTagged) {
+      const place = taggedPlace.place;
+      const slot = taggedPlace.slotType;
 
-        const place = dayTagged[dayTagIdx++]?.place;
+      if (place) {
+        const activity: IActivity = {
+          type: "poi",
+          name: sanitizeHtml(place.name, {
+            allowedTags: [],
+            allowedAttributes: {},
+          }),
+          location: {
+            type: "Point",
+            coordinates: place.coordinates,
+          },
+          time: SLOT_START_TIMES[slot] ?? "09:00",
+          status: "planned",
+          order,
+        };
 
-        if (place) {
-          const activity: IActivity = {
-            type: "poi",
-            name: sanitizeHtml(place.name, {
-              allowedTags: [],
-              allowedAttributes: {},
-            }),
-            location: {
-              type: "Point",
-              coordinates: place.coordinates,
-            },
-            time: SLOT_START_TIMES[slot] ?? "09:00",
-            status: "planned",
-            order,
-          };
+        // If it's a meal explicitly inject it into notes to trigger the frontend highlighting
+        if (["breakfast", "lunch", "dinner"].includes(slot)) {
+          activity.notes = slot.charAt(0).toUpperCase() + slot.slice(1);
+        }
 
-          if (place.googlePlaceId) {
-            activity.location!.googlePlaceId = place.googlePlaceId;
-          }
-          if (place.rating !== undefined) activity.rating = place.rating;
-          if (place.priceLevel !== undefined)
-            activity.priceLevel = place.priceLevel;
-          if (place.photoUrl) activity.photoUrl = place.photoUrl;
+        if (place.googlePlaceId) {
+          activity.location!.googlePlaceId = place.googlePlaceId;
+        }
+        if (place.rating !== undefined) activity.rating = place.rating;
+        if (place.priceLevel !== undefined)
+          activity.priceLevel = place.priceLevel;
+        if (place.photoUrl) activity.photoUrl = place.photoUrl;
 
           if (place.openingHoursArray && place.openingHoursArray.length > 0) {
             const dayJs = dayDate.getDay();
@@ -304,34 +308,33 @@ export async function buildItinerary(
             activity.openingHours = place.openingHours;
           }
 
-          // ─── Nearby food suggestions ─────────────────────────────────────
-          // Fire-and-forget with cache: costs 0 API calls on cache hit
-          try {
-            const anchorArg: {
-              coordinates: [number, number];
-              name: string;
-              googlePlaceId?: string;
-            } = {
-              coordinates: place.coordinates,
-              name: place.name,
-            };
-            if (place.googlePlaceId)
-              anchorArg.googlePlaceId = place.googlePlaceId;
+        // ─── Nearby food suggestions ─────────────────────────────────────
+        // Fire-and-forget with cache: costs 0 API calls on cache hit
+        try {
+          const anchorArg: {
+            coordinates: [number, number];
+            name: string;
+            googlePlaceId?: string;
+          } = {
+            coordinates: place.coordinates,
+            name: place.name,
+          };
+          if (place.googlePlaceId)
+            anchorArg.googlePlaceId = place.googlePlaceId;
 
-            const food = await nearbyFoodService.getNearbyFood(
-              anchorArg,
-              transportMode,
-            );
-            if (food.length > 0) {
-              (activity as any).nearbySuggestions = food;
-            }
-          } catch {
-            // Non-blocking: nearby food suggestions are best-effort
+          const food = await nearbyFoodService.getNearbyFood(
+            anchorArg,
+            transportMode,
+          );
+          if (food.length > 0) {
+            (activity as any).nearbySuggestions = food;
           }
-
-          activities.push(activity);
-          order++;
+        } catch {
+          // Non-blocking: nearby food suggestions are best-effort
         }
+
+        activities.push(activity);
+        order++;
       }
     }
 

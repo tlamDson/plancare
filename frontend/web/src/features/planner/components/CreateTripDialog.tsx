@@ -81,6 +81,7 @@ function buildPreferences(data: TripWizardData) {
     focus: data.focus,
     constraints: data.constraints,
     specialRequirements: data.specialRequirements || undefined,
+    includedMeals: data.includedMeals,
     activitiesPerDay: PACE_TO_ACTIVITIES[data.pace] ?? 3,
     // RAG lookup idKeys — only set when user selected from dropdown
     countryIdKey: data.countryIdKey,
