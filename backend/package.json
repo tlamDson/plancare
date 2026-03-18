@@ -16,6 +16,7 @@
   "dependencies": {
     "@clerk/clerk-react": "^5.59.2",
     "@clerk/express": "^1.7.68",
+    "@google/genai": "^1.45.0",
     "@google/generative-ai": "^0.24.1",
     "@travelplan/shared": "*",
     "axios": "^1.13.5",

@@ -63,6 +63,11 @@ export const TripPreferencesSchema = z.object({
     })),
   /** Free-text special requirements (diet, accessibility, etc.) */
   specialRequirements: z.string().max(200).optional(),
+  /** User opted-in meals to intertwine with activities */
+  includedMeals: z
+    .array(z.enum(["breakfast", "lunch", "dinner"]))
+    .optional()
+    .default([]),
 
   // ─── Deprecated — kept for backward compat with existing DB trips ───────
   /** @deprecated Use focus[] instead */

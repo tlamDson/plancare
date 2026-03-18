@@ -15,6 +15,48 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+export async function resolveCityFromDestination(
+  destination: string
+): Promise<{ countryIdKey: string; cityIdKey: string; countryName: string; cityName: string } | null> {
+  const parts = destination.split(",").map((s) => s.trim());
+  const cityPart = parts[0] ?? "";
+  const countryPart = parts[1] ?? "";
+  if (!cityPart) return null;
+
+  let country = null;
+
+  if (countryPart) {
+    country = await Country.findOne({
+      nameEn: { $regex: new RegExp(`^${escapeRegex(countryPart)}$`, "i") },
+    });
+  }
+
+  if (!country) {
+    country = await Country.findOne({
+      "cities.nameEn": {
+        $regex: new RegExp(`^${escapeRegex(cityPart)}$`, "i"),
+      },
+    });
+  }
+
+  if (!country) return null;
+
+  const city = country.cities.find(
+    (c) =>
+      c.nameEn.toLowerCase() === cityPart.toLowerCase() ||
+      c.name.toLowerCase() === cityPart.toLowerCase(),
+  );
+
+  if (!city) return null;
+
+  return {
+    countryIdKey: country.idKey,
+    cityIdKey: city.idKey,
+    countryName: country.nameEn,
+    cityName: city.nameEn,
+  };
+}
+
 export async function getCityInsight(
   destination: string,
   opts?: { countryIdKey?: string; cityIdKey?: string },
@@ -36,40 +78,18 @@ export async function getCityInsight(
   }
 
   // PATH 2 — Parse "City, Country" string (legacy or free-text destinations)
-  const parts = destination.split(",").map((s) => s.trim());
-  const cityPart = parts[0] ?? "";
-  const countryPart = parts[1] ?? "";
-  if (!cityPart) return null;
+  const resolved = await resolveCityFromDestination(destination);
+  if (!resolved) return null;
 
-  let country = null;
-
-  if (countryPart) {
-    // Try to match country by nameEn first
-    country = await Country.findOne({
-      nameEn: { $regex: new RegExp(`^${escapeRegex(countryPart)}$`, "i") },
-    });
-  }
-
-  if (!country) {
-    // Search by city nameEn across all countries
-    country = await Country.findOne({
-      "cities.nameEn": {
-        $regex: new RegExp(`^${escapeRegex(cityPart)}$`, "i"),
-      },
-    });
-  }
-
-  if (!country) return null;
-
-  // CRITICAL: findOne returns the whole Country document — must extract the specific city from the array
-  const city = country.cities.find(
-    (c) =>
-      c.nameEn.toLowerCase() === cityPart.toLowerCase() ||
-      c.name.toLowerCase() === cityPart.toLowerCase(),
-  );
+  const country = await Country.findOne({
+    idKey: resolved.countryIdKey,
+    "cities.idKey": resolved.cityIdKey,
+  });
+  
+  const city = country?.cities?.find((c) => c.idKey === resolved.cityIdKey);
 
   if (city?.insightText) {
-    logger.info({ cityPart, countryPart }, "RAG insight loaded via string parse");
+    logger.info({ cityPart: resolved.cityName, countryPart: resolved.countryName }, "RAG insight loaded via string parse");
   }
 
   return city?.insightText ?? null;

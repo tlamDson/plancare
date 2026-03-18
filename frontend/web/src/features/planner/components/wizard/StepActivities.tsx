@@ -335,6 +335,46 @@ export function StepActivities() {
           })}
         </div>
       </div>
+      {/* D. Included Meals */}
+      <div className="space-y-3 pt-2">
+        <Label className="text-base font-semibold">
+          🍽️ {t("wizard.includedMealsLabel")}
+          <span className="ml-2 text-xs font-normal text-muted-foreground">
+            {t("wizard.includedMealsDesc")}
+          </span>
+        </Label>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {(["breakfast", "lunch", "dinner"] as const).map((meal) => {
+            const checked = data.includedMeals.includes(meal);
+            return (
+              <label
+                key={meal}
+                className="flex items-center gap-2 rounded-md border p-3 cursor-pointer hover:bg-muted/40 transition-colors"
+              >
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={(v) => {
+                    if (v) {
+                      setData({
+                        includedMeals: [...data.includedMeals, meal],
+                      });
+                    } else {
+                      setData({
+                        includedMeals: data.includedMeals.filter(
+                          (m) => m !== meal,
+                        ),
+                      });
+                    }
+                  }}
+                />
+                <span className="text-sm font-medium capitalize">
+                  {t(`wizard.meal_${meal}`)}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

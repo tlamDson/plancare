@@ -16,7 +16,7 @@ import {
   getProgressPercent,
   updateJobProgress,
 } from "./itinerary-builder";
-import { getCityInsight } from "../../destinations/services/destination-lookup.service";
+import { getRelevantPlaceInsights } from "../../destinations/services/place-insight-retrieval.service";
 
 interface TripJobData {
   tripId: string;
@@ -209,12 +209,14 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
     // ─── RAG: Fetch local insight for this destination ────────────────────
     let localInsight: string | null = null;
     try {
-      localInsight = await getCityInsight(preferences.destination, {
-        ...(preferences.countryIdKey
-          ? { countryIdKey: preferences.countryIdKey }
-          : {}),
-        ...(preferences.cityIdKey ? { cityIdKey: preferences.cityIdKey } : {}),
-      });
+      localInsight = await getRelevantPlaceInsights(
+        preferences.destination,
+        {
+          ...(preferences.countryIdKey ? { countryIdKey: preferences.countryIdKey } : {}),
+          ...(preferences.cityIdKey ? { cityIdKey: preferences.cityIdKey } : {}),
+        },
+        preferences
+      );
       if (localInsight) {
         logger.info(
           { destination: preferences.destination, chars: localInsight.length },

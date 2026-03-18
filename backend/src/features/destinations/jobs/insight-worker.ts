@@ -2,12 +2,15 @@
  * Insight Scraper Worker
  *
  * Processes a single city per job.
- * Rate limiter (max: 1, duration: 2000) ensures Serper stays within limits.
+ * Fetches entities from multiple themes, generates embeddings,
+ * and upserts into PlaceInsight collection via bulkWrite.
  */
 
 import { Job } from "bullmq";
+import { extractCityEntities } from "../services/insight-scraper.service";
+import { embedTexts } from "../services/embedding.service";
+import { PlaceInsight } from "../models/PlaceInsight";
 import { Country } from "../models/Country";
-import { scrapeCityInsight } from "../services/insight-scraper.service";
 import { createWorker } from "../../../lib/queue";
 import { logger } from "../../../lib/logger";
 import type { ScrapeCityPayload } from "./insight-queue";
@@ -21,37 +24,65 @@ export async function insightScraperProcessor(
 
   logger.info(
     { jobId: job.id, city: cityNameEn, country: countryNameEn },
-    "Processing insight scrape job",
+    "Processing PlaceInsight extraction job",
   );
 
-  const insight = await scrapeCityInsight(cityNameEn, countryNameEn);
+  const entities = await extractCityEntities(cityNameEn, countryNameEn);
 
-  if (!insight) {
-    // Throw so BullMQ auto-retries with exponential backoff
+  if (entities.length === 0) {
     throw new Error(
-      `Serper/Gemini returned no insight for ${cityNameEn}, ${countryNameEn}`,
+      `Serper/Gemini returned no entities for ${cityNameEn}, ${countryNameEn}`,
     );
   }
 
-  // Use positional $ operator to update the specific city in the array (no save() needed)
+  // Batch embed texts
+  const textsToEmbed = entities.map(
+    (e) => `${e.name} ${e.description} ${e.tags.join(" ")}`
+  );
+  
+  const embeddings = await embedTexts(textsToEmbed);
+
+  // Bulk write to PlaceInsight collection with updateOne + upsert
+  const operations = entities.map((entity, i) => ({
+    updateOne: {
+      filter: { cityIdKey, name: entity.name },
+      update: {
+        $set: {
+          countryIdKey,
+          category: entity.category,
+          description: entity.description,
+          tags: entity.tags,
+          embedding: embeddings[i]!,
+          sourceQuery: entity.sourceQuery,
+          updatedAt: new Date(),
+        },
+      },
+      upsert: true,
+    },
+  }));
+
+  await PlaceInsight.bulkWrite(operations);
+
+  // Update last scraped timestamp to prevent infinite re-queueing
   await Country.updateOne(
     { idKey: countryIdKey, "cities.idKey": cityIdKey },
     {
       $set: {
-        "cities.$.insightText": insight,
         "cities.$.insightUpdatedAt": new Date(),
       },
     },
   );
 
   logger.info(
-    { jobId: job.id, city: cityNameEn },
-    "Insight scraped and saved",
+    { jobId: job.id, city: cityNameEn, totalProcessed: entities.length },
+    "PlaceInsight entities extracted and bulk upserted",
   );
-  return `Done: ${cityNameEn}`;
+  
+  return `Done: ${cityNameEn} (${entities.length} places)`;
 }
 
 // Worker with rate limiter: max 1 job processed every 2 seconds
+// This protects Serper and Gemini API rate limits.
 export const insightWorker = createWorker(
   INSIGHT_QUEUE_NAME,
   insightScraperProcessor,

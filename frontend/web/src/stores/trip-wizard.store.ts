@@ -36,6 +36,7 @@ export type TripWizardData = {
     foodAsMainActivities: boolean;
   };
   specialRequirements: string;
+  includedMeals: ("breakfast" | "lunch" | "dinner")[];
   // ─── Deprecated (kept for backward compat) ────────────────────────────
   mood:
     | ""
@@ -78,6 +79,7 @@ const initialData: TripWizardData = {
     foodAsMainActivities: false,
   },
   specialRequirements: "",
+  includedMeals: [],
   mood: "",
   interests: [],
   dealBreakers: [],

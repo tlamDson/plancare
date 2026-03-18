@@ -235,11 +235,56 @@ export function buildTripPrompt(
                 "evening",
                 "night",
               ];
+  
+  // Conditionally inject meals into the slot timeline if requested
+  const meals = preferences.includedMeals ?? [];
+  const finalSlotLabels: string[] = [];
+
+  slotLabels.forEach((slot, index) => {
+    // Inject breakfast before the very first morning activity
+    if (index === 0 && meals.includes("breakfast")) {
+      finalSlotLabels.push("breakfast");
+    }
+    finalSlotLabels.push(slot);
+    
+    // Inject lunch after the first afternoon activity
+    if (slot === "afternoon" && meals.includes("lunch")) {
+      finalSlotLabels.push("lunch");
+    }
+    // Inject dinner after early evening / late afternoon
+    if (
+      (slot === "late afternoon" ||
+        (slot === "afternoon" && !slotLabels.includes("late afternoon"))) &&
+      meals.includes("dinner")
+    ) {
+      finalSlotLabels.push("dinner");
+    }
+  });
 
   const daySkeletonLines = Array.from({ length: days }, (_, i) => {
     const n = i + 1;
-    const slotLines = slotLabels
-      .map((slot, slotIdx) => buildSlotLine(slot, slotIdx, n))
+    let focusSlotIdx = 0; // Only increment focus idx for NON-meal slots
+    const slotLines = finalSlotLabels
+      .map((slot) => {
+        if (["breakfast", "lunch", "dinner"].includes(slot)) {
+          // Special meal slot descriptor overrides
+          let descriptor = "restaurant or cafe";
+          if (slot === "breakfast") descriptor = "breakfast spot, bakery, or morning cafe";
+          if (slot === "lunch") descriptor = "lunch spot, eatery, or street food (if allowed)";
+          if (slot === "dinner") descriptor = "nice dinner restaurant or local dining spot";
+          
+          let filterStr = "";
+          if (constraints.avoid_crowds) filterStr += " — avoid tourist traps";
+          if (constraints.no_street_food) filterStr += " — sit-down restaurant only, NO street food";
+          
+          return `    "${slot}": "[day ${n}] ${descriptor} IN ${destination}${filterStr}"`;
+        } else {
+          // Normal activity slot
+          const line = buildSlotLine(slot, focusSlotIdx, n);
+          focusSlotIdx++;
+          return line;
+        }
+      })
       .join(",\n");
     return `  "day${n}": {\n${slotLines}\n  }`;
   }).join(",\n");
@@ -278,7 +323,13 @@ ${localKnowledgeBlock}
 
 CRITICAL: You MUST output exactly ${days} day entries (day1 through day${days}). Do NOT stop early.
 CRITICAL: Do NOT suggest any location outside ${destination} city.
-${foodAsMain ? "When Gastronomy slots allow restaurants, you MAY use restaurants/cafés as main activities." : "CRITICAL: Every slot must be a PLACE TO VISIT (attraction, landmark, museum, park, market, viewpoint). Do NOT use \"restaurant\" or \"café\" as main activities — nearby food suggestions are added automatically."}
+${
+  foodAsMain
+    ? "When Gastronomy slots allow restaurants, you MAY use restaurants/cafés as main activities."
+    : meals.length > 0
+      ? `CRITICAL: You MUST suggest actual restaurants or cafes ONLY for the explicitly requested meal slots ("${meals.join('", "')}"). For ALL OTHER slots, they MUST be PLACES TO VISIT (attractions, landmarks).`
+      : 'CRITICAL: Every slot must be a PLACE TO VISIT (attraction, landmark, museum, park, market, viewpoint). Do NOT use "restaurant" or "café" as main activities — nearby food suggestions are added automatically.'
+}
 ${languageInstruction}
 
 Replace every placeholder with a real, specific query. Follow the slot descriptors exactly. Return ALL ${days} keys:
