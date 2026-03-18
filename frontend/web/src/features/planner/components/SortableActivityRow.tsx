@@ -15,7 +15,7 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, RefreshCw, Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -73,25 +73,15 @@ export function SortableActivityRow({
     /* ── Outer: position:relative so the regen button can be absolutely placed
          but NO overflow:hidden here — card's overflow-hidden won't clip it.  ── */
     <div ref={setNodeRef} style={style} className="relative">
-      {/* ── Row: drag handle (inline) + card content ─────────────────── */}
-      <div className="flex items-start gap-1">
-        {/* Drag handle — inline flex item, never clipped, always touchable */}
-        <button
-          {...attributes}
-          {...listeners}
-          className={[
-            "mt-1 flex h-9 w-5 shrink-0 items-center justify-center rounded",
-            "text-muted-foreground/30 hover:text-muted-foreground/70",
-            "transition-colors cursor-grab active:cursor-grabbing",
-            "touch-none select-none focus:outline-none",
-            isDragDisabled ? "opacity-0 pointer-events-none" : "",
-          ].join(" ")}
-          aria-label="Drag to reorder activity"
-          tabIndex={-1}
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
-
+      {/* ── Row: drag listeners on the entire card area ─────────────────── */}
+      <div 
+        className={[
+          "flex items-start gap-1",
+          isDragDisabled ? "" : "cursor-grab active:cursor-grabbing touch-none"
+        ].join(" ")}
+        {...attributes}
+        {...listeners}
+      >
         {/* Card area — flex-1, children is ActivityRow */}
         <div className="flex-1 min-w-0">
           {children}

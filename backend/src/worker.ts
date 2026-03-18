@@ -11,7 +11,8 @@ import cron from "node-cron";
 
 const startWorker = async () => {
   try {
-    await mongoose.connect(env.MONGO_URI);
+    logger.info("Connecting to MongoDB...");
+    await mongoose.connect(env.MONGO_URI, { serverSelectionTimeoutMS: 10000 });
     logger.info("Worker connected to MongoDB");
 
     const worker = createWorker("trip-generation", tripGeneratorProcessor, {
@@ -87,8 +88,14 @@ const startWorker = async () => {
       await mongoose.disconnect();
       process.exit(0);
     });
-  } catch (error) {
-    logger.error({ error }, "Worker failed to start");
+  } catch (error: any) {
+    // Use console.error as a safety net — Pino may fail before it is configured
+    console.error("❌ Worker failed to start. Raw error:", error?.message);
+    console.error("Stack:", error?.stack);
+    logger.error(
+      { err: error, message: error?.message, stack: error?.stack },
+      "Worker failed to start",
+    );
     process.exit(1);
   }
 };

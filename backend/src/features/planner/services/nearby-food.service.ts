@@ -85,7 +85,6 @@ export class NearbyFoodService {
             "restaurant",
             "cafe",
             "bakery",
-            "food",
             "meal_takeaway",
           ],
           maxResultCount: 10,

@@ -27,6 +27,21 @@ import { WidgetError } from "@/components/WidgetError";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import type { Trip, ItineraryDay, Activity } from "@/utils/schemas";
+import { useReorderActivities } from "@/features/planner/hooks/useReorderActivities";
+import {
+  DndContext,
+  useSensor,
+  useSensors,
+  PointerSensor,
+} from "@dnd-kit/core";
+import type { DragEndEvent } from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   convertCurrency,
   formatPriceLevel,
@@ -72,6 +87,114 @@ function getValidActivities(day: ItineraryDay): Activity[] {
 // ─────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────
+// Sortable Map Activity Row Helper
+// ─────────────────────────────────────────────────────────────────
+
+interface SortableMapActivityRowProps {
+  activity: Activity;
+  index: number;
+  isSelected: boolean;
+  color: string;
+  currency: string;
+  language?: any;
+  onSelect: () => void;
+}
+
+function SortableMapActivityRow({
+  activity,
+  index,
+  isSelected,
+  color,
+  currency,
+  language,
+  onSelect,
+}: SortableMapActivityRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: activity._id! });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : "auto",
+  };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`relative group flex items-start gap-2 rounded-lg py-1 px-1 transition-colors cursor-grab active:cursor-grabbing touch-none ${
+        isSelected ? "bg-white/60 dark:bg-white/10" : "hover:bg-muted/50"
+      }`}
+    >
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect();
+        }}
+        aria-label={activity.name}
+        className="text-left flex items-start gap-2 h-full cursor-pointer flex-1 min-w-0"
+      >
+        <span
+          className="shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-white text-[9px] font-bold mt-0.5"
+          style={{ backgroundColor: color }}
+          aria-hidden="true"
+        >
+          {index + 1}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p
+            className={`text-xs font-medium leading-tight line-clamp-1 ${
+              isSelected ? "text-foreground" : ""
+            }`}
+          >
+            {activity.name}
+          </p>
+          {(activity.time || activity.cost) && (
+            <div className="flex items-center gap-2 mt-0.5">
+              {activity.time && (
+                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                  <Clock className="h-2.5 w-2.5" aria-hidden="true" />
+                  {activity.time}
+                </span>
+              )}
+              {activity.cost != null && (
+                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                  <DollarSign className="h-2.5 w-2.5" aria-hidden="true" />
+                  {activity.cost > 0
+                    ? new Intl.NumberFormat(getLocaleCode(language), {
+                        style: "currency",
+                        currency: currency,
+                        maximumFractionDigits: currency === "VND" ? 0 : 2,
+                      }).format(convertCurrency(activity.cost, "USD", currency))
+                    : "Free"}
+                </span>
+              )}
+              {activity.cost == null && activity.priceLevel != null && (
+                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                  <DollarSign className="h-2.5 w-2.5" aria-hidden="true" />
+                  {activity.priceLevel > 0
+                    ? formatPriceLevel(activity.priceLevel, currency, language)
+                    : "Free"}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </button>
+    </li>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────────
 
@@ -99,6 +222,36 @@ export function TripMapView({ trip }: TripMapViewProps) {
     center: initialCenter,
     zoom: 13,
   });
+
+  const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({});
+  const { mutate: reorderActivities } = useReorderActivities();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent, dayIndex: number) => {
+    const { active, over } = event;
+    if (!over) return;
+    if (active.id === over.id) return;
+
+    if (!trip) return;
+    const day = trip.itinerary[dayIndex];
+    if (!day) return;
+
+    const sorted = getValidActivities(day);
+    const oldIndex = sorted.findIndex((a) => a._id === active.id);
+    const newIndex = sorted.findIndex((a) => a._id === over.id);
+    if (oldIndex === newIndex || oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(sorted, oldIndex, newIndex);
+
+    reorderActivities({
+      tripId: trip._id,
+      dayIndex,
+      orderedActivityIds: reordered.map((a) => a._id!),
+    });
+  };
 
   const { flyToDay, selectActivity } = useTripMarkers({
     map,
@@ -218,11 +371,15 @@ export function TripMapView({ trip }: TripMapViewProps) {
               const isActive = activeDay === day.day;
               const activities = getValidActivities(day);
 
+              const isExpanded = !!expandedDays[day.day];
+              const displayCount = isExpanded ? activities.length : 5;
+              const visibleActivities = activities.slice(0, displayCount);
+              const dayIndex = trip.itinerary.findIndex((d) => d.day === day.day);
+
               return (
-                <button
+                <div
                   key={day.day}
                   onClick={() => handleDayClick(day.day)}
-                  aria-label={`${t("map.flyToDay")} ${day.day}`}
                   className={`w-full text-left rounded-xl p-3 transition-all duration-200 cursor-pointer border ${
                     isActive
                       ? "shadow-md scale-[1.01]"
@@ -251,117 +408,73 @@ export function TripMapView({ trip }: TripMapViewProps) {
                     </span>
                   </div>
 
-                  <ol className="space-y-1.5">
-                    {activities.length === 0 ? (
-                      <li className="text-xs text-muted-foreground italic pl-5">
-                        No location data
-                      </li>
-                    ) : (
-                      activities.slice(0, 4).map((act, idx) => {
-                        const actId = act._id ?? `day${day.day}-idx${idx}`;
-                        const [lng, lat] = (act.location?.coordinates ?? [
-                          0, 0,
-                        ]) as [number, number];
-                        const isSelected =
-                          selectedActivity?.activity._id === act._id &&
-                          selectedActivity?.dayNumber === day.day;
-                        return (
-                          <li key={act._id ?? idx}>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                console.log(
-                                  `[TripMapView] Clicked sidebar activity: "${act.name}" -> passing coords [${lng}, ${lat}] to Mapbox`,
-                                );
-                                selectActivity(actId, lng, lat);
-                              }}
-                              aria-label={act.name}
-                              className={`w-full text-left flex items-start gap-2 rounded-lg px-1 py-1 transition-colors cursor-pointer hover:bg-muted/50 ${
-                                isSelected ? "bg-white/60 dark:bg-white/10" : ""
-                              }`}
-                            >
-                              <span
-                                className="shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-white text-[9px] font-bold mt-0.5"
-                                style={{ backgroundColor: color }}
-                                aria-hidden="true"
-                              >
-                                {idx + 1}
-                              </span>
-                              <div className="min-w-0">
-                                <p
-                                  className={`text-xs font-medium leading-tight line-clamp-1 ${
-                                    isSelected ? "text-foreground" : ""
-                                  }`}
-                                >
-                                  {act.name}
-                                </p>
-                                {(act.time || act.cost) && (
-                                  <div className="flex items-center gap-2 mt-0.5">
-                                    {act.time && (
-                                      <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                                        <Clock
-                                          className="h-2.5 w-2.5"
-                                          aria-hidden="true"
-                                        />
-                                        {act.time}
-                                      </span>
-                                    )}
-                                    {act.cost != null && (
-                                      <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                                        <DollarSign
-                                          className="h-2.5 w-2.5"
-                                          aria-hidden="true"
-                                        />
-                                        {act.cost > 0
-                                          ? new Intl.NumberFormat(
-                                              getLocaleCode(language),
-                                              {
-                                                style: "currency",
-                                                currency: currency,
-                                                maximumFractionDigits:
-                                                  currency === "VND" ? 0 : 2,
-                                              },
-                                            ).format(
-                                              convertCurrency(
-                                                act.cost,
-                                                "USD",
-                                                currency,
-                                              ),
-                                            )
-                                          : "Free"}
-                                      </span>
-                                    )}
-                                    {act.cost == null &&
-                                      act.priceLevel != null && (
-                                        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                                          <DollarSign
-                                            className="h-2.5 w-2.5"
-                                            aria-hidden="true"
-                                          />
-                                          {act.priceLevel > 0
-                                            ? formatPriceLevel(
-                                                act.priceLevel,
-                                                currency,
-                                                language,
-                                              )
-                                            : "Free"}
-                                        </span>
-                                      )}
-                                  </div>
-                                )}
-                              </div>
-                            </button>
-                          </li>
-                        );
-                      })
-                    )}
-                    {activities.length > 4 && (
-                      <li className="text-[10px] text-muted-foreground pl-6">
-                        +{activities.length - 4} more stops
-                      </li>
-                    )}
-                  </ol>
-                </button>
+                  {activities.length === 0 ? (
+                    <div className="text-xs text-muted-foreground italic pl-5">
+                      No location data
+                    </div>
+                  ) : (
+                    <DndContext
+                      sensors={sensors}
+                      onDragEnd={(e: DragEndEvent) => handleDragEnd(e, dayIndex)}
+                    >
+                      <SortableContext
+                        items={visibleActivities.map((a) => a._id!)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <ol className="space-y-1.5 -ml-1">
+                          {visibleActivities.map((act, idx) => {
+                            const actId = act._id ?? `day${day.day}-idx${idx}`;
+                            const [lng, lat] = (act.location?.coordinates ?? [
+                              0, 0,
+                            ]) as [number, number];
+                            const isSelected =
+                              selectedActivity?.activity._id === act._id &&
+                              selectedActivity?.dayNumber === day.day;
+                            return (
+                              <SortableMapActivityRow
+                                key={actId}
+                                activity={act}
+                                index={idx}
+                                color={color}
+                                currency={currency}
+                                language={language}
+                                isSelected={isSelected}
+                                onSelect={() => {
+                                  console.log(
+                                    `[TripMapView] Clicked sidebar activity: "${act.name}" -> passing coords [${lng}, ${lat}] to Mapbox`,
+                                  );
+                                  selectActivity(actId, lng, lat);
+                                }}
+                              />
+                            );
+                          })}
+                        </ol>
+                      </SortableContext>
+                    </DndContext>
+                  )}
+                  {!isExpanded && activities.length > 5 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedDays((prev) => ({ ...prev, [day.day]: true }));
+                      }}
+                      className="mt-2 text-[10px] font-semibold text-primary hover:underline pl-7"
+                    >
+                      + {activities.length - 5} more mapped stops...
+                    </button>
+                  )}
+                  {isExpanded && activities.length > 5 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedDays((prev) => ({ ...prev, [day.day]: false }));
+                      }}
+                      className="mt-2 text-[10px] font-semibold text-muted-foreground hover:underline pl-7"
+                    >
+                      Show less
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
