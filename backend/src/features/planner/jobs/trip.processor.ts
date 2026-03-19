@@ -210,6 +210,26 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
     // ─── RAG: Fetch local insight (Vector Search → Graceful Fallback to legacy insightText)
     let localInsight: string | null = null;
     try {
+      logger.info(
+        {
+          jobId: job.id,
+          tripId,
+          destination: preferences.destination,
+        },
+        "[RAG_USED] Trip generation invoked RAG retrieval"
+      );
+
+      logger.info(
+        { 
+          destination: preferences.destination,
+          cityIdKey: preferences.cityIdKey,
+          countryIdKey: preferences.countryIdKey,
+          focus: preferences.focus,
+          pace: preferences.pace
+        },
+        "📚 RAG: Starting PlaceInsight retrieval for trip generation"
+      );
+
       localInsight = await getRelevantPlaceInsights(
         preferences.destination,
         {
@@ -220,6 +240,10 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
       );
       // Fallback: if Vector Search returned empty, try legacy getCityInsight
       if (!localInsight) {
+        logger.info(
+          { destination: preferences.destination },
+          "📚 RAG: Vector search returned empty, attempting legacy getCityInsight"
+        );
         localInsight =
           (await getCityInsight(preferences.destination, {
             ...(preferences.countryIdKey ? { countryIdKey: preferences.countryIdKey } : {}),
@@ -228,17 +252,58 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
       }
       if (localInsight) {
         logger.info(
-          { destination: preferences.destination, chars: localInsight.length },
-          "📚 RAG: Local insight loaded — injecting into AI prompt",
+          { 
+            jobId: job.id,
+            tripId,
+            destination: preferences.destination, 
+            chars: localInsight.length,
+            lines: localInsight.split('\n').length,
+            preview: localInsight.substring(0, 100) + '...'
+          },
+          "✅ RAG: Local insight loaded — injecting into AI prompt"
+        );
+        logger.info(
+          {
+            jobId: job.id,
+            tripId,
+            ragUsed: true,
+            localInsightLength: localInsight.length,
+          },
+          "[RAG_USED] Trip generation used RAG context"
         );
       } else {
+        logger.warn(
+          { jobId: job.id, tripId, destination: preferences.destination },
+          "⚠️ RAG: No local insight found (neither vector nor legacy) — using generalized AI prompt"
+        );
         logger.info(
-          { destination: preferences.destination },
-          "📚 RAG: No local insight found — using generalized AI prompt",
+          {
+            jobId: job.id,
+            tripId,
+            ragUsed: false,
+          },
+          "[RAG_USED] Trip generation proceeded without RAG context"
         );
       }
     } catch (ragErr) {
-      logger.warn({ ragErr }, "📚 RAG: Failed to fetch insight — continuing without it");
+      logger.error(
+        { 
+          jobId: job.id,
+          tripId,
+          ragErr: ragErr instanceof Error ? ragErr.message : String(ragErr),
+          destination: preferences.destination
+        }, 
+        "❌ RAG: Failed to fetch insight — continuing without it"
+      );
+      logger.info(
+        {
+          jobId: job.id,
+          tripId,
+          ragUsed: false,
+          reason: "rag_exception",
+        },
+        "[RAG_USED] Trip generation proceeded without RAG context"
+      );
     }
 
     const intents = await aiAgentService.generateIntentsWithRetry(

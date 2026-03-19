@@ -235,6 +235,17 @@ npm run build
 - **When to Run:** After every meaningful code change — not just at the end of a task.
 - **Failure = Blocked:** If `npm run build` fails, stop all other work and fix the build first.
 
+## 7.1 File Organization Rules
+
+### No Markdown Files in Root Directory
+
+**Critical Rule:** Do NOT create any new `.md` files in the project root directory.
+
+- **Allowed:** Only `README.md` (already exists) should be in root
+- **Test Files:** Create test documentation in `docs/test/` folder
+- **Notes/Planning:** Use `docs/` subdirectories with appropriate names
+- **Session Notes:** Use session workspace folder, NOT project root
+
 ## 8. Development Checklist (PR Review)
 
 Before merging backend code, verify:

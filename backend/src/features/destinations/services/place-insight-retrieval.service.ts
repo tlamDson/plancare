@@ -83,8 +83,26 @@ export async function getRelevantPlaceInsights(
       },
     ]);
 
+    logger.info(
+      { 
+        cityIdKey, 
+        queryText, 
+        queryVectorLength: queryVector.length,
+        resultsCount: results.length,
+        topResults: results.slice(0, 3).map(r => ({
+          name: r.name,
+          category: r.category,
+          score: r.score
+        }))
+      },
+      "🔍 RAG: Vector search executed"
+    );
+
     if (results.length === 0) {
-      logger.info({ cityIdKey }, "Vector search returned no results, falling back to legacy insightText");
+      logger.warn(
+        { cityIdKey, queryText, destination }, 
+        "⚠️ RAG: Vector search returned 0 results, falling back to legacy insightText"
+      );
       const fallbackOpts = {
         ...(countryIdKey ? { countryIdKey } : {}),
         ...(cityIdKey ? { cityIdKey } : {})
@@ -98,16 +116,28 @@ export async function getRelevantPlaceInsights(
       .join("\n");
 
     logger.info(
-      { cityIdKey, resultCount: results.length, queryLen: queryText.length },
-      "RAG: Vector search completed successfully"
+      { 
+        cityIdKey, 
+        resultCount: results.length, 
+        queryLen: queryText.length,
+        formattedLength: formatted.length,
+        avgScore: (results.reduce((sum, r) => sum + (r.score || 0), 0) / results.length).toFixed(3)
+      },
+      "✅ RAG: Vector search completed successfully — formatted results ready for LLM"
     );
 
     return formatted;
 
   } catch (error) {
     logger.error(
-      { destination, error },
-      "Vector search failed (Index might not be created or model failed). Falling back to legacy insightText."
+      { 
+        destination, 
+        cityIdKey: opts.cityIdKey,
+        countryIdKey: opts.countryIdKey,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      },
+      "❌ RAG: Vector search failed (Index might not be created or model failed). Falling back to legacy insightText."
     );
     const fallbackOpts = {
       ...(opts.countryIdKey ? { countryIdKey: opts.countryIdKey } : {}),
