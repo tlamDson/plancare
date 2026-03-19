@@ -36,13 +36,11 @@ const TripsPage = lazy(() => import("@/features/planner/pages/TripsPage"));
 const TripDetailPage = lazy(
   () => import("@/features/planner/pages/TripDetailPage"),
 );
-const AIAssistantPage = lazy(
-  () => import("@/features/assistant/pages/AIAssistantPage"),
-);
 const MapPage = lazy(() => import("@/features/map/pages/MapPage"));
 
 // Error pages
 const NotFound = lazy(() => import("@/app/pages/NotFound"));
+const InDevelopment = lazy(() => import("@/app/pages/InDevelopment"));
 
 /**
  * Suspense wrapper for lazy loaded routes
@@ -138,7 +136,18 @@ export function AppRouter() {
           element={
             <ProtectedRoute>
               <LazyRoute>
-                <AIAssistantPage />
+                <InDevelopment />
+              </LazyRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/assistant"
+          element={
+            <ProtectedRoute>
+              <LazyRoute>
+                <InDevelopment />
               </LazyRoute>
             </ProtectedRoute>
           }

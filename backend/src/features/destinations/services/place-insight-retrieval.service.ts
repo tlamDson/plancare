@@ -1,3 +1,4 @@
+import type { TripPreferences } from "@travelplan/shared";
 import { PlaceInsight } from "../models/PlaceInsight";
 import { embedText } from "./embedding.service";
 import { resolveCityFromDestination, getCityInsight } from "./destination-lookup.service";
@@ -10,21 +11,20 @@ const TOP_K = 10;
  */
 function buildRetrievalQuery(
   destination: string,
-  preferences: any // Typed loosely here since TripPreferences is in shared, could import if needed
+  preferences: TripPreferences
 ): string {
   const parts: string[] = [destination];
   const focus = preferences.focus ?? [];
-  
+
   if (focus.includes("Gastronomy")) parts.push("local food restaurants cafes culinary");
   if (focus.includes("Culture")) parts.push("museums history culture temples architecture");
   if (focus.includes("Nature")) parts.push("parks nature viewpoints outdoors scenery");
   if (focus.includes("Lifestyle")) parts.push("nightlife bars shopping local life");
-  
+
   if (preferences.constraints?.foodAsMainActivities) parts.push("restaurants dining unique eats");
-  
-  // Example of using pace to influence verbosity
-  if (preferences.pace === "Relaxed") parts.push("chill relaxing peaceful");
-  
+
+  if (preferences.pace === "relaxed") parts.push("chill relaxing peaceful");
+
   return parts.join(" ");
 }
 
@@ -39,7 +39,7 @@ export async function getRelevantPlaceInsights(
     cityIdKey?: string;
     queryOverride?: string;
   },
-  preferences: any
+  preferences: TripPreferences
 ): Promise<string> {
   try {
     let { countryIdKey, cityIdKey } = opts;
@@ -50,7 +50,9 @@ export async function getRelevantPlaceInsights(
       cityIdKey = resolved?.cityIdKey;
     }
 
-    if (!cityIdKey) return ""; // Cannot filter without a specific city
+    if (!cityIdKey) {
+      return (await getCityInsight(destination, opts)) ?? "";
+    }
 
     const queryText = opts.queryOverride ?? buildRetrievalQuery(destination, preferences);
     
@@ -103,7 +105,7 @@ export async function getRelevantPlaceInsights(
     return formatted;
 
   } catch (error) {
-    logger.warn(
+    logger.error(
       { destination, error },
       "Vector search failed (Index might not be created or model failed). Falling back to legacy insightText."
     );

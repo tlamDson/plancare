@@ -17,6 +17,7 @@ import {
   updateJobProgress,
 } from "./itinerary-builder";
 import { getRelevantPlaceInsights } from "../../destinations/services/place-insight-retrieval.service";
+import { getCityInsight } from "../../destinations/services/destination-lookup.service";
 
 interface TripJobData {
   tripId: string;
@@ -206,7 +207,7 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
         }
       : undefined;
 
-    // ─── RAG: Fetch local insight for this destination ────────────────────
+    // ─── RAG: Fetch local insight (Vector Search → Graceful Fallback to legacy insightText)
     let localInsight: string | null = null;
     try {
       localInsight = await getRelevantPlaceInsights(
@@ -217,6 +218,14 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
         },
         preferences
       );
+      // Fallback: if Vector Search returned empty, try legacy getCityInsight
+      if (!localInsight) {
+        localInsight =
+          (await getCityInsight(preferences.destination, {
+            ...(preferences.countryIdKey ? { countryIdKey: preferences.countryIdKey } : {}),
+            ...(preferences.cityIdKey ? { cityIdKey: preferences.cityIdKey } : {}),
+          })) ?? null;
+      }
       if (localInsight) {
         logger.info(
           { destination: preferences.destination, chars: localInsight.length },
