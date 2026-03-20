@@ -273,6 +273,14 @@ VITE_ENV=development
 > cp frontend/web/.env.example frontend/web/.env.local
 > ```
 
+#### **Docker Compose: API + worker + weather**
+
+If you run **`docker compose up`** for `api` / `worker`:
+
+- Put secrets in **`.env.docker`** at the repo root (copy from [`env.docker.example`](env.docker.example)). The containers **do not** load `backend/.env`.
+- Add **`OPENWEATHER_API_KEY=`** there for trip weather (same 32-char key from [openweathermap.org](https://home.openweathermap.org/api_keys)). After editing this file, **recreate** the API so the container picks up the new env: **`docker compose up -d --force-recreate api`** (use `--build` only if you changed the image/Dockerfile).
+- Run Vite with **`VITE_API_URL=http://localhost:3000/api`** in `frontend/web/.env.local` so the browser calls the API on port **3000** (Docker maps `3000:3000`).
+
 ### 3. Start Services
 
 #### **Option A: Docker Compose (Recommended for Local Dev)**

@@ -48,6 +48,11 @@ services:
       timeout: 5s
       retries: 5
 
+  # Env: copy `env.docker.example` → `.env.docker` (root). Include OPENWEATHER_API_KEY
+  # for trip weather (API proxy). `backend/.env` is not mounted into containers.
+  # After changing OPENWEATHER_* in `.env.docker`, recreate the API (env is baked at create time):
+  #   docker compose up -d --force-recreate api
+
   # ============================================
   # API - Backend HTTP Server
   # ============================================
