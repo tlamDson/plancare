@@ -4,7 +4,7 @@
  * Main planner view for a single trip — shows a rich itinerary timeline.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   useJobPoller,
@@ -32,6 +32,11 @@ import { AgentLockBanner } from "../components/AgentLockBanner";
 import { BackgroundProcessingModal } from "../components/BackgroundProcessingModal";
 import { useActiveJobStore } from "@/stores/useActiveJobStore";
 import { ItineraryDayCard } from "../components/ItineraryDayCard";
+import { TripDetailHeader } from "../components/trip-detail/TripDetailHeader";
+import { TripDetailDayStrip } from "../components/trip-detail/TripDetailDayStrip";
+import { TripDetailSummaryRail } from "../components/trip-detail/TripDetailSummaryRail";
+import { resolveItineraryDayIndex } from "../components/trip-detail/resolve-itinerary-day-index";
+import type { ItineraryDay } from "@/utils/schemas";
 import { DataError } from "@/components/DataError";
 import { PageLoader } from "@/components/PageLoader";
 import { retryJob, cancelJob } from "../api/jobs.api";
@@ -43,31 +48,21 @@ import {
   Map,
   MapPin,
   Undo2,
-  Edit2,
-  Check,
-  X,
   CalendarPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
 import { useUpdateTrip, useUpdateTripLifecycle } from "../hooks/useTrips";
 import { apiClient } from "@/lib/axios";
 import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
+import type { TripLifecycle } from "@travelplan/shared";
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const navigate = useNavigate();
   const { data: trip, isLoading, error } = useTrip(tripId);
-  const { language, t } = useTranslationStore();
+  const { language, t, currency: preferredCurrency } = useTranslationStore();
   const queryClient = useQueryClient();
   const { mutate: updateLifecycle, isPending: isUpdatingLifecycle } =
     useUpdateTripLifecycle();
@@ -87,6 +82,7 @@ export default function TripDetailPage() {
   const [isUndoing, setIsUndoing] = useState(false);
   const [isReGeocoding, setIsReGeocoding] = useState(false);
   const [canUndo, setCanUndo] = useState(true);
+  const [activeDayIndex, setActiveDayIndex] = useState(0);
   const { autoLoadLongTripChunks } = useSubscriptionStore();
   const { setActiveJob, clearActiveJob } = useActiveJobStore();
 
@@ -299,7 +295,7 @@ export default function TripDetailPage() {
   );
 
   const handleDragEnd = useCallback(
-    (event: DragEndEvent, dayIndex: number) => {
+    (event: DragEndEvent, dayEntity: ItineraryDay) => {
       const { active, over } = event;
 
       // Guard 1: dropped outside any droppable area
@@ -308,7 +304,12 @@ export default function TripDetailPage() {
       if (active.id === over.id) return;
 
       if (!trip) return;
-      const day = trip.itinerary[dayIndex];
+      const itineraryDayIndex = resolveItineraryDayIndex(
+        trip.itinerary,
+        dayEntity,
+      );
+      if (itineraryDayIndex < 0) return;
+      const day = trip.itinerary[itineraryDayIndex];
       if (!day) return;
 
       const sorted = day.activities.slice().sort((a, b) => {
@@ -327,7 +328,7 @@ export default function TripDetailPage() {
 
       reorderActivities({
         tripId: trip._id,
-        dayIndex,
+        dayIndex: itineraryDayIndex,
         orderedActivityIds: reordered.map((a) => a._id!),
       });
     },
@@ -378,6 +379,31 @@ export default function TripDetailPage() {
     trip?.itinerary?.length,
   ]);
 
+  const sortedDays = useMemo(
+    () =>
+      !trip?.itinerary?.length
+        ? []
+        : trip.itinerary.slice().sort((a, b) => a.day - b.day),
+    [trip],
+  );
+
+  const totalStops = useMemo(
+    () =>
+      !trip?.itinerary?.length
+        ? 0
+        : trip.itinerary.reduce((n, d) => n + d.activities.length, 0),
+    [trip],
+  );
+
+  useEffect(() => {
+    setActiveDayIndex(0);
+  }, [trip?._id]);
+
+  useEffect(() => {
+    if (sortedDays.length === 0) return;
+    setActiveDayIndex((i) => Math.min(i, sortedDays.length - 1));
+  }, [sortedDays.length]);
+
   if (isLoading) return <PageLoader />;
 
   if (error || !trip) {
@@ -410,10 +436,17 @@ export default function TripDetailPage() {
   const totalDays = getTripDuration(trip.startDate, trip.endDate);
   const isFallback = trip?.status === "FALLBACK";
 
+  const activeDay = sortedDays[activeDayIndex] ?? null;
+  const itineraryDayIndex =
+    activeDay != null
+      ? resolveItineraryDayIndex(trip.itinerary, activeDay)
+      : -1;
+  const isLastActiveDay =
+    sortedDays.length > 0 && activeDayIndex === sortedDays.length - 1;
+
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-5xl md:max-w-6xl w-full">
-        {/* Agent Lock Banner */}
+      <div className="w-full max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 space-y-6">
         <AgentLockBanner
           isLocked={trip.isAgentProcessing}
           currentStep={jobState.currentStep}
@@ -438,195 +471,140 @@ export default function TripDetailPage() {
           currentStep={jobState.currentStep}
         />
 
-        {/* Trip Header */}
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 flex-wrap">
-              {isEditingTitle ? (
-                <div className="flex items-center gap-1">
-                  <Input
-                    autoFocus
-                    value={editTitleValue}
-                    onChange={(e) => setEditTitleValue(e.target.value)}
-                    onKeyDown={handleKeyDownTitle}
-                    disabled={isUpdatingTrip}
-                    className="h-9 md:h-10 text-xl font-bold md:text-3xl w-[200px] md:w-[350px] shadow-sm"
-                  />
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                    onClick={handleSaveTitle}
-                    disabled={isUpdatingTrip}
-                  >
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                    onClick={() => setIsEditingTitle(false)}
-                    disabled={isUpdatingTrip}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] gap-6 lg:gap-8 items-start">
+          <div className="space-y-6 min-w-0 max-w-3xl w-full">
+            <TripDetailHeader
+              tripTitleLocalized={getLocalizedTripTitle(trip.title, t)}
+              status={trip.status}
+              isAgentProcessing={trip.isAgentProcessing}
+              isEditingTitle={isEditingTitle}
+              editTitleValue={editTitleValue}
+              onEditTitleValueChange={setEditTitleValue}
+              onStartEditTitle={handleEditTitle}
+              onSaveTitle={handleSaveTitle}
+              onCancelEditTitle={() => setIsEditingTitle(false)}
+              onTitleKeyDown={handleKeyDownTitle}
+              isUpdatingTrip={isUpdatingTrip}
+              lifecycle={trip.lifecycle}
+              onLifecycleChange={(val) =>
+                updateLifecycle({
+                  tripId: trip._id,
+                  lifecycle: val as TripLifecycle,
+                })
+              }
+              isUpdatingLifecycle={isUpdatingLifecycle}
+              dateRange={dateRange}
+              totalDays={totalDays}
+              actions={
+                <>
+                  {trip.status === "COMPLETED" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleReGeocode}
+                      disabled={isReGeocoding}
+                      className="gap-1.5 min-h-10 cursor-pointer transition-colors duration-200"
+                      aria-label="Re-geocode activities"
+                    >
+                      <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      {isReGeocoding ? "Geocoding..." : "Fix Locations"}
+                    </Button>
+                  )}
+
+                  {ENABLE_GOOGLE_CALENDAR_SYNC &&
+                    trip.status === "COMPLETED" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => syncCalendar()}
+                        disabled={isSyncing || trip.isAgentProcessing}
+                        className="gap-1.5 min-h-10 cursor-pointer transition-colors duration-200"
+                        aria-label="Sync to Google Calendar"
+                        title="Đồng bộ lịch trình lên Google Calendar của bạn"
+                      >
+                        <CalendarPlus
+                          className="h-4 w-4 shrink-0"
+                          aria-hidden="true"
+                        />
+                        {isSyncing ? "Đang đồng bộ..." : "Sync Google Calendar"}
+                      </Button>
+                    )}
+
+                  {trip.status === "COMPLETED" && hasMapData && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/map/${trip._id}`)}
+                      className="gap-1.5 min-h-10 cursor-pointer transition-colors duration-200 lg:hidden"
+                      aria-label={t("map.viewOnMap")}
+                    >
+                      <Map className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      {t("map.viewOnMap")}
+                    </Button>
+                  )}
+
+                  {!trip.isAgentProcessing && canUndo && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUndo}
+                      disabled={isUndoing}
+                      className="shrink-0 gap-1.5 min-h-10 cursor-pointer transition-colors duration-200"
+                      title="Hoàn tác thay đổi lịch trình gần nhất"
+                    >
+                      <Undo2 className="h-4 w-4 shrink-0" />
+                      {isUndoing ? "Đang hoàn tác..." : "Hoàn tác"}
+                    </Button>
+                  )}
+                </>
+              }
+            />
+
+            {sortedDays.length > 1 ? (
+              <TripDetailDayStrip
+                sortedDays={sortedDays}
+                activeIndex={activeDayIndex}
+                onSelectDay={setActiveDayIndex}
+                language={language}
+              />
+            ) : null}
+
+            <div>
+              <h2 className="text-xl font-semibold mb-4">{t("trip.itinerary")}</h2>
+              {isChunkedTrip && (
+                <div className="mb-4 rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+                  {t("trip.longTripBanner")}
+                </div>
+              )}
+
+              {trip.itinerary.length === 0 ? (
+                <div className="rounded-xl border border-border bg-muted/30 p-8 text-center transition-shadow duration-200">
+                  <CalendarDays className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+                  <p className="font-medium mb-1">{t("trip.noItinerary")}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t("trip.noItineraryDesc")}
+                  </p>
                 </div>
               ) : (
-                <div className="group flex items-center gap-2">
-                  <h1 className="text-3xl font-bold">
-                    {getLocalizedTripTitle(trip.title, t)}
-                  </h1>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 shrink-0 focus:opacity-100"
-                    onClick={handleEditTitle}
-                    title="Edit Trip Name"
-                  >
-                    <Edit2 className="h-4 w-4 text-muted-foreground mr-0.5" />
-                  </Button>
-                </div>
-              )}
-
-              {/* User Lifecycle Status Dropdown (only visible if AI is done) */}
-              {trip.status === "COMPLETED" && (
-                <Select
-                  value={trip.lifecycle || "UPCOMING"}
-                  onValueChange={(val: any) =>
-                    updateLifecycle({ tripId: trip._id, lifecycle: val })
-                  }
-                  disabled={isUpdatingLifecycle || trip.isAgentProcessing}
-                >
-                  <SelectTrigger className="h-8 min-w-[120px] text-xs font-medium px-3 shadow-sm border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors focus:ring-1 focus:ring-primary rounded-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UPCOMING">Upcoming</SelectItem>
-                    <SelectItem value="IN_TRIP">In Trip</SelectItem>
-                    <SelectItem value="COMPLETED">Completed</SelectItem>
-                    <SelectItem
-                      value="CANCELLED"
-                      className="text-muted-foreground"
-                    >
-                      Cancelled
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            {dateRange && (
-              <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
-                <CalendarDays className="h-4 w-4" aria-hidden="true" />
-                <span>
-                  {dateRange}
-                  {totalDays > 0 && ` · ${totalDays}-day trip`}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Action buttons row */}
-          <div className="flex items-center gap-2 shrink-0 flex-wrap">
-            {/* Re-geocode button — fixes wrong coordinates on old trips */}
-            {trip.status === "COMPLETED" && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleReGeocode}
-                disabled={isReGeocoding}
-                className="gap-1.5"
-                aria-label="Re-geocode activities"
-              >
-                <MapPin className="h-4 w-4" aria-hidden="true" />
-                {isReGeocoding ? "Geocoding..." : "Fix Locations"}
-              </Button>
-            )}
-
-            {/* Sync to Google Calendar — completed trips only; off in prod unless env flag */}
-            {ENABLE_GOOGLE_CALENDAR_SYNC && trip.status === "COMPLETED" && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => syncCalendar()}
-                disabled={isSyncing || trip.isAgentProcessing}
-                className="gap-1.5"
-                aria-label="Sync to Google Calendar"
-                title="Đồng bộ lịch trình lên Google Calendar của bạn"
-              >
-                <CalendarPlus className="h-4 w-4" aria-hidden="true" />
-                {isSyncing ? "Đang đồng bộ..." : "Sync Google Calendar"}
-              </Button>
-            )}
-            {/* View on Map button — only when COMPLETED + has coords */}
-            {trip.status === "COMPLETED" && hasMapData && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(`/map/${trip._id}`)}
-                className="gap-1.5"
-                aria-label={t("map.viewOnMap")}
-              >
-                <Map className="h-4 w-4" aria-hidden="true" />
-                {t("map.viewOnMap")}
-              </Button>
-            )}
-
-            {!trip.isAgentProcessing && canUndo && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleUndo}
-                disabled={isUndoing}
-                className="shrink-0 gap-1.5"
-                title="Hoàn tác thay đổi lịch trình gần nhất"
-              >
-                <Undo2 className="h-4 w-4" />
-                {isUndoing ? "Đang hoàn tác..." : "Hoàn tác"}
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Itinerary */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">{t("trip.itinerary")}</h2>
-          {isChunkedTrip && (
-            <div className="mb-4 rounded-lg border border-purple-200 bg-purple-50/70 p-3 text-sm text-purple-800">
-              Long-trip generation may take longer. You can leave this page and
-              come back later.
-            </div>
-          )}
-
-          {trip.itinerary.length === 0 ? (
-            <div className="rounded-xl border bg-muted/30 p-8 text-center">
-              <CalendarDays className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-              <p className="font-medium mb-1">{t("trip.noItinerary")}</p>
-              <p className="text-sm text-muted-foreground">
-                {t("trip.noItineraryDesc")}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {trip.itinerary
-                .slice()
-                .sort((a, b) => a.day - b.day)
-                .map((day, dayIndex, arr) => {
-                  const isLast = dayIndex === arr.length - 1;
-                  return (
+                <div className="space-y-4">
+                  {activeDay != null && itineraryDayIndex >= 0 ? (
                     <div
-                      key={day._id ?? day.day}
-                      ref={isLast && isChunkedTrip ? lastDayRef : undefined}
+                      key={activeDay._id ?? activeDay.day}
+                      ref={
+                        isLastActiveDay && isChunkedTrip
+                          ? lastDayRef
+                          : undefined
+                      }
                     >
                       <DndContext
                         sensors={sensors}
                         onDragEnd={(event: DragEndEvent) =>
-                          handleDragEnd(event, dayIndex)
+                          handleDragEnd(event, activeDay)
                         }
                       >
                         <ItineraryDayCard
-                          day={day}
-                          dayIndex={dayIndex}
+                          day={activeDay}
+                          dayIndex={itineraryDayIndex}
                           currency={trip.budget.currency}
                           isDragDisabled={
                             trip.isAgentProcessing ||
@@ -635,7 +613,8 @@ export default function TripDetailPage() {
                             isFallback
                           }
                           regenningActivityId={
-                            isRegening && regenVariables?.dayIndex === dayIndex
+                            isRegening &&
+                            regenVariables?.dayIndex === itineraryDayIndex
                               ? regenVariables.activityId
                               : null
                           }
@@ -643,34 +622,52 @@ export default function TripDetailPage() {
                         />
                       </DndContext>
                     </div>
-                  );
-                })}
+                  ) : null}
 
-              {/* Chunked trip: show skeleton while next chunk loads */}
-              {isChunkedTrip && !allChunksLoaded && (
-                <div className="rounded-xl border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
-                  <p className={isLoadingChunk ? "animate-pulse" : ""}>
-                    {isLoadingChunk
-                      ? "Loading more days..."
-                      : autoLoadLongTripChunks
-                        ? "Auto-loading next days..."
-                        : "Click to load more days."}
-                  </p>
-                  {!autoLoadLongTripChunks && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-3"
-                      onClick={() => void loadNextChunk()}
-                      disabled={isLoadingChunk}
-                    >
-                      Load more days
-                    </Button>
+                  {isChunkedTrip && !allChunksLoaded && (
+                    <div className="rounded-xl border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+                      <p
+                        className={
+                          isLoadingChunk
+                            ? "animate-pulse motion-reduce:animate-none"
+                            : ""
+                        }
+                      >
+                        {isLoadingChunk
+                          ? t("trip.chunkLoading")
+                          : autoLoadLongTripChunks
+                            ? t("trip.chunkAutoLoading")
+                            : t("trip.chunkLoadMoreHint")}
+                      </p>
+                      {!autoLoadLongTripChunks && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-3 min-h-10 cursor-pointer transition-colors duration-200"
+                          onClick={() => void loadNextChunk()}
+                          disabled={isLoadingChunk}
+                        >
+                          {t("trip.chunkLoadMoreCta")}
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
             </div>
-          )}
+          </div>
+
+          <TripDetailSummaryRail
+            destination={trip.destination}
+            dateRange={dateRange}
+            totalCalendarDays={totalDays}
+            totalStops={totalStops}
+            budgetTotal={trip.budget.totalLimit}
+            budgetCurrency={trip.budget.currency}
+            preferredCurrency={preferredCurrency}
+            showViewOnMap={trip.status === "COMPLETED" && hasMapData}
+            onViewMap={() => navigate(`/map/${trip._id}`)}
+          />
         </div>
       </div>
     </DashboardLayout>

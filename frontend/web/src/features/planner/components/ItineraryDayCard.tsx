@@ -197,6 +197,7 @@ function ActivityRow({
   preferredCurrency?: string;
   language?: any;
 }) {
+  const { t } = useTranslationStore();
   const meta = TYPE_META[activity.type] ?? TYPE_META.custom;
   const Icon = meta.icon;
   const timeLabel = formatTimeRange(activity.time, derivedEndTime);
@@ -236,8 +237,8 @@ function ActivityRow({
       {/* Distance from previous indicator (placed on the timeline above the icon) */}
       {showDistance && (
         <div className="absolute -top-3 left-[0.1rem] flex items-center z-20">
-          <div className="bg-background px-1 text-[10px] font-medium text-muted-foreground border rounded-full shadow-sm flex items-center gap-0.5">
-            <span className="text-[9px]">📍</span>
+          <div className="bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground border border-border rounded-full shadow-sm flex items-center gap-0.5">
+            <MapPin className="h-2.5 w-2.5 shrink-0 opacity-80" aria-hidden />
             {formatDistance((activity as any).distanceFromPrevious)}
           </div>
         </div>
@@ -256,10 +257,12 @@ function ActivityRow({
       </div>
 
       {/* Card body */}
-      <div className={`flex-1 min-w-0 flex flex-col sm:flex-row rounded-lg border shadow-sm overflow-hidden group transition-colors duration-300 sm:min-h-[200px] ${cardBorder} ${cardBg}`}>
+      <div
+        className={`flex-1 min-w-0 flex flex-col sm:flex-row rounded-lg border shadow-sm overflow-hidden group transition-all duration-200 sm:min-h-[140px] motion-reduce:transition-none hover:shadow-md ${cardBorder} ${cardBg}`}
+      >
         {/* Photo hero */}
         {activity.photoUrl && (
-          <div className="w-full h-48 sm:w-56 sm:h-auto overflow-hidden shrink-0 border-r border-border/10">
+          <div className="w-full h-40 sm:h-36 sm:w-44 sm:min-h-[7rem] overflow-hidden shrink-0 border-r border-border/10">
             <img
               src={activity.photoUrl}
               alt={activity.name}
@@ -362,7 +365,10 @@ function ActivityRow({
             <details className="mt-2 group">
               <summary className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors list-none">
                 <Utensils className="h-3 w-3 shrink-0" aria-hidden="true" />
-                ᄂn gần đây ({(activity as any).nearbySuggestions.length} gợi ý)
+                {t("trip.nearbySuggestionsSummary").replace(
+                  "{count}",
+                  String((activity as any).nearbySuggestions.length),
+                )}
                 <ChevronDown
                   className="h-3 w-3 ml-auto transition-transform group-open:rotate-180"
                   aria-hidden="true"
@@ -470,7 +476,7 @@ export function ItineraryDayCard({
   })();
 
   return (
-    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-md">
       {/* Day header */}
       <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/40">
         <div>

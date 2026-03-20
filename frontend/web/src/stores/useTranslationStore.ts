@@ -419,6 +419,14 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.editTitle": "Edit trip name",
     "trip.saveTitle": "Save trip name",
     "trip.cancelEdit": "Cancel editing",
+    "trip.longTripBanner":
+      "Long-trip generation may take longer. You can leave this page and come back later.",
+    "trip.chunkLoading": "Loading more days...",
+    "trip.chunkAutoLoading": "Auto-loading next days...",
+    "trip.chunkLoadMoreHint": "Click to load more days.",
+    "trip.chunkLoadMoreCta": "Load more days",
+    "trip.dragToReorder": "Drag to reorder activities",
+    "trip.nearbySuggestionsSummary": "Nearby picks ({count} suggestions)",
     // Trips page sort
     "trips.sortPlaceholder": "Sort by",
     "trips.sortNewest": "Newest first",
@@ -849,6 +857,14 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.editTitle": "Modifier le nom du voyage",
     "trip.saveTitle": "Enregistrer le nom",
     "trip.cancelEdit": "Annuler",
+    "trip.longTripBanner":
+      "La génération d'un long voyage peut prendre plus de temps. Vous pouvez quitter cette page et revenir plus tard.",
+    "trip.chunkLoading": "Chargement des jours suivants...",
+    "trip.chunkAutoLoading": "Chargement automatique des jours suivants...",
+    "trip.chunkLoadMoreHint": "Cliquez pour charger plus de jours.",
+    "trip.chunkLoadMoreCta": "Charger plus de jours",
+    "trip.dragToReorder": "Glisser pour réorganiser les activités",
+    "trip.nearbySuggestionsSummary": "À proximité ({count} suggestions)",
     // Trips page sort
     "trips.sortPlaceholder": "Trier par",
     "trips.sortNewest": "Plus récent",
@@ -1269,6 +1285,14 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.editTitle": "Sửa tên chuyến đi",
     "trip.saveTitle": "Lưu tên chuyến đi",
     "trip.cancelEdit": "Hủy chỉnh sửa",
+    "trip.longTripBanner":
+      "Chuyến đi dài có thể mất thêm thời gian tạo. Bạn có thể rời trang và quay lại sau.",
+    "trip.chunkLoading": "Đang tải thêm ngày...",
+    "trip.chunkAutoLoading": "Đang tự động tải các ngày tiếp theo...",
+    "trip.chunkLoadMoreHint": "Nhấn để tải thêm ngày.",
+    "trip.chunkLoadMoreCta": "Tải thêm ngày",
+    "trip.dragToReorder": "Kéo để sắp xếp hoạt động",
+    "trip.nearbySuggestionsSummary": "Gợi ý gần đây ({count} món)",
     // Trips page sort
     "trips.sortPlaceholder": "Sắp xếp",
     "trips.sortNewest": "Mới nhất",

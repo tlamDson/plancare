@@ -15,7 +15,8 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Loader2, Sparkles } from "lucide-react";
+import { GripVertical, Loader2, Sparkles } from "lucide-react";
+import { useTranslationStore } from "@/stores/useTranslationStore";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -40,6 +41,7 @@ export function SortableActivityRow({
   onRegen,
   children,
 }: SortableActivityRowProps) {
+  const { t } = useTranslationStore();
   const [open, setOpen] = useState(false);
   const [hint, setHint] = useState("");
 
@@ -72,21 +74,20 @@ export function SortableActivityRow({
   return (
     /* ── Outer: position:relative so the regen button can be absolutely placed
          but NO overflow:hidden here — card's overflow-hidden won't clip it.  ── */
-    <div ref={setNodeRef} style={style} className="relative">
-      {/* ── Row: drag listeners on the entire card area ─────────────────── */}
-      <div 
-        className={[
-          "flex items-start gap-1",
-          isDragDisabled ? "" : "cursor-grab active:cursor-grabbing touch-none"
-        ].join(" ")}
-        {...attributes}
-        {...listeners}
-      >
-        {/* Card area — flex-1, children is ActivityRow */}
-        <div className="flex-1 min-w-0">
-          {children}
-        </div>
-      </div>
+    <div ref={setNodeRef} style={style} className="relative flex items-start gap-1">
+      {!isDragDisabled ? (
+        <button
+          type="button"
+          className="shrink-0 mt-1 p-1 rounded-md border border-transparent text-muted-foreground hover:text-foreground hover:bg-muted cursor-grab active:cursor-grabbing touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors duration-200"
+          {...attributes}
+          {...listeners}
+          aria-label={t("trip.dragToReorder")}
+          title={t("trip.dragToReorder")}
+        >
+          <GripVertical className="h-4 w-4" aria-hidden />
+        </button>
+      ) : null}
+      <div className="flex-1 min-w-0">{children}</div>
 
       {/* ── Regen button — absolute overlay at top-right of this row.
            Positioned relative to THIS div (no overflow-hidden),
