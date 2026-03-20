@@ -8,7 +8,8 @@ export default defineConfig(({ mode }) => {
   const siteUrl =
     env.VITE_SITE_URL?.replace(/\/$/, "") ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
-  const ogImagePath = env.VITE_OG_IMAGE_PATH || "/images/countries/vietnam_image1.jpg";
+  const ogImagePath =
+    env.VITE_OG_IMAGE_PATH || "/images/countries/vietnam_image1.jpg";
 
   return {
     plugins: [
