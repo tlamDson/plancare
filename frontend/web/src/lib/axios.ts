@@ -14,7 +14,7 @@ import axios, { AxiosError, type AxiosResponse } from "axios";
 // ============================================
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 const API_TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT) || 30000;
 
 // ============================================
@@ -91,13 +91,23 @@ apiClient.interceptors.response.use(
       const status = error.response.status;
 
       switch (status) {
-        case 401:
+        case 401: {
+          // Weather uses the same Bearer flow; a race before Clerk registers
+          // the token can 401 once — don't bounce the whole app for that.
+          const reqUrl = String(error.config?.url ?? "");
+          const isWeatherForecast =
+            reqUrl.includes("weather/forecast") ||
+            reqUrl.endsWith("/weather/forecast");
+          if (isWeatherForecast) {
+            break;
+          }
           // Unauthorized - redirect to login
           // Don't redirect if already on auth pages
           if (!window.location.pathname.includes("/sign")) {
             window.location.href = "/signin";
           }
           break;
+        }
         case 403:
           // Forbidden
           console.error("Access denied");
@@ -108,10 +118,18 @@ apiClient.interceptors.response.use(
           break;
         case 500:
         case 502:
-        case 503:
-          // Server errors
-          console.error("Server error. Please try again later.");
+        case 503: {
+          // Weather proxy often returns 502/503 with JSON bodies handled by callers;
+          // avoid scary global logs for that route.
+          const errUrl = String(error.config?.url ?? "");
+          const isWeatherForecast =
+            errUrl.includes("weather/forecast") ||
+            errUrl.endsWith("/weather/forecast");
+          if (!isWeatherForecast) {
+            console.error("Server error. Please try again later.");
+          }
           break;
+        }
       }
     } else if (error.request) {
       // Network error
