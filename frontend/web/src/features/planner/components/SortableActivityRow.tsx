@@ -19,6 +19,11 @@ import { GripVertical, Loader2, Sparkles } from "lucide-react";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 import { Button } from "@/components/ui/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -92,30 +97,40 @@ export function SortableActivityRow({
       {/* ── Regen button — absolute overlay at top-right of this row.
            Positioned relative to THIS div (no overflow-hidden),
            so it floats ON TOP of the card corner without being clipped.   ── */}
-      <div className="absolute top-2 right-0 z-30">
+      <div className="absolute top-3 right-3 z-30">
         <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isRegenning || isDragDisabled}
-              className={[
-                "h-7 gap-1.5 text-xs font-medium pr-2.5 pl-2",
-                "bg-background/90 backdrop-blur-sm shadow-sm",
-                "border-primary/20 text-primary/80",
-                "hover:bg-primary/5 hover:border-primary/40 hover:text-primary",
-                "transition-all duration-200",
-              ].join(" ")}
-              aria-label={`Regenerate ${activity.name}`}
-            >
-              {isRegenning ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Sparkles className="h-3 w-3" />
-              )}
-              {isRegenning ? "Generating…" : "Regenerate"}
-            </Button>
-          </PopoverTrigger>
+          <Tooltip>
+            <PopoverTrigger asChild>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  disabled={isRegenning || isDragDisabled}
+                  className={[
+                    "h-8 w-8",
+                    "bg-background/90 backdrop-blur-sm shadow-sm",
+                    "border-primary/20 text-primary/80",
+                    "hover:bg-primary/5 hover:border-primary/40 hover:text-primary",
+                    "transition-all duration-200",
+                  ].join(" ")}
+                  aria-label={
+                    isRegenning
+                      ? `${t("trip.regenerating")} ${activity.name}`
+                      : `${t("trip.regenerate")}: ${activity.name}`
+                  }
+                >
+                  {isRegenning ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+            </PopoverTrigger>
+            <TooltipContent side="left">
+              {isRegenning ? t("trip.regenerating") : t("trip.regenerate")}
+            </TooltipContent>
+          </Tooltip>
 
           <PopoverContent
             side="bottom"
