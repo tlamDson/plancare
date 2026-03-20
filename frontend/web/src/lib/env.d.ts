@@ -38,6 +38,9 @@ interface ImportMetaEnv {
   /** Comma-separated emails allowed to see Calendar sync (not secret — backend enforces). */
   readonly VITE_VIP_EMAILS?: string;
 
+  readonly VITE_SITE_URL?: string;
+  readonly VITE_OG_IMAGE_PATH?: string;
+
   // ============================================
   // Third-Party Services (PUBLIC KEYS ONLY)
   // Never expose secret keys!
