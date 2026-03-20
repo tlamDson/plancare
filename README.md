@@ -251,7 +251,21 @@ VITE_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token
 
 # Environment
 VITE_ENV=development
+
+# Google Calendar sync UI (optional)
+# Production build: omit or set false to hide the button. Staging: VITE_ENABLE_GOOGLE_CALENDAR_SYNC=true
+# Local: button shows automatically in `npm run dev`; set VITE_ENABLE_GOOGLE_CALENDAR_SYNC=false to hide
+# VITE_ENABLE_GOOGLE_CALENDAR_SYNC=true
 ```
+
+#### **Google Calendar sync (production vs local)**
+
+- **Production (e.g. `main`):** Omit `VITE_ENABLE_GOOGLE_CALENDAR_SYNC` or keep it not `true` so the **production build** hides the sync button. On the backend, omit `ENABLE_GOOGLE_CALENDAR_SYNC` in production so the sync route is **not registered** (calls get **404**, not a permission-style error).
+- **Local dev:** The sync **API** stays available when `NODE_ENV=development` and the backend flag is unset. The **button appears in `npm run dev` by default**; set `VITE_ENABLE_GOOGLE_CALENDAR_SYNC=false` in `frontend/web/.env.local` if you want to hide it locally.
+- **Turning sync on in production later:** Set `ENABLE_GOOGLE_CALENDAR_SYNC=true` on API + worker **and** rebuild the frontend with `VITE_ENABLE_GOOGLE_CALENDAR_SYNC=true`.
+- **VIP-only (internal / Testing OAuth):** Set **`VIP_EMAILS`** (backend) and **`VITE_VIP_EMAILS`** (frontend build) to the same comma-separated list. Only those users see the Sync control; others see a short beta notice. **Empty `VIP_EMAILS` in development** → backend allows any user; **empty `VITE_VIP_EMAILS` in dev** → UI treats everyone as VIP for convenience. **Production with a non-empty `VIP_EMAILS`:** only listed emails pass the API check (`CALENDAR_VIP_ONLY` otherwise). **`VITE_VIP_EMAILS` is public** in the bundle — real enforcement is server-side.
+- **Incremental OAuth (Clerk):** Keep default Google sign-in scopes to `openid` / `email` / `profile` only in Clerk; the app requests **`https://www.googleapis.com/auth/calendar.events`** via `externalAccount.reauthorize()` when a VIP clicks Sync. Add the post-login redirect URL to Clerk and Google OAuth allowed redirects.
+- **“App isn’t verified” / “This app is blocked” (new Google accounts):** This comes from **Google Cloud OAuth consent** (Testing mode only allows **Test users** you add in the console). Add each tester’s Google account, or move to **In production** after Google’s verification for restricted scopes.
 
 > **Tip:** Copy from `.env.example` if it exists:
 > ```bash

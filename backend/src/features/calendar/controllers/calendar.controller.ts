@@ -9,11 +9,13 @@ import { ClerkRequest } from "../../../types/express";
 import { logger } from "../../../lib/logger";
 import { tripRepository } from "../../planner/repositories/trip.repository";
 import { getGoogleAccessToken } from "../services/clerk-oauth.service";
+import { assertCalendarSyncVip } from "../services/calendar-sync-vip-guard.service";
 import { calendarSyncQueue } from "../calendar.queue";
 
 /**
  * POST /api/trips/:tripId/sync-calendar
  * Queues a background job to sync the trip itinerary to Google Calendar.
+ * (Route is only registered when `isCalendarSyncEnabled()` is true — see `index.ts`.)
  */
 export const syncTripToCalendar = async (
   req: ClerkRequest,
@@ -23,6 +25,25 @@ export const syncTripToCalendar = async (
     const userId = req.auth?.()?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const vip = await assertCalendarSyncVip(userId);
+    if (!vip.ok) {
+      if (vip.reason === "no_email") {
+        res.status(403).json({
+          success: false,
+          code: "CALENDAR_VIP_REQUIRED",
+          message: "Không xác định được email tài khoản để kiểm tra quyền đồng bộ lịch.",
+        });
+        return;
+      }
+      res.status(403).json({
+        success: false,
+        code: "CALENDAR_VIP_ONLY",
+        message:
+          "Tính năng đồng bộ Google Calendar chỉ dành cho tài khoản được mời (VIP/Tester).",
+      });
       return;
     }
 

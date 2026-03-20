@@ -31,4 +31,11 @@ export const env = cleanEnv(process.env, {
     desc: "Serper.dev API Key for local insight scraping (RAG)",
     default: "",
   }),
+  /** When "true", POST /trips/:id/sync-calendar is allowed. When unset in production, calendar sync is off. */
+  ENABLE_GOOGLE_CALENDAR_SYNC: str({ default: "" }),
+  /**
+   * Comma-separated emails allowed to sync (production). Empty in production = no one.
+   * Empty in development = all users allowed (convenience).
+   */
+  VIP_EMAILS: str({ default: "" }),
 });

@@ -31,7 +31,7 @@ const router = Router();
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Forbidden
+ *         description: Forbidden (trip belongs to another user)
  *       404:
  *         description: Trip not found
  */

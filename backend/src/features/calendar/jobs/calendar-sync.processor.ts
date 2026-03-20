@@ -12,11 +12,21 @@ import { getGoogleAccessToken } from "../services/clerk-oauth.service";
 import { itineraryToGoogleEvents } from "../services/calendar-format.service";
 import { syncEventsToGoogle } from "../services/google-calendar.service";
 import type { CalendarSyncJobData } from "../calendar.queue";
+import { isCalendarSyncEnabled } from "../calendar-feature-flag";
 
 export async function calendarSyncProcessor(
   job: Job<CalendarSyncJobData>,
 ): Promise<{ success: boolean; eventCount: number }> {
   const { tripId, userId } = job.data;
+
+  if (!isCalendarSyncEnabled()) {
+    logger.warn(
+      { jobId: job.id, tripId },
+      "Calendar sync job skipped — ENABLE_GOOGLE_CALENDAR_SYNC is off",
+    );
+    return { success: false, eventCount: 0 };
+  }
+
   logger.info({ jobId: job.id, tripId, userId }, "Calendar sync job started");
 
   // Step 1 — Get Google OAuth token from Clerk

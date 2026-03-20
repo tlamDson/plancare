@@ -24,6 +24,7 @@ import userRoutes from "./features/user/routes";
 import billingRoutes from "./features/billing/routes";
 import devRoutes from "./features/dev/routes";
 import calendarRoutes from "./features/calendar/routes";
+import { isCalendarSyncEnabled } from "./features/calendar/calendar-feature-flag";
 import destinationRoutes from "./features/destinations/routes";
 
 // Swagger configuration
@@ -100,7 +101,9 @@ app.use("/api/users", userRoutes);
 app.use("/api/billing", billingRoutes);
 app.use("/api/dev", devRoutes);
 app.use("/api", plannerRoutes);
-app.use("/api", calendarRoutes);
+if (isCalendarSyncEnabled()) {
+  app.use("/api", calendarRoutes);
+}
 app.use("/api/destinations", destinationRoutes);
 
 //7. Health checks

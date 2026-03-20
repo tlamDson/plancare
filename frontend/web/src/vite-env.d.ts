@@ -26,6 +26,9 @@ interface ImportMetaEnv {
    * Show Google Calendar sync in production bundle (default off).
    */
   readonly VITE_ENABLE_GOOGLE_CALENDAR_SYNC?: string;
+
+  /** Comma-separated VIP emails for Calendar sync UI (client-visible). */
+  readonly VITE_VIP_EMAILS?: string;
 }
 
 interface ImportMeta {

@@ -35,20 +35,18 @@ import { ItineraryDayCard } from "../components/ItineraryDayCard";
 import { TripDetailHeader } from "../components/trip-detail/TripDetailHeader";
 import { TripDetailDayStrip } from "../components/trip-detail/TripDetailDayStrip";
 import { TripDetailSummaryRail } from "../components/trip-detail/TripDetailSummaryRail";
+import { TripCalendarSyncActions } from "../components/trip-detail/TripCalendarSyncActions";
 import { resolveItineraryDayIndex } from "../components/trip-detail/resolve-itinerary-day-index";
 import type { ItineraryDay } from "@/utils/schemas";
 import { DataError } from "@/components/DataError";
 import { PageLoader } from "@/components/PageLoader";
 import { retryJob, cancelJob } from "../api/jobs.api";
-import { ENABLE_GOOGLE_CALENDAR_SYNC } from "@/config/env";
-import { syncTripToCalendar } from "../api/calendar.api";
 import { toast } from "sonner";
 import {
   CalendarDays,
   Map,
   MapPin,
   Undo2,
-  CalendarPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
@@ -194,31 +192,6 @@ export default function TripDetailPage() {
       toast.error(
         err?.response?.data?.message || "Failed to cancel trip generation.",
       );
-    },
-  });
-
-  const { mutate: syncCalendar, isPending: isSyncing } = useMutation({
-    mutationFn: () => syncTripToCalendar(tripId!),
-    onSuccess: (data) => {
-      toast.success(
-        data.message ??
-          "Đang đồng bộ lên Google Calendar... Sự kiện sẽ xuất hiện trong ít phút!",
-        { duration: 6000 },
-      );
-    },
-    onError: (err: any) => {
-      const code = err?.response?.data?.code;
-      if (code === "GOOGLE_NOT_CONNECTED") {
-        toast.error(
-          "Vui lòng đăng nhập bằng tài khoản Google để sử dụng tính năng đồng bộ lịch.",
-          { duration: 8000 },
-        );
-      } else {
-        toast.error(
-          err?.response?.data?.message ??
-            "Không thể đồng bộ lên Google Calendar.",
-        );
-      }
     },
   });
 
@@ -511,24 +484,11 @@ export default function TripDetailPage() {
                     </Button>
                   )}
 
-                  {ENABLE_GOOGLE_CALENDAR_SYNC &&
-                    trip.status === "COMPLETED" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => syncCalendar()}
-                        disabled={isSyncing || trip.isAgentProcessing}
-                        className="gap-1.5 min-h-10 cursor-pointer transition-colors duration-200"
-                        aria-label="Sync to Google Calendar"
-                        title="Đồng bộ lịch trình lên Google Calendar của bạn"
-                      >
-                        <CalendarPlus
-                          className="h-4 w-4 shrink-0"
-                          aria-hidden="true"
-                        />
-                        {isSyncing ? "Đang đồng bộ..." : "Sync Google Calendar"}
-                      </Button>
-                    )}
+                  <TripCalendarSyncActions
+                    tripId={trip._id}
+                    tripStatus={trip.status}
+                    isAgentProcessing={trip.isAgentProcessing}
+                  />
 
                   {trip.status === "COMPLETED" && hasMapData && (
                     <Button

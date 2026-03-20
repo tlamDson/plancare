@@ -35,6 +35,9 @@ interface ImportMetaEnv {
    */
   readonly VITE_ENABLE_GOOGLE_CALENDAR_SYNC?: string;
 
+  /** Comma-separated emails allowed to see Calendar sync (not secret — backend enforces). */
+  readonly VITE_VIP_EMAILS?: string;
+
   // ============================================
   // Third-Party Services (PUBLIC KEYS ONLY)
   // Never expose secret keys!
