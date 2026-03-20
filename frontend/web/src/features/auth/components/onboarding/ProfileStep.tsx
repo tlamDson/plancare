@@ -26,18 +26,18 @@ export function ProfileStep({
       <div>
         <h2 className="text-2xl font-bold mb-2">Let's set up your profile</h2>
         <p className="text-muted-foreground">
-          Tell us a bit about yourself to personalize your experience.
+          Choose how your name appears publicly when sharing trips.
         </p>
       </div>
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="displayName">Display name</Label>
+          <Label htmlFor="displayName">Public nickname / username</Label>
           <Input
             id="displayName"
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
-            placeholder="How should we call you?"
+            placeholder="e.g., nomad.minh"
           />
         </div>
 

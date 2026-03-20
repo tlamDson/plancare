@@ -4,6 +4,8 @@
  * Static data for onboarding preferences
  */
 
+import type { FocusKey, GroupTypeKey } from "@/features/settings/types/user-preferences.types";
+
 export const INTERESTS = [
   { id: "adventure", label: "Adventure", emoji: "🏔️" },
   { id: "culture", label: "Culture", emoji: "🏛️" },
@@ -36,4 +38,31 @@ export interface OnboardingPreferences {
   interests: string[];
   travelStyle: string;
   firstTrip: { destination: string; travelers: number } | null;
+}
+
+export const INTEREST_TO_FOCUS: Record<string, FocusKey> = {
+  food: "Gastronomy",
+  culture: "Culture",
+  history: "Culture",
+  nature: "Nature",
+  beach: "Nature",
+  adventure: "Nature",
+  city: "Lifestyle",
+  nightlife: "Lifestyle",
+};
+
+export const TRAVEL_STYLE_TO_GROUP: Record<string, GroupTypeKey> = {
+  solo: "solo",
+  couple: "couple",
+  family: "family_kids",
+  friends: "friends",
+};
+
+export function mapInterestsToFocus(interests: string[]): FocusKey[] {
+  const set = new Set<FocusKey>();
+  for (const id of interests) {
+    const focus = INTEREST_TO_FOCUS[id];
+    if (focus) set.add(focus);
+  }
+  return [...set];
 }

@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SettingsModal } from "@/features/settings/components/SettingsModal";
+import type { TabId } from "@/features/settings/components/SettingsModal";
 import { GlobalJobWatcher } from "@/features/planner/components/GlobalJobWatcher";
 import {
   LayoutDashboard,
@@ -59,6 +60,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<TabId>("personal");
 
   useEffect(() => {
     if (!me) return;
@@ -70,6 +72,29 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       quotaResetsAt: usage?.quotaResetsAt ?? null,
     });
   }, [me, setSubscriptionSnapshot]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const shouldOpen = params.get("openSettings") === "true";
+    const tab = params.get("settingsTab") as TabId | null;
+    if (!shouldOpen) return;
+
+    if (tab) {
+      setSettingsInitialTab(tab);
+    }
+    setIsSettingsOpen(true);
+
+    params.delete("openSettings");
+    params.delete("settingsTab");
+    const nextSearch = params.toString();
+    navigate(
+      {
+        pathname: location.pathname,
+        search: nextSearch ? `?${nextSearch}` : "",
+      },
+      { replace: true },
+    );
+  }, [location.pathname, location.search, navigate]);
 
   const usage = (me as any)?.usage;
   const progressPercent =
@@ -233,6 +258,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+        initialTab={settingsInitialTab}
       />
     </div>
   );

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { getUserPreferences } from "@/features/settings/types/user-preferences.types";
 
 export type Language = "English (US)" | "French" | "Vietnamese";
 
@@ -409,6 +410,15 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.lifecycle_completed": "Completed",
     "trip.lifecycle_cancelled": "Cancelled",
     "trip.lifecycle_failed": "Failed",
+    "trip.summary": "Trip summary",
+    "trip.dayNavigation": "Itinerary days",
+    "trip.summaryDaySingular": "calendar day",
+    "trip.summaryDayPlural": "calendar days",
+    "trip.totalStops": "Stops & activities",
+    "trip.budgetLabel": "Budget",
+    "trip.editTitle": "Edit trip name",
+    "trip.saveTitle": "Save trip name",
+    "trip.cancelEdit": "Cancel editing",
     // Trips page sort
     "trips.sortPlaceholder": "Sort by",
     "trips.sortNewest": "Newest first",
@@ -830,6 +840,15 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.lifecycle_completed": "Terminé",
     "trip.lifecycle_cancelled": "Annulé",
     "trip.lifecycle_failed": "Échoué",
+    "trip.summary": "Résumé du voyage",
+    "trip.dayNavigation": "Jours du voyage",
+    "trip.summaryDaySingular": "jour (calendrier)",
+    "trip.summaryDayPlural": "jours (calendrier)",
+    "trip.totalStops": "Étapes et activités",
+    "trip.budgetLabel": "Budget",
+    "trip.editTitle": "Modifier le nom du voyage",
+    "trip.saveTitle": "Enregistrer le nom",
+    "trip.cancelEdit": "Annuler",
     // Trips page sort
     "trips.sortPlaceholder": "Trier par",
     "trips.sortNewest": "Plus récent",
@@ -1241,6 +1260,15 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.lifecycle_completed": "Hoàn thành",
     "trip.lifecycle_cancelled": "Đã hủy",
     "trip.lifecycle_failed": "Thất bại",
+    "trip.summary": "Tóm tắt chuyến đi",
+    "trip.dayNavigation": "Các ngày trong lịch trình",
+    "trip.summaryDaySingular": "ngày lịch",
+    "trip.summaryDayPlural": "ngày lịch",
+    "trip.totalStops": "Điểm dừng & hoạt động",
+    "trip.budgetLabel": "Ngân sách",
+    "trip.editTitle": "Sửa tên chuyến đi",
+    "trip.saveTitle": "Lưu tên chuyến đi",
+    "trip.cancelEdit": "Hủy chỉnh sửa",
     // Trips page sort
     "trips.sortPlaceholder": "Sắp xếp",
     "trips.sortNewest": "Mới nhất",
@@ -1261,13 +1289,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
 };
 
 // Initialize from localStorage
-const getPrefs = () => {
-  try {
-    return JSON.parse(localStorage.getItem("user-preferences") || "{}");
-  } catch {
-    return {};
-  }
-};
+export const getPrefs = () => getUserPreferences();
 
 const getInitialLanguage = (): Language => {
   const prefs = getPrefs();

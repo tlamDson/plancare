@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { convertCurrency } from "@/utils/format";
+import type { UserPreferences } from "@/features/settings/types/user-preferences.types";
 
 export type TripWizardPriorities = {
   money: number;
@@ -98,7 +99,7 @@ type TripWizardState = {
   setBudget: (budget: TripWizardData["budget"]) => void;
   setPriorities: (priorities: TripWizardPriorities) => void;
   /** Call this when opening the wizard to inject user's preferred currency */
-  initWizard: (currency: string) => void;
+  initWizard: (currency: string, userPrefs?: Partial<UserPreferences>) => void;
   reset: () => void;
 };
 
@@ -120,7 +121,7 @@ export const useTripWizardStore = create<TripWizardState>((set) => ({
     set((state) => ({
       data: { ...state.data, priorities },
     })),
-  initWizard: (currency) =>
+  initWizard: (currency, userPrefs) =>
     set((state) => ({
       data: {
         ...state.data,
@@ -129,6 +130,16 @@ export const useTripWizardStore = create<TripWizardState>((set) => ({
           total: Math.round(convertCurrency(500, "USD", currency)),
           currency,
         },
+        focus: userPrefs?.focus?.slice(0, 3) ?? state.data.focus,
+        groupType: userPrefs?.groupType ?? state.data.groupType,
+        transportMode: userPrefs?.transportMode ?? state.data.transportMode,
+        pace: userPrefs?.pace ?? state.data.pace,
+        constraints: {
+          ...state.data.constraints,
+          ...(userPrefs?.constraints ?? {}),
+        },
+        specialRequirements:
+          userPrefs?.specialRequirements ?? state.data.specialRequirements,
       },
     })),
   reset: () => set({ data: initialData }),

@@ -24,6 +24,7 @@ import type { TripPreferences } from "@travelplan/shared";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
 import { useActiveJobStore } from "@/stores/useActiveJobStore";
+import { getUserPreferences } from "@/features/settings/types/user-preferences.types";
 
 const TOTAL_STEPS = 6;
 const MIN_DAILY_BUDGET = 20;
@@ -205,7 +206,7 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
       onOpenChange={(nextOpen) => {
         if (nextOpen) {
           // Sync budget currency with user's preferred currency setting
-          initWizard(preferredCurrency || "USD");
+          initWizard(preferredCurrency || "USD", getUserPreferences());
         } else {
           reset();
           setStepIndex(0);

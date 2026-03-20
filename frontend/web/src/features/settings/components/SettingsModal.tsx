@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   User,
@@ -67,14 +67,15 @@ const SETTINGS_TABS = [
   },
 ] as const;
 
-type TabId = (typeof SETTINGS_TABS)[number]["id"];
+export type TabId = (typeof SETTINGS_TABS)[number]["id"];
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: TabId;
 }
 
-export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>("personal");
   const { t } = useTranslationStore();
   const { autoLoadLongTripChunks, setAutoLoadLongTripChunks } =
@@ -83,6 +84,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const ActiveComponent =
     SETTINGS_TABS.find((tab) => tab.id === activeTab)?.Component ||
     PersonalInfoSettings;
+
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

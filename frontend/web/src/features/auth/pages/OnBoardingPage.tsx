@@ -5,14 +5,21 @@
  * Refactored to follow Rule of 200 (< 200 lines)
  */
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useUser } from "@clerk/clerk-react";
 import { Check, ChevronLeft, ChevronRight, Loader2, Plane } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import {
+  DEFAULT_USER_PREFERENCES,
+  getUserPreferences,
+  mapFocusToInterests,
+  mapGroupToTravelStyle,
+} from "@/features/settings/types/user-preferences.types";
 
 import { ProfileStep, PreferencesStep, FirstTripStep } from "../components/onboarding";
-import type { OnboardingPreferences } from "../constants/onboarding";
+import { mapInterestsToFocus, TRAVEL_STYLE_TO_GROUP } from "../constants/onboarding";
 
 const TOTAL_STEPS = 3;
 
@@ -20,6 +27,10 @@ export default function OnBoardingPage() {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { user, isLoaded } = useUser();
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
+  const isResetMode = searchParams.get("mode") === "reset";
 
   // Step 1 - Profile
   const [name, setName] = useState("");
@@ -32,6 +43,30 @@ export default function OnBoardingPage() {
   // Step 3 - First Trip
   const [destination, setDestination] = useState("");
   const [travelers, setTravelers] = useState(1);
+
+  useEffect(() => {
+    if (isLoaded && user) {
+      setName(user.fullName || user.firstName || "");
+    }
+
+    if (isResetMode) {
+      setCurrency("USD");
+      setSelectedInterests([]);
+      setTravelStyle("");
+      setDestination("");
+      setTravelers(1);
+      return;
+    }
+
+    const prefs = getUserPreferences();
+    setCurrency(prefs.currency || "USD");
+    setSelectedInterests(mapFocusToInterests(prefs.focus));
+    setTravelStyle(mapGroupToTravelStyle(prefs.groupType));
+    if (prefs.firstTrip?.destination) {
+      setDestination(prefs.firstTrip.destination);
+      setTravelers(prefs.firstTrip.travelers || 1);
+    }
+  }, [isLoaded, isResetMode, user]);
 
   const toggleInterest = (id: string) => {
     setSelectedInterests((prev) =>
@@ -50,22 +85,46 @@ export default function OnBoardingPage() {
   const handleComplete = async () => {
     setIsLoading(true);
 
-    const preferences: OnboardingPreferences = {
+    const current = getUserPreferences();
+    const onboardingFocus = mapInterestsToFocus(selectedInterests);
+    const onboardingGroupType =
+      travelStyle ? TRAVEL_STYLE_TO_GROUP[travelStyle] ?? null : null;
+
+    const preferences = {
+      ...DEFAULT_USER_PREFERENCES,
+      ...current,
+      displayName: name.trim(),
       currency,
-      interests: selectedInterests,
-      travelStyle,
+      focus: onboardingFocus,
+      groupType: onboardingGroupType,
       firstTrip: destination ? { destination, travelers } : null,
+      onboardingDefaults: {
+        focus: onboardingFocus,
+        groupType: onboardingGroupType,
+        transportMode: "walking" as const,
+        pace: "balanced" as const,
+        constraints: {
+          mobility_friendly: false,
+          avoid_crowds: false,
+          foodAsMainActivities: false,
+        },
+        specialRequirements: "",
+      },
     };
 
     localStorage.setItem("user-preferences", JSON.stringify(preferences));
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    toast.success("Welcome to TravelPlanner!");
-    navigate("/dashboard");
+    toast.success(
+      isResetMode
+        ? "Onboarding preferences updated successfully"
+        : "Welcome to TravelPlanner!",
+    );
+    navigate(redirectTo);
     setIsLoading(false);
   };
 
-  const handleSkip = () => navigate("/dashboard");
+  const handleSkip = () => navigate(redirectTo);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
