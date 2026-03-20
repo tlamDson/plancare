@@ -8,3 +8,4 @@ export * from "./useTrips";
 export * from "./useTripWizard";
 export * from "./useReorderActivities";
 export * from "./useRegenActivity";
+export * from "./useTripDayWeather";

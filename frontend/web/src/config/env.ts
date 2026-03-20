@@ -15,8 +15,10 @@ export const ENV = import.meta.env.VITE_ENV || "development";
 export const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 // Mapbox (Public Token - URL restricted in Mapbox dashboard)
-export const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+export const MAPBOX_TOKEN =
+  import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || import.meta.env.VITE_MAPBOX_TOKEN;
 
+// OpenWeather (Public key usage on client for short-term forecast)
 // Feature Flags
 export const IS_DEV = ENV === "development";
 export const IS_PROD = ENV === "production";
