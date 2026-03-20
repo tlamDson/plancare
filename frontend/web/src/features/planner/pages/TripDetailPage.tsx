@@ -35,6 +35,7 @@ import { ItineraryDayCard } from "../components/ItineraryDayCard";
 import { DataError } from "@/components/DataError";
 import { PageLoader } from "@/components/PageLoader";
 import { retryJob, cancelJob } from "../api/jobs.api";
+import { ENABLE_GOOGLE_CALENDAR_SYNC } from "@/config/env";
 import { syncTripToCalendar } from "../api/calendar.api";
 import { toast } from "sonner";
 import {
@@ -542,8 +543,8 @@ export default function TripDetailPage() {
               </Button>
             )}
 
-            {/* Sync to Google Calendar — only for completed trips */}
-            {trip.status === "COMPLETED" && (
+            {/* Sync to Google Calendar — completed trips only; off in prod unless env flag */}
+            {ENABLE_GOOGLE_CALENDAR_SYNC && trip.status === "COMPLETED" && (
               <Button
                 variant="outline"
                 size="sm"

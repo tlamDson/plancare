@@ -21,6 +21,11 @@ interface ImportMetaEnv {
 
   /** Enable debug mode */
   readonly VITE_DEBUG?: string;
+
+  /**
+   * Show Google Calendar sync in production bundle (default off).
+   */
+  readonly VITE_ENABLE_GOOGLE_CALENDAR_SYNC?: string;
 }
 
 interface ImportMeta {

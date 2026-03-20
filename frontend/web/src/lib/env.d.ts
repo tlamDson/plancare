@@ -29,6 +29,12 @@ interface ImportMetaEnv {
   /** Enable mock API responses */
   readonly VITE_MOCK_API?: string;
 
+  /**
+   * Show "Sync Google Calendar" in production builds (staging / internal testers).
+   * Omit or false in public production — OAuth is limited to test accounts.
+   */
+  readonly VITE_ENABLE_GOOGLE_CALENDAR_SYNC?: string;
+
   // ============================================
   // Third-Party Services (PUBLIC KEYS ONLY)
   // Never expose secret keys!

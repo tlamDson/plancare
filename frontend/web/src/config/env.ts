@@ -22,6 +22,15 @@ export const IS_DEV = ENV === "development";
 export const IS_PROD = ENV === "production";
 export const DEBUG = import.meta.env.VITE_DEBUG === "true";
 
+/**
+ * Google Calendar sync is only reliable for Google OAuth allowlisted/test accounts.
+ * Hidden in production builds unless VITE_ENABLE_GOOGLE_CALENDAR_SYNC=true (staging / internal).
+ * Dev server (`vite`) always shows the button for local testing.
+ */
+export const ENABLE_GOOGLE_CALENDAR_SYNC =
+  !import.meta.env.PROD ||
+  import.meta.env.VITE_ENABLE_GOOGLE_CALENDAR_SYNC === "true";
+
 // Validation: Fail fast if critical keys are missing
 if (!CLERK_PUBLISHABLE_KEY && IS_PROD) {
   throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY in production");
