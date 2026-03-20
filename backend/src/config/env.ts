@@ -38,4 +38,8 @@ export const env = cleanEnv(process.env, {
    * Empty in development = all users allowed (convenience).
    */
   VIP_EMAILS: str({ default: "" }),
+  /** OpenWeather API key (server-only). Used by GET /api/weather/forecast proxy. */
+  OPENWEATHER_API_KEY: str({ default: "" }),
+  /** Override OpenWeather API base (default https://api.openweathermap.org/data/2.5) */
+  OPENWEATHER_BASE_URL: str({ default: "" }),
 });

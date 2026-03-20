@@ -26,6 +26,7 @@ import devRoutes from "./features/dev/routes";
 import calendarRoutes from "./features/calendar/routes";
 import { isCalendarSyncEnabled } from "./features/calendar/calendar-feature-flag";
 import destinationRoutes from "./features/destinations/routes";
+import weatherRoutes from "./features/weather/routes";
 
 // Swagger configuration
 const swaggerOptions = {
@@ -101,6 +102,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/billing", billingRoutes);
 app.use("/api/dev", devRoutes);
 app.use("/api", plannerRoutes);
+app.use("/api", weatherRoutes);
 if (isCalendarSyncEnabled()) {
   app.use("/api", calendarRoutes);
 }
