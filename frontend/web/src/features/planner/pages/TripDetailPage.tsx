@@ -35,20 +35,14 @@ import { ItineraryDayCard } from "../components/ItineraryDayCard";
 import { TripDetailHeader } from "../components/trip-detail/TripDetailHeader";
 import { TripDetailDayStrip } from "../components/trip-detail/TripDetailDayStrip";
 import { TripDetailSummaryRail } from "../components/trip-detail/TripDetailSummaryRail";
-import { TripCalendarSyncActions } from "../components/trip-detail/TripCalendarSyncActions";
+import { TripDetailActionsMenu } from "../components/trip-detail/TripDetailActionsMenu";
 import { resolveItineraryDayIndex } from "../components/trip-detail/resolve-itinerary-day-index";
 import type { ItineraryDay } from "@/utils/schemas";
 import { DataError } from "@/components/DataError";
 import { PageLoader } from "@/components/PageLoader";
 import { retryJob, cancelJob } from "../api/jobs.api";
 import { toast } from "sonner";
-import {
-  CalendarDays,
-  Map,
-  MapPin,
-  Undo2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { CalendarDays } from "lucide-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
 import { useUpdateTrip, useUpdateTripLifecycle } from "../hooks/useTrips";
@@ -209,38 +203,40 @@ export default function TripDetailPage() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.trips.detail(tripId),
       });
-      toast.success("↩ Hoàn tác thành công — Lịch trình đã được khôi phục.");
+      toast.success(t("trip.undoSuccess"));
     } catch (err: any) {
       if (err?.response?.status === 409) {
         setCanUndo(false);
-        toast.info("Không có lịch sử hoàn tác.");
+        toast.info(t("trip.undoEmpty"));
       } else {
-        toast.error("Hoàn tác thất bại.");
+        toast.error(t("trip.undoFailed"));
       }
     } finally {
       setIsUndoing(false);
     }
-  }, [tripId, queryClient]);
+  }, [tripId, queryClient, t]);
 
   const handleReGeocode = useCallback(async () => {
     if (!tripId) return;
     setIsReGeocoding(true);
-    const toastId = toast.loading("🔍 Re-geocoding activities...");
+    const toastId = toast.loading(t("trip.reGeocodeLoading"));
     try {
       const res = await apiClient.post(`/trips/${tripId}/regeocode`);
       await queryClient.invalidateQueries({
         queryKey: queryKeys.trips.detail(tripId),
       });
       toast.success(
-        `✅ Updated ${res.data.updated} activities (${res.data.failed} failed)`,
+        t("trip.reGeocodeSuccess")
+          .replace("{updated}", String(res.data.updated))
+          .replace("{failed}", String(res.data.failed)),
         { id: toastId },
       );
     } catch (err: any) {
-      toast.error("Re-geocode failed. Check API keys.", { id: toastId });
+      toast.error(t("trip.reGeocodeFailed"), { id: toastId });
     } finally {
       setIsReGeocoding(false);
     }
-  }, [tripId, queryClient]);
+  }, [tripId, queryClient, t]);
 
   const handleEditTitle = () => {
     if (!trip) return;
@@ -368,6 +364,30 @@ export default function TripDetailPage() {
     [trip],
   );
 
+  const activeDay = sortedDays[activeDayIndex] ?? null;
+
+  const activeDayCoordinates = useMemo(() => {
+    if (!activeDay) return [] as Array<[number, number]>;
+    return activeDay.activities
+      .map((activity) => activity.location?.coordinates)
+      .filter(
+        (coordinates): coordinates is [number, number] =>
+          Array.isArray(coordinates) && coordinates.length === 2,
+      );
+  }, [activeDay]);
+
+  const allTripCoordinates = useMemo(() => {
+    if (!trip?.itinerary?.length) return [] as Array<[number, number]>;
+    return trip.itinerary.flatMap((day) =>
+      day.activities
+        .map((activity) => activity.location?.coordinates)
+        .filter(
+          (coordinates): coordinates is [number, number] =>
+            Array.isArray(coordinates) && coordinates.length === 2,
+        ),
+    );
+  }, [trip]);
+
   useEffect(() => {
     setActiveDayIndex(0);
   }, [trip?._id]);
@@ -409,7 +429,6 @@ export default function TripDetailPage() {
   const totalDays = getTripDuration(trip.startDate, trip.endDate);
   const isFallback = trip?.status === "FALLBACK";
 
-  const activeDay = sortedDays[activeDayIndex] ?? null;
   const itineraryDayIndex =
     activeDay != null
       ? resolveItineraryDayIndex(trip.itinerary, activeDay)
@@ -419,7 +438,7 @@ export default function TripDetailPage() {
 
   return (
     <DashboardLayout>
-      <div className="w-full max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 space-y-6">
+      <div className="w-full max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 space-y-5">
         <AgentLockBanner
           isLocked={trip.isAgentProcessing}
           currentStep={jobState.currentStep}
@@ -444,12 +463,10 @@ export default function TripDetailPage() {
           currentStep={jobState.currentStep}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] gap-6 lg:gap-8 items-start">
-          <div className="space-y-6 min-w-0 max-w-3xl w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(260px,300px)] xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)] gap-5 lg:gap-6 items-start">
+          <div className="space-y-5 min-w-0 w-full">
             <TripDetailHeader
               tripTitleLocalized={getLocalizedTripTitle(trip.title, t)}
-              status={trip.status}
-              isAgentProcessing={trip.isAgentProcessing}
               isEditingTitle={isEditingTitle}
               editTitleValue={editTitleValue}
               onEditTitleValueChange={setEditTitleValue}
@@ -458,65 +475,31 @@ export default function TripDetailPage() {
               onCancelEditTitle={() => setIsEditingTitle(false)}
               onTitleKeyDown={handleKeyDownTitle}
               isUpdatingTrip={isUpdatingTrip}
-              lifecycle={trip.lifecycle}
-              onLifecycleChange={(val) =>
-                updateLifecycle({
-                  tripId: trip._id,
-                  lifecycle: val as TripLifecycle,
-                })
-              }
-              isUpdatingLifecycle={isUpdatingLifecycle}
-              dateRange={dateRange}
-              totalDays={totalDays}
               actions={
-                <>
-                  {trip.status === "COMPLETED" && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleReGeocode}
-                      disabled={isReGeocoding}
-                      className="gap-1.5 min-h-10 cursor-pointer transition-colors duration-200"
-                      aria-label="Re-geocode activities"
-                    >
-                      <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
-                      {isReGeocoding ? "Geocoding..." : "Fix Locations"}
-                    </Button>
-                  )}
-
-                  <TripCalendarSyncActions
-                    tripId={trip._id}
-                    tripStatus={trip.status}
-                    isAgentProcessing={trip.isAgentProcessing}
-                  />
-
-                  {trip.status === "COMPLETED" && hasMapData && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/map/${trip._id}`)}
-                      className="gap-1.5 min-h-10 cursor-pointer transition-colors duration-200 lg:hidden"
-                      aria-label={t("map.viewOnMap")}
-                    >
-                      <Map className="h-4 w-4 shrink-0" aria-hidden="true" />
-                      {t("map.viewOnMap")}
-                    </Button>
-                  )}
-
-                  {!trip.isAgentProcessing && canUndo && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleUndo}
-                      disabled={isUndoing}
-                      className="shrink-0 gap-1.5 min-h-10 cursor-pointer transition-colors duration-200"
-                      title="Hoàn tác thay đổi lịch trình gần nhất"
-                    >
-                      <Undo2 className="h-4 w-4 shrink-0" />
-                      {isUndoing ? "Đang hoàn tác..." : "Hoàn tác"}
-                    </Button>
-                  )}
-                </>
+                <TripDetailActionsMenu
+                  tripId={trip._id}
+                  tripStatus={trip.status}
+                  isAgentProcessing={trip.isAgentProcessing}
+                  hasMapData={hasMapData}
+                  dateRange={dateRange}
+                  totalDays={totalDays}
+                  lifecycle={trip.lifecycle}
+                  onLifecycleChange={(val) =>
+                    updateLifecycle({
+                      tripId: trip._id,
+                      lifecycle: val as TripLifecycle,
+                    })
+                  }
+                  isUpdatingLifecycle={isUpdatingLifecycle}
+                  showFixLocations={trip.status === "COMPLETED"}
+                  isReGeocoding={isReGeocoding}
+                  onReGeocode={handleReGeocode}
+                  showUndo={!trip.isAgentProcessing}
+                  canUndo={canUndo}
+                  isUndoing={isUndoing}
+                  onUndo={handleUndo}
+                  onViewMap={() => navigate(`/map/${trip._id}`)}
+                />
               }
             />
 
@@ -530,7 +513,9 @@ export default function TripDetailPage() {
             ) : null}
 
             <div>
-              <h2 className="text-xl font-semibold mb-4">{t("trip.itinerary")}</h2>
+              <h2 className="text-lg font-semibold mb-3 text-foreground/90">
+                {t("trip.itinerary")}
+              </h2>
               {isChunkedTrip && (
                 <div className="mb-4 rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
                   {t("trip.longTripBanner")}
@@ -600,15 +585,14 @@ export default function TripDetailPage() {
                             : t("trip.chunkLoadMoreHint")}
                       </p>
                       {!autoLoadLongTripChunks && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="mt-3 min-h-10 cursor-pointer transition-colors duration-200"
+                        <button
+                          type="button"
+                          className="mt-3 inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium min-h-10 cursor-pointer transition-colors hover:bg-accent"
                           onClick={() => void loadNextChunk()}
                           disabled={isLoadingChunk}
                         >
                           {t("trip.chunkLoadMoreCta")}
-                        </Button>
+                        </button>
                       )}
                     </div>
                   )}
@@ -618,8 +602,11 @@ export default function TripDetailPage() {
           </div>
 
           <TripDetailSummaryRail
+            tripId={trip._id}
             destination={trip.destination}
-            dateRange={dateRange}
+            activeDayDate={activeDay?.date}
+            activeDayCoordinates={activeDayCoordinates}
+            allTripCoordinates={allTripCoordinates}
             totalCalendarDays={totalDays}
             totalStops={totalStops}
             budgetTotal={trip.budget.totalLimit}

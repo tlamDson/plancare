@@ -214,6 +214,7 @@ function ActivityRow({
     !isFirst &&
     (activity as any).distanceFromPrevious !== undefined &&
     (activity as any).distanceFromPrevious > 0;
+  const showStatusBadge = activity.status !== "planned";
 
   // Detect if this is a meal based on name/notes presence of keywords
   const isMeal = (() => {
@@ -272,7 +273,7 @@ function ActivityRow({
           </div>
         )}
 
-        <div className="p-4 flex-1 flex flex-col">
+        <div className="p-4 pr-12 sm:pr-14 flex-1 flex flex-col">
           {/* Top row: time + status */}
           <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
             {timeLabel ? (
@@ -283,19 +284,21 @@ function ActivityRow({
             ) : (
               <span />
             )}
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center flex-wrap justify-end">
               {isMeal && (
                 <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 border-none text-xs capitalize h-5 gap-1 shadow-sm">
                   <Utensils className="h-3 w-3" />
-                  Dining
+                  {t("trip.diningTag")}
                 </Badge>
               )}
-              <Badge
-                variant={STATUS_VARIANT[activity.status]}
-                className="text-xs capitalize h-5"
-              >
-                {activity.status}
-              </Badge>
+              {showStatusBadge ? (
+                <Badge
+                  variant={STATUS_VARIANT[activity.status]}
+                  className="text-xs capitalize h-5"
+                >
+                  {activity.status}
+                </Badge>
+              ) : null}
             </div>
           </div>
 
@@ -354,8 +357,7 @@ function ActivityRow({
             <div className="flex items-center gap-1.5 mt-2 px-2 py-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-md text-xs text-amber-700 dark:text-amber-400">
               <Car className="h-3 w-3 shrink-0" aria-hidden="true" />
               <span>
-                Khá xa để đi bộ — cân nhắc gọi xe hoặc dùng phương tiện công
-                cộng.
+                {t("trip.transportWarning")}
               </span>
             </div>
           )}
@@ -477,18 +479,22 @@ export function ItineraryDayCard({
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-md">
-      {/* Day header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/40">
-        <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Day {day.day}
+      {/* Day header — single line to reduce vertical noise */}
+      <div className="px-4 py-2.5 border-b bg-muted/40">
+        <p className="text-sm text-foreground">
+          <span className="font-semibold text-primary">Day {day.day}</span>
+          <span className="mx-2 text-muted-foreground/50" aria-hidden>
+            ·
           </span>
-          <p className="font-semibold text-sm text-foreground">{dateLabel}</p>
-        </div>
-        <Badge variant="secondary" className="text-xs">
-          {day.activities.length}{" "}
-          {day.activities.length === 1 ? "activity" : "activities"}
-        </Badge>
+          <span className="font-medium">{dateLabel}</span>
+          <span className="mx-2 text-muted-foreground/50" aria-hidden>
+            ·
+          </span>
+          <span className="text-muted-foreground text-xs font-normal">
+            {day.activities.length}{" "}
+            {day.activities.length === 1 ? "activity" : "activities"}
+          </span>
+        </p>
       </div>
 
       {/* Activities timeline */}
