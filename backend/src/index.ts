@@ -140,10 +140,14 @@ app.get("/ready", async (req: Request, res: Response) => {
       timestamp: new Date(),
     });
   } catch (error) {
+    logger.error({ err: error }, "Readiness check failed (Mongo or Redis)");
     res.status(503).json({
       status: "not_ready",
       error: "Service dependencies unavailable",
       timestamp: new Date(),
+      ...(process.env.NODE_ENV !== "production" && error instanceof Error
+        ? { detail: error.message }
+        : {}),
     });
   }
 });

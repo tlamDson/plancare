@@ -75,6 +75,8 @@ Validated in `backend/src/config/env.ts`. Common variables:
 | `REDIS_HOST` | Redis hostname (e.g. `localhost`, `redis`, or `*.railway.internal`) |
 | `REDIS_PORT` | Default `6379` |
 | `REDIS_PASSWORD` | Optional locally; set in Docker/prod when Redis requires auth |
+| `REDIS_URL` | Optional. If set, overrides host/port/password (e.g. Railway `redis://default:...@...railway.internal:6379`). Use `redis://` for plain TCP, `rediss://` for TLS. |
+| `REDIS_TLS` | Optional override: `true` / `false` / `1` / `0` |
 | `CLERK_SECRET_KEY` / web publishable key | Auth |
 | `GEMINI_API_KEY` | Worker / AI pipeline |
 | `MAPBOX_ACCESS_TOKEN` | Geocoding / maps |

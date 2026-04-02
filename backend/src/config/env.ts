@@ -15,6 +15,10 @@ export const env = cleanEnv(process.env, {
   REDIS_HOST: str({ default: "localhost" }),
   REDIS_PORT: port({ default: 6379 }),
   REDIS_PASSWORD: str({ desc: "Redis Password", default: "" }), // Optional for local dev
+  /** If set (e.g. Railway `redis://...`), overrides REDIS_HOST/PORT/PASSWORD for connection. Use `redis://` (plain) or `rediss://` (TLS). */
+  REDIS_URL: str({ default: "" }),
+  /** Empty = autodetect (TLS for Upstash-style hosts; plain TCP for Docker `redis`, localhost, railway.internal). Set "true"/"false" to override. */
+  REDIS_TLS: str({ default: "" }),
   GEMINI_API_KEY: str({ desc: "Gemini API Key — required for Worker service" }), // Fail Fast: crash if missing
   MAPBOX_ACCESS_TOKEN: str({ desc: "Mapbox Access Token", default: "" }), // Week 3
   GOOGLE_PLACES_API_KEY: str({ desc: "Google Places API Key", default: "" }), // Week 3
