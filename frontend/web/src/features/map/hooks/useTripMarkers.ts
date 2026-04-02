@@ -163,7 +163,7 @@ export function useTripMarkers({
     for (const id of [...addedLayerIds.current].reverse()) {
       try {
         if (map.getLayer(id)) map.removeLayer(id);
-      } catch (_) {
+      } catch {
         /* map might be destroyed */
       }
     }
@@ -171,7 +171,7 @@ export function useTripMarkers({
     for (const id of [...addedSourceIds.current].reverse()) {
       try {
         if (map.getSource(id)) map.removeSource(id);
-      } catch (_) {
+      } catch {
         /* map might be destroyed */
       }
     }
@@ -417,7 +417,9 @@ export function useTripMarkers({
     return () => {
       try {
         map.off("click", deselect);
-      } catch (_) {}
+      } catch {
+        /* listener may already be removed */
+      }
       cleanup();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

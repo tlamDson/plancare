@@ -93,9 +93,6 @@ async function fetchJobStatus(jobId: string): Promise<Job> {
  *   mockCurrentStep: "Analyzing weather data...",
  * });
  */
-// BullMQ statuses that mean "still working" — includes DELAYED (waiting for retry backoff)
-const ACTIVE_STATUSES = new Set(["QUEUED", "PROCESSING", "DELAYED", "WAITING"]);
-
 export function useJobPoller({
   jobId,
   interval = 2000,

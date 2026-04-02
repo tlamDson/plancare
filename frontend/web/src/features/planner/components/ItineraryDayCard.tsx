@@ -29,7 +29,10 @@ import {
   formatPriceLevel,
   formatPriceCategory,
 } from "@/utils/format";
-import { useTranslationStore } from "@/stores/useTranslationStore";
+import {
+  useTranslationStore,
+  type Language,
+} from "@/stores/useTranslationStore";
 
 import {
   SortableContext,
@@ -195,7 +198,7 @@ function ActivityRow({
   isLast: boolean;
   distanceUnit?: "Miles" | "Km";
   preferredCurrency?: string;
-  language?: any;
+  language?: Language;
 }) {
   const { t } = useTranslationStore();
   const meta = TYPE_META[activity.type] ?? TYPE_META.custom;
@@ -210,10 +213,11 @@ function ActivityRow({
     return km.toFixed(1) + " km";
   };
 
+  const distPrev = activity.distanceFromPrevious;
   const showDistance =
     !isFirst &&
-    (activity as any).distanceFromPrevious !== undefined &&
-    (activity as any).distanceFromPrevious > 0;
+    distPrev !== undefined &&
+    distPrev > 0;
   const showStatusBadge = activity.status !== "planned";
 
   // Detect if this is a meal based on name/notes presence of keywords
@@ -240,7 +244,7 @@ function ActivityRow({
         <div className="absolute -top-3 left-[0.1rem] flex items-center z-20">
           <div className="bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground border border-border rounded-full shadow-sm flex items-center gap-0.5">
             <MapPin className="h-2.5 w-2.5 shrink-0 opacity-80" aria-hidden />
-            {formatDistance((activity as any).distanceFromPrevious)}
+            {formatDistance(distPrev ?? 0)}
           </div>
         </div>
       )}
@@ -353,7 +357,7 @@ function ActivityRow({
           )}
 
           {/* Transport warning — shown when gap to next activity exceeds threshold */}
-          {(activity as any).requiresTransport && (
+          {activity.requiresTransport && (
             <div className="flex items-center gap-1.5 mt-2 px-2 py-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-md text-xs text-amber-700 dark:text-amber-400">
               <Car className="h-3 w-3 shrink-0" aria-hidden="true" />
               <span>
@@ -363,13 +367,13 @@ function ActivityRow({
           )}
 
           {/* Nearby food suggestions */}
-          {(activity as any).nearbySuggestions?.length > 0 && (
+          {(activity.nearbySuggestions?.length ?? 0) > 0 && (
             <details className="mt-2 group">
               <summary className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors list-none">
                 <Utensils className="h-3 w-3 shrink-0" aria-hidden="true" />
                 {t("trip.nearbySuggestionsSummary").replace(
                   "{count}",
-                  String((activity as any).nearbySuggestions.length),
+                  String(activity.nearbySuggestions?.length ?? 0),
                 )}
                 <ChevronDown
                   className="h-3 w-3 ml-auto transition-transform group-open:rotate-180"
@@ -377,7 +381,7 @@ function ActivityRow({
                 />
               </summary>
               <div className="mt-2 space-y-1.5 pl-1">
-                {(activity as any).nearbySuggestions.map((s: any) => (
+                {activity.nearbySuggestions?.map((s) => (
                   <div
                     key={s.placeId}
                     className="flex items-center justify-between gap-2 text-xs"
@@ -479,22 +483,18 @@ export function ItineraryDayCard({
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-md">
-      {/* Day header — single line to reduce vertical noise */}
-      <div className="px-4 py-2.5 border-b bg-muted/40">
-        <p className="text-sm text-foreground">
-          <span className="font-semibold text-primary">Day {day.day}</span>
-          <span className="mx-2 text-muted-foreground/50" aria-hidden>
-            ·
+      {/* Day header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/40">
+        <div>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Day {day.day}
           </span>
-          <span className="font-medium">{dateLabel}</span>
-          <span className="mx-2 text-muted-foreground/50" aria-hidden>
-            ·
-          </span>
-          <span className="text-muted-foreground text-xs font-normal">
-            {day.activities.length}{" "}
-            {day.activities.length === 1 ? "activity" : "activities"}
-          </span>
-        </p>
+          <p className="font-semibold text-sm text-foreground">{dateLabel}</p>
+        </div>
+        <Badge variant="secondary" className="text-xs">
+          {day.activities.length}{" "}
+          {day.activities.length === 1 ? "activity" : "activities"}
+        </Badge>
       </div>
 
       {/* Activities timeline */}

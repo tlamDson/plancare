@@ -108,7 +108,7 @@ export default function TripsPage() {
         } else {
           // It's a lifecycle filter (UPCOMING, IN_TRIP, COMPLETED, CANCELLED)
           // We only match lifecycle if the AI is truly done (COMPLETED).
-          const currentLifecycle = (trip as any).lifecycle || "UPCOMING";
+          const currentLifecycle = trip.lifecycle;
           matchesStatus =
             trip.status === "COMPLETED" && currentLifecycle === statusFilter;
         }

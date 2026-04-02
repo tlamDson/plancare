@@ -10,6 +10,7 @@
  */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
 import { toast } from "sonner";
 import { queryKeys } from "@/lib/query-client";
 import { apiClient } from "@/lib/axios";
@@ -86,14 +87,23 @@ export function useRegenActivity() {
       toast.success("Activity replaced with a new suggestion!");
     },
 
-    onError: (err: any) => {
-      if (err?.message === "FREE_REGEN_LIMIT_REACHED") {
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : String(err ?? "");
+      if (message === "FREE_REGEN_LIMIT_REACHED") {
         return;
       }
-      const msg =
-        err?.response?.data?.message ||
-        "Could not find a unique replacement. Try again.";
-      toast.error(msg);
+      const data = isAxiosError(err) ? err.response?.data : undefined;
+      const axiosMsg =
+        data &&
+        typeof data === "object" &&
+        "message" in data &&
+        typeof (data as { message: unknown }).message === "string"
+          ? (data as { message: string }).message
+          : undefined;
+      toast.error(
+        axiosMsg || "Could not find a unique replacement. Try again.",
+      );
     },
   });
 }

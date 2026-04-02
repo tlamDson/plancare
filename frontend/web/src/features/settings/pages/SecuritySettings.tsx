@@ -47,8 +47,15 @@ export function SecuritySettings() {
       setCurrentPassword("");
       setNewPassword("");
       setIsPasswordDialogOpen(false);
-    } catch (error: any) {
-      toast.error(error.errors?.[0]?.message || "Failed to update password");
+    } catch (error: unknown) {
+      const clerkMsg =
+        error &&
+        typeof error === "object" &&
+        "errors" in error &&
+        Array.isArray((error as { errors: { message?: string }[] }).errors)
+          ? (error as { errors: { message?: string }[] }).errors[0]?.message
+          : undefined;
+      toast.error(clerkMsg || "Failed to update password");
     } finally {
       setIsUpdatingPassword(false);
     }

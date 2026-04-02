@@ -16,6 +16,25 @@ import {
 } from "@/components/ui/popover";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 
+function parseClerkUnsafeMeta(metadata: unknown) {
+  const m =
+    metadata && typeof metadata === "object"
+      ? (metadata as Record<string, unknown>)
+      : {};
+  const dobRaw = m.dob;
+  return {
+    preferredName:
+      typeof m.preferredName === "string" ? m.preferredName : "",
+    dob:
+      typeof dobRaw === "string" || typeof dobRaw === "number"
+        ? new Date(dobRaw)
+        : undefined,
+    gender: typeof m.gender === "string" ? m.gender : "",
+    phone: typeof m.phone === "string" ? m.phone : "",
+    address: typeof m.address === "string" ? m.address : "",
+  };
+}
+
 export function PersonalInfoSettings() {
   const { user, isLoaded } = useUser();
   const { t } = useTranslationStore();
@@ -40,16 +59,12 @@ export function PersonalInfoSettings() {
       setLastName(user.lastName || "");
       setEmail(user.primaryEmailAddress?.emailAddress || "");
 
-      const meta = user.unsafeMetadata as Record<string, any>;
-      setPreferredName(meta?.preferredName || "");
-      if (meta?.dob) {
-        setDob(new Date(meta.dob));
-      } else {
-        setDob(undefined);
-      }
-      setGender(meta?.gender || "");
-      setPhone(meta?.phone || "");
-      setAddress(meta?.address || "");
+      const meta = parseClerkUnsafeMeta(user.unsafeMetadata);
+      setPreferredName(meta.preferredName);
+      setDob(meta.dob);
+      setGender(meta.gender);
+      setPhone(meta.phone);
+      setAddress(meta.address);
     }
   }, [user]);
 
@@ -74,9 +89,8 @@ export function PersonalInfoSettings() {
         },
       });
       toast.success(t("personal.toastSave"));
-    } catch (error) {
+    } catch {
       toast.error(t("personal.toastFail"));
-      console.error(error);
     } finally {
       setIsSaving(false);
     }
@@ -87,16 +101,12 @@ export function PersonalInfoSettings() {
       setFirstName(user.firstName || "");
       setLastName(user.lastName || "");
       setEmail(user.primaryEmailAddress?.emailAddress || "");
-      const meta = user.unsafeMetadata as Record<string, any>;
-      setPreferredName(meta?.preferredName || "");
-      if (meta?.dob) {
-        setDob(new Date(meta.dob));
-      } else {
-        setDob(undefined);
-      }
-      setGender(meta?.gender || "");
-      setPhone(meta?.phone || "");
-      setAddress(meta?.address || "");
+      const meta = parseClerkUnsafeMeta(user.unsafeMetadata);
+      setPreferredName(meta.preferredName);
+      setDob(meta.dob);
+      setGender(meta.gender);
+      setPhone(meta.phone);
+      setAddress(meta.address);
     }
   };
 

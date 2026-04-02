@@ -117,6 +117,9 @@ export const tripSchema = z.object({
   cities: z.array(cityStopSchema),
   isAgentProcessing: z.boolean(),
   agentJobId: z.string().optional(),
+  /** Chunked itinerary generation (Pro long trips) */
+  totalChunks: z.number().min(0).optional(),
+  chunksReady: z.array(z.boolean()).optional(),
   version: z.number(),
   status: tripStatusSchema,
   lifecycle: tripLifecycleSchema.default("UPCOMING"),

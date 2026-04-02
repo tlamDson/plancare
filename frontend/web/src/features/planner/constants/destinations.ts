@@ -272,7 +272,7 @@ export const CITIES_BY_COUNTRY: Record<string, City[]> = {
 };
 
 export function isMVPCountry(countryId: string): boolean {
-  return MVP_COUNTRY_IDS.includes(countryId as any);
+  return (MVP_COUNTRY_IDS as readonly string[]).includes(countryId);
 }
 
 export function getCitiesForCountry(countryId: string): City[] {

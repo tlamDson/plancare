@@ -88,5 +88,7 @@ export const insightWorker = createWorker(
   insightScraperProcessor,
   {
     limiter: { max: 1, duration: 2000 },
+    stalledInterval: 30_000,
+    lockDuration: 60_000,
   },
 );

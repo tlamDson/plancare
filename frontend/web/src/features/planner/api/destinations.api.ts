@@ -1,6 +1,7 @@
 import { apiClient } from "@/lib/axios";
 
 export interface DestinationCity {
+  hasRagInsight: boolean;
   idKey: string;
   name: string;
   nameEn: string;

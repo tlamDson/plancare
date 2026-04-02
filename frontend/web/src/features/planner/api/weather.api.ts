@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { apiClient } from "@/lib/axios";
+import { OPENWEATHER_API_KEY, OPENWEATHER_BASE_URL } from "@/config/env";
 import { validateAPI } from "@/utils/validation";
 import { createBrowserLogger } from "@/lib/logger";
 
@@ -64,73 +64,53 @@ function selectRepresentativeEntry(
   });
 }
 
-/** Weather is loaded via authenticated backend proxy; always attempt when trip data exists. */
 export function canFetchWeather(): boolean {
-  return true;
+  return Boolean(OPENWEATHER_API_KEY);
 }
-
-type AxiosLikeError = {
-  response?: {
-    status?: number;
-    data?: { code?: string; message?: string };
-  };
-};
 
 export async function getTripDayWeatherForecast({
   destination,
   dayDateIso,
 }: GetTripDayWeatherParams): Promise<TripDayWeather | null> {
+  if (!OPENWEATHER_API_KEY) {
+    weatherLogger.warn(
+      { destination, dayDateIso },
+      "Missing VITE_OPENWEATHER_API_KEY; weather forecast is disabled",
+    );
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    q: destination,
+    appid: OPENWEATHER_API_KEY,
+    units: "metric",
+  });
+
   weatherLogger.info(
     {
       destination,
       dayDateIso,
-      endpoint: "GET /weather/forecast (backend proxy)",
-      query: { q: destination },
+      endpoint: `${OPENWEATHER_BASE_URL}/forecast`,
+      query: { q: destination, units: "metric" },
     },
-    "Requesting weather forecast via API",
+    "Requesting OpenWeather forecast",
   );
 
-  let rawData: unknown;
-  try {
-    const res = await apiClient.get<unknown>("/weather/forecast", {
-      params: { q: destination },
-    });
-    rawData = res.data;
-  } catch (err: unknown) {
-    const ax = err as AxiosLikeError;
-    const status = ax.response?.status;
-    const code = ax.response?.data?.code;
-    const message = ax.response?.data?.message;
+  const response = await fetch(`${OPENWEATHER_BASE_URL}/forecast?${params}`);
+  if (!response.ok) {
     weatherLogger.error(
       {
         destination,
         dayDateIso,
-        status,
-        code,
-        message,
+        status: response.status,
+        statusText: response.statusText,
       },
-      "Weather forecast request failed (backend proxy)",
+      "OpenWeather request failed",
     );
-    if (
-      status === 503 &&
-      code === "WEATHER_NOT_CONFIGURED"
-    ) {
-      return null;
-    }
-    if (status === 502 && code === "OPENWEATHER_UNAUTHORIZED") {
-      return null;
-    }
-    if (status === 502 && code === "OPENWEATHER_ERROR") {
-      return null;
-    }
-    if (status === 502 && code === "WEATHER_ERROR") {
-      return null;
-    }
-    throw new Error(
-      message ?? `Weather request failed${status != null ? ` (${status})` : ""}`,
-    );
+    throw new Error(`Weather request failed with status ${response.status}`);
   }
 
+  const rawData: unknown = await response.json();
   const parsed = validateAPI(
     forecastResponseSchema,
     rawData,

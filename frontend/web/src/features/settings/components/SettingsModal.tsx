@@ -87,7 +87,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
 
   useEffect(() => {
     if (isOpen && initialTab) {
-      setActiveTab(initialTab);
+      queueMicrotask(() => setActiveTab(initialTab));
     }
   }, [isOpen, initialTab]);
 

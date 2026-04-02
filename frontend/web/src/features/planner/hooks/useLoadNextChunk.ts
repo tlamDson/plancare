@@ -14,6 +14,8 @@ import { apiClient } from "@/lib/axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
 import { toast } from "sonner";
+import type { Trip } from "../api/trips.api";
+import type { ItineraryDay } from "@/utils/schemas";
 
 export interface UseLoadNextChunkResult {
   /** Index of the next chunk to load (0-based) */
@@ -48,24 +50,22 @@ export function useLoadNextChunk(
 
       if (response.data.ready) {
         // Merge new days into the cached trip data
-        queryClient.setQueryData(
+        queryClient.setQueryData<Trip>(
           queryKeys.trips.detail(tripId),
-          (old: any) => {
-            if (!old?.trip) return old;
-            const existingDays: any[] = old.trip.itinerary ?? [];
-            const newDays: any[] = response.data.days ?? [];
-            // Avoid duplicating days that are already present
-            const existingDayNums = new Set(existingDays.map((d: any) => d.day));
+          (old) => {
+            if (!old) return old;
+            const existingDays = old.itinerary ?? [];
+            const newDays = (response.data.days ?? []) as ItineraryDay[];
+            const existingDayNums = new Set(
+              existingDays.map((d) => d.day),
+            );
             const uniqueNewDays = newDays.filter(
-              (d: any) => !existingDayNums.has(d.day),
+              (d) => !existingDayNums.has(d.day),
             );
             return {
               ...old,
-              trip: {
-                ...old.trip,
-                itinerary: [...existingDays, ...uniqueNewDays],
-                chunksReady: response.data.chunksReady,
-              },
+              itinerary: [...existingDays, ...uniqueNewDays],
+              chunksReady: response.data.chunksReady,
             };
           },
         );

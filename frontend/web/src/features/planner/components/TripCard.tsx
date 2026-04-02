@@ -75,7 +75,7 @@ export function TripCard({ trip, priority = false }: TripCardProps) {
 
   const coverSrc =
     trip.coverImage ||
-    getCountryImage((trip as any).destination || trip.title, trip._id) ||
+    getCountryImage(trip.destination || trip.title, trip._id) ||
     null;
 
   const convertedSpent = convertCurrency(
@@ -99,7 +99,7 @@ export function TripCard({ trip, priority = false }: TripCardProps) {
   const isAiFailed = trip.status === "FAILED";
   const isAiActive = !isAiDone && !isAiFailed;
 
-  const currentLifecycle = (trip as any).lifecycle || "UPCOMING";
+  const currentLifecycle = trip.lifecycle;
 
   const formatStatusLabel = (status: string) =>
     status

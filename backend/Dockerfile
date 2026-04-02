@@ -27,6 +27,7 @@ RUN npm ci
 
 # Copy all source code
 COPY backend/src ./backend/src
+COPY backend/scripts ./backend/scripts
 COPY backend/tsconfig.json ./backend/
 COPY packages/shared/src ./packages/shared/src
 COPY packages/shared/tsconfig.json ./packages/shared/
@@ -60,6 +61,7 @@ RUN npm ci
 
 # Copy source for hot reload (volume mount overrides this)
 COPY backend/src ./backend/src
+COPY backend/scripts ./backend/scripts
 COPY backend/tsconfig.json ./backend/
 COPY packages/shared/src ./packages/shared/src
 COPY packages/shared/tsconfig.json ./packages/shared/
@@ -100,6 +102,7 @@ RUN npm ci --only=production && \
 
 # Copy compiled code from builder (backend & shared)
 COPY --from=builder /app/backend/dist ./backend/dist
+COPY --from=builder /app/backend/scripts ./backend/scripts
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
 # Create non-root user for security

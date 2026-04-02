@@ -69,7 +69,10 @@ function buildPreferences(data: TripWizardData) {
       adults: data.travelers.adults,
       children: data.travelers.children,
     },
-    accommodationType: (data.accommodationType || "any") as any,
+    accommodationType:
+      data.accommodationType === "" || !data.accommodationType
+        ? "any"
+        : data.accommodationType,
     priorities: data.priorities,
     mood: data.mood || undefined,
     interests: data.interests.length > 0 ? data.interests : undefined,

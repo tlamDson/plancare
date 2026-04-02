@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTripWizardStore } from "@/stores/trip-wizard.store";
@@ -11,6 +12,9 @@ const EXAMPLES = [
 
 export function StepRequirements() {
   const { data, setData } = useTripWizardStore();
+  const [exampleIx] = useState(
+    () => Math.floor(Date.now() / 10_000) % EXAMPLES.length,
+  );
 
   return (
     <div className="space-y-4">
@@ -26,7 +30,7 @@ export function StepRequirements() {
 
       <Textarea
         id="special-requirements"
-        placeholder={`Ví dụ: "${EXAMPLES[Math.floor(Date.now() / 10000) % EXAMPLES.length]}"`}
+        placeholder={`Ví dụ: "${EXAMPLES[exampleIx]}"`}
         value={data.specialRequirements}
         onChange={(e) =>
           setData({ specialRequirements: e.target.value.slice(0, 200) })

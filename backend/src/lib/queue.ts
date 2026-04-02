@@ -1,28 +1,44 @@
 import {
   Queue,
-  Worker,
   QueueOptions,
+  Worker,
   WorkerOptions,
-  ConnectionOptions,
 } from "bullmq";
+import type { RedisOptions } from "ioredis";
+import IORedis from "ioredis";
 import { env } from "../config/env";
 import { logger } from "./logger";
-import IORedis from "ioredis";
 
-// TLS config for Upstash Redis (required in production)
-const isProduction = process.env.NODE_ENV === "production";
+/** Plain TCP — Railway private Redis, Docker, local dev. */
+function shouldSkipRedisTls(host: string): boolean {
+  const h = host.toLowerCase();
+  return (
+    h.includes("railway.internal") ||
+    h === "localhost" ||
+    h === "127.0.0.1"
+  );
+}
 
-const connectionBase: any = {
-  host: env.REDIS_HOST,
-  port: env.REDIS_PORT,
-  ...(env.REDIS_PASSWORD ? { password: env.REDIS_PASSWORD } : {}),
-  family: 4, // Upstash prefers IPv4
-  ...(isProduction ? { tls: {} } : {}), // TLS required for Upstash
-};
+function buildRedisConnectionOptions(): RedisOptions {
+  const skipTls = shouldSkipRedisTls(env.REDIS_HOST);
+  return {
+    host: env.REDIS_HOST,
+    port: env.REDIS_PORT,
+    ...(env.REDIS_PASSWORD ? { password: env.REDIS_PASSWORD } : {}),
+    family: 4,
+    ...(skipTls
+      ? {}
+      : { tls: { rejectUnauthorized: false } }),
+    retryStrategy: (times: number) => Math.min(times * 50, 2000),
+  };
+}
+
+const connectionBase = buildRedisConnectionOptions();
 
 const connection = {
   ...connectionBase,
-  maxRetriesPerRequest: null, // Required by BullMQ
+  // Required by BullMQ (ioredis client used as queue connection)
+  maxRetriesPerRequest: null,
 };
 
 export const createQueue = (name: string, options?: QueueOptions) => {

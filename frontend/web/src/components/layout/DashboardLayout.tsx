@@ -5,7 +5,7 @@
  * Layout wrapper for authenticated pages
  */
 
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
 import { cn } from "@/lib/utils";
@@ -36,7 +36,6 @@ import {
 } from "lucide-react";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 import { useUserMe } from "@/features/user/hooks/useUser";
-import { useEffect } from "react";
 import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
 
 interface DashboardLayoutProps {
@@ -64,9 +63,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   useEffect(() => {
     if (!me) return;
-    const usage = (me as any).usage;
+    const usage = me.usage;
     setSubscriptionSnapshot({
-      isPro: (me as any).tier === "pro",
+      isPro: me.tier === "pro",
       tripsUsedThisCycle: usage?.tripsUsedThisCycle ?? 0,
       tripLimit: usage?.tripLimit ?? 10,
       quotaResetsAt: usage?.quotaResetsAt ?? null,
@@ -79,10 +78,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     const tab = params.get("settingsTab") as TabId | null;
     if (!shouldOpen) return;
 
-    if (tab) {
-      setSettingsInitialTab(tab);
-    }
-    setIsSettingsOpen(true);
+    queueMicrotask(() => {
+      if (tab) {
+        setSettingsInitialTab(tab);
+      }
+      setIsSettingsOpen(true);
+    });
 
     params.delete("openSettings");
     params.delete("settingsTab");
@@ -96,7 +97,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     );
   }, [location.pathname, location.search, navigate]);
 
-  const usage = (me as any)?.usage;
+  const usage = me?.usage;
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
   const progressPercent =
     isPro || !usage?.tripLimit || usage.tripLimit < 0
       ? 0
@@ -108,7 +115,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     ? Math.max(
         0,
         Math.ceil(
-          (new Date(usage.quotaResetsAt).getTime() - Date.now()) /
+          (new Date(usage.quotaResetsAt).getTime() - nowMs) /
             (1000 * 60 * 60 * 24),
         ),
       )

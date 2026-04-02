@@ -1,9 +1,10 @@
 import { useMemo } from "react";
-import { CloudSun, Droplets, Map, MapPin } from "lucide-react";
+import { CalendarDays, CloudSun, Droplets, Map, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 import { convertCurrency } from "@/utils/format";
 import { useTripDayWeather } from "@/features/planner/hooks";
+import { canFetchWeather } from "@/features/planner/api/weather.api";
 import { MAPBOX_TOKEN } from "@/config/env";
 
 interface TripDetailSummaryRailProps {
@@ -12,6 +13,7 @@ interface TripDetailSummaryRailProps {
   activeDayDate?: string;
   activeDayCoordinates: Array<[number, number]>;
   allTripCoordinates: Array<[number, number]>;
+  dateRange: string;
   totalCalendarDays: number;
   totalStops: number;
   budgetTotal?: number;
@@ -27,6 +29,7 @@ export function TripDetailSummaryRail({
   activeDayDate,
   activeDayCoordinates,
   allTripCoordinates,
+  dateRange,
   totalCalendarDays,
   totalStops,
   budgetTotal,
@@ -40,6 +43,8 @@ export function TripDetailSummaryRail({
     destination,
     dayDateIso: activeDayDate,
   });
+
+  const weatherConfigReady = canFetchWeather();
 
   const previewCoordinates =
     activeDayCoordinates.length > 0 ? activeDayCoordinates : allTripCoordinates;
@@ -84,36 +89,47 @@ export function TripDetailSummaryRail({
       }
     })();
 
-  const metaLine =
-    totalCalendarDays > 0
-      ? `${totalCalendarDays} ${
-          totalCalendarDays === 1
-            ? t("trip.summaryDaySingular")
-            : t("trip.summaryDayPlural")
-        } · ${totalStops} ${t("trip.stopsUnit")}`
-      : `${totalStops} ${t("trip.stopsUnit")}`;
-
   return (
-    <aside className="lg:sticky lg:top-4 space-y-3">
-      <div className="rounded-xl border bg-card/50 backdrop-blur-sm shadow-sm p-4 space-y-3 transition-shadow duration-200 hover:shadow-md">
+    <aside className="lg:sticky lg:top-4 space-y-4">
+      <div className="rounded-xl border bg-card/50 backdrop-blur-sm shadow-sm p-5 space-y-4 transition-shadow duration-200 hover:shadow-md">
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t("trip.summary")}
           </h2>
           {destination ? (
-            <p className="mt-1 flex items-start gap-2 text-sm font-semibold text-foreground leading-snug">
+            <p className="mt-1 flex items-start gap-2 text-sm font-medium text-foreground">
               <MapPin
                 className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground"
                 aria-hidden
               />
-              <span>{destination}</span>
+              <span className="leading-snug">{destination}</span>
             </p>
           ) : null}
         </div>
 
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          {metaLine}
-        </p>
+        {dateRange ? (
+          <div className="flex items-start gap-2 text-sm text-muted-foreground">
+            <CalendarDays className="h-4 w-4 shrink-0 mt-0.5" aria-hidden />
+            <div>
+              <p>{dateRange}</p>
+              {totalCalendarDays > 0 ? (
+                <p className="mt-0.5 text-xs">
+                  {totalCalendarDays}{" "}
+                  {totalCalendarDays === 1
+                    ? t("trip.summaryDaySingular")
+                    : t("trip.summaryDayPlural")}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm">
+          <p className="text-muted-foreground text-xs uppercase tracking-wide font-medium">
+            {t("trip.totalStops")}
+          </p>
+          <p className="text-lg font-semibold tabular-nums">{totalStops}</p>
+        </div>
 
         {displayBudget ? (
           <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm">
@@ -128,8 +144,7 @@ export function TripDetailSummaryRail({
           <Button
             type="button"
             variant="default"
-            size="sm"
-            className="w-full min-h-9 cursor-pointer transition-colors duration-200 gap-2"
+            className="w-full min-h-10 cursor-pointer transition-colors duration-200 gap-2"
             onClick={onViewMap}
           >
             <Map className="h-4 w-4 shrink-0" aria-hidden />
@@ -138,7 +153,7 @@ export function TripDetailSummaryRail({
         ) : null}
       </div>
 
-      <div className="rounded-xl border bg-card/50 backdrop-blur-sm shadow-sm p-4 space-y-3 transition-shadow duration-200 hover:shadow-md">
+      <div className="rounded-xl border bg-card/50 backdrop-blur-sm shadow-sm p-5 space-y-3 transition-shadow duration-200 hover:shadow-md">
         <div className="flex items-center gap-2">
           <CloudSun className="h-4 w-4 text-primary" aria-hidden />
           <h3 className="text-sm font-semibold text-foreground">
@@ -146,7 +161,11 @@ export function TripDetailSummaryRail({
           </h3>
         </div>
 
-        {weatherQuery.isLoading ? (
+        {!weatherConfigReady ? (
+          <p className="text-sm text-muted-foreground">
+            {t("trip.weatherMissingConfig")}
+          </p>
+        ) : weatherQuery.isLoading ? (
           <p className="text-sm text-muted-foreground animate-pulse motion-reduce:animate-none">
             {t("trip.weatherLoading")}
           </p>
@@ -179,12 +198,12 @@ export function TripDetailSummaryRail({
         )}
       </div>
 
-      <div className="rounded-xl border bg-card/50 backdrop-blur-sm shadow-sm p-3 space-y-2 transition-shadow duration-200 hover:shadow-md">
-        <div className="px-1">
+      <div className="rounded-xl border bg-card/50 backdrop-blur-sm shadow-sm p-3 space-y-3 transition-shadow duration-200 hover:shadow-md">
+        <div className="px-2 pt-1">
           <h3 className="text-sm font-semibold text-foreground">
             {t("trip.minimapTitle")}
           </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-1">
             {t("trip.minimapSubtitle")}
           </p>
         </div>
@@ -193,22 +212,32 @@ export function TripDetailSummaryRail({
           <button
             type="button"
             onClick={onViewMap}
-            disabled={!showViewOnMap}
-            className="group block w-full overflow-hidden rounded-lg border border-border/60 bg-muted/30 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
+            className="group block w-full overflow-hidden rounded-lg border border-border/60 bg-muted/30 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             aria-label={t("trip.openMapFullscreen")}
           >
             <img
               src={staticMapUrl}
               alt={`${t("trip.minimapTitle")} - ${destination || "trip"}`}
-              className="h-32 w-full object-cover transition-transform duration-200 group-hover:scale-[1.01]"
+              className="h-36 w-full object-cover transition-transform duration-200 group-hover:scale-[1.01]"
               loading="lazy"
             />
           </button>
         ) : (
-          <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 px-3 py-4 text-center text-xs text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 px-3 py-5 text-center text-sm text-muted-foreground">
             {t("trip.minimapEmpty")}
           </div>
         )}
+
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full min-h-10 cursor-pointer transition-colors duration-200 gap-2"
+          onClick={onViewMap}
+          disabled={!showViewOnMap || !tripId}
+        >
+          <Map className="h-4 w-4 shrink-0" aria-hidden />
+          {t("trip.openMapFullscreen")}
+        </Button>
       </div>
     </aside>
   );

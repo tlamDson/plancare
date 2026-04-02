@@ -107,7 +107,7 @@ export function TravelPreferencesSettings() {
   };
 
   useEffect(() => {
-    hydrateFromPrefs(getUserPreferences());
+    queueMicrotask(() => hydrateFromPrefs(getUserPreferences()));
   }, []);
 
   const toggleFocus = (value: FocusKey) => {

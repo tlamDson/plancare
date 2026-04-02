@@ -22,23 +22,24 @@ export function BackgroundProcessingModal({
   const [hasShownModal, setHasShownModal] = useState(false);
   const [open, setOpen] = useState(false);
 
-  // Show modal after 15s
   useEffect(() => {
+    const wantsRetry =
+      Boolean(currentStep?.toLowerCase().includes("retry")) &&
+      !hasShownModal;
+    if (wantsRetry) {
+      queueMicrotask(() => {
+        setHasShownModal(true);
+        setOpen(true);
+      });
+      return;
+    }
     if (!isProcessing || hasShownModal) return;
-    const timer = setTimeout(() => {
+    const timer = window.setTimeout(() => {
       setHasShownModal(true);
       setOpen(true);
     }, 15000);
-    return () => clearTimeout(timer);
-  }, [isProcessing, hasShownModal]);
-
-  // Show modal immediately if DELAYED/retry
-  useEffect(() => {
-    if (currentStep?.toLowerCase().includes("retry") && !hasShownModal) {
-      setHasShownModal(true);
-      setOpen(true);
-    }
-  }, [currentStep, hasShownModal]);
+    return () => window.clearTimeout(timer);
+  }, [isProcessing, hasShownModal, currentStep]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

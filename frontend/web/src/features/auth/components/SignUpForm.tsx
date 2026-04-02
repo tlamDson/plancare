@@ -4,7 +4,7 @@
  * Email/password registration form with validation and strength indicator
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
@@ -39,9 +39,6 @@ export function SignUpForm({
 }: SignUpFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] =
-    useState<PasswordStrength | null>(null);
-
   const {
     register,
     handleSubmit,
@@ -51,18 +48,17 @@ export function SignUpForm({
     resolver: zodResolver(signUpFormSchema),
   });
 
-  // Real-time password strength check
   const watchedPassword = useWatch({ control, name: "password" });
+  const passwordStrength = useMemo<PasswordStrength | null>(
+    () =>
+      watchedPassword ? checkPasswordStrength(watchedPassword) : null,
+    [watchedPassword],
+  );
+
   useEffect(() => {
-    if (watchedPassword) {
-      setPasswordStrength(checkPasswordStrength(watchedPassword));
-      if (signUpError?.field === "password") {
-        onClearError("password");
-      }
-    } else {
-      setPasswordStrength(null);
+    if (watchedPassword && signUpError?.field === "password") {
+      onClearError("password");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedPassword, signUpError?.field, onClearError]);
 
   return (

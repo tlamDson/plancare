@@ -28,12 +28,12 @@ function useProgressiveMessage(
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    if (!isActive) {
-      setElapsed(0);
-      return;
-    }
+    if (!isActive) return;
     const interval = setInterval(() => setElapsed((s) => s + 1), 1000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      setElapsed(0);
+    };
   }, [isActive]);
 
   if (overrideStep) return overrideStep;

@@ -35,17 +35,24 @@ import { ItineraryDayCard } from "../components/ItineraryDayCard";
 import { TripDetailHeader } from "../components/trip-detail/TripDetailHeader";
 import { TripDetailDayStrip } from "../components/trip-detail/TripDetailDayStrip";
 import { TripDetailSummaryRail } from "../components/trip-detail/TripDetailSummaryRail";
-import { TripDetailActionsMenu } from "../components/trip-detail/TripDetailActionsMenu";
+import { TripCalendarSyncActions } from "../components/trip-detail/TripCalendarSyncActions";
 import { resolveItineraryDayIndex } from "../components/trip-detail/resolve-itinerary-day-index";
 import type { ItineraryDay } from "@/utils/schemas";
 import { DataError } from "@/components/DataError";
 import { PageLoader } from "@/components/PageLoader";
 import { retryJob, cancelJob } from "../api/jobs.api";
 import { toast } from "sonner";
-import { CalendarDays } from "lucide-react";
+import {
+  CalendarDays,
+  Map,
+  MapPin,
+  Undo2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
 import { useUpdateTrip, useUpdateTripLifecycle } from "../hooks/useTrips";
+import { isAxiosError } from "axios";
 import { apiClient } from "@/lib/axios";
 import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
 import type { TripLifecycle } from "@travelplan/shared";
@@ -112,7 +119,7 @@ export default function TripDetailPage() {
     });
     console.log("Full trip object:", trip);
     console.groupEnd();
-  }, [trip]);
+  }, [trip, t]);
 
   // ── Debug: log when AI job finishes and itinerary is ready to render ──
   useEffect(() => {
@@ -142,10 +149,7 @@ export default function TripDetailPage() {
       });
     });
     console.groupEnd();
-
-    // Only fire when processing finishes (isAgentProcessing changes to false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trip?.isAgentProcessing]);
+  }, [trip, t, trip?.isAgentProcessing]);
 
   const jobState = useJobPoller({
     jobId: activeJobId,
@@ -161,8 +165,11 @@ export default function TripDetailPage() {
       setActiveJobId(result.jobId);
       setJobError(null);
       toast.success("Retry queued. The agent is working again.");
-    } catch (retryError: any) {
-      const message = retryError?.message || "Failed to retry trip generation";
+    } catch (retryError: unknown) {
+      const message =
+        retryError instanceof Error
+          ? retryError.message
+          : "Failed to retry trip generation";
       setJobError(message);
       toast.error(message);
     } finally {
@@ -182,10 +189,16 @@ export default function TripDetailPage() {
         });
       }
     },
-    onError: (err: any) => {
-      toast.error(
-        err?.response?.data?.message || "Failed to cancel trip generation.",
-      );
+    onError: (err: unknown) => {
+      const data = isAxiosError(err) ? err.response?.data : undefined;
+      const msg =
+        data &&
+        typeof data === "object" &&
+        "message" in data &&
+        typeof (data as { message: unknown }).message === "string"
+          ? (data as { message: string }).message
+          : "";
+      toast.error(msg || "Failed to cancel trip generation.");
     },
   });
 
@@ -204,8 +217,8 @@ export default function TripDetailPage() {
         queryKey: queryKeys.trips.detail(tripId),
       });
       toast.success(t("trip.undoSuccess"));
-    } catch (err: any) {
-      if (err?.response?.status === 409) {
+    } catch (err: unknown) {
+      if (isAxiosError(err) && err.response?.status === 409) {
         setCanUndo(false);
         toast.info(t("trip.undoEmpty"));
       } else {
@@ -231,7 +244,7 @@ export default function TripDetailPage() {
           .replace("{failed}", String(res.data.failed)),
         { id: toastId },
       );
-    } catch (err: any) {
+    } catch {
       toast.error(t("trip.reGeocodeFailed"), { id: toastId });
     } finally {
       setIsReGeocoding(false);
@@ -313,7 +326,7 @@ export default function TripDetailPage() {
   );
 
   // Chunk loading for Pro trips > 5 days
-  const totalChunks = (trip as any)?.totalChunks ?? 0;
+  const totalChunks = trip?.totalChunks ?? 0;
   const isChunkedTrip = totalChunks > 1;
   const { allChunksLoaded, isLoadingChunk, loadNextChunk } = useLoadNextChunk(
     tripId,
@@ -438,7 +451,7 @@ export default function TripDetailPage() {
 
   return (
     <DashboardLayout>
-      <div className="w-full max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 space-y-5">
+      <div className="w-full max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 space-y-6">
         <AgentLockBanner
           isLocked={trip.isAgentProcessing}
           currentStep={jobState.currentStep}
@@ -463,10 +476,12 @@ export default function TripDetailPage() {
           currentStep={jobState.currentStep}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(260px,300px)] xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)] gap-5 lg:gap-6 items-start">
-          <div className="space-y-5 min-w-0 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] gap-6 lg:gap-8 items-start">
+          <div className="space-y-6 min-w-0 max-w-3xl w-full">
             <TripDetailHeader
               tripTitleLocalized={getLocalizedTripTitle(trip.title, t)}
+              status={trip.status}
+              isAgentProcessing={trip.isAgentProcessing}
               isEditingTitle={isEditingTitle}
               editTitleValue={editTitleValue}
               onEditTitleValueChange={setEditTitleValue}
@@ -475,31 +490,67 @@ export default function TripDetailPage() {
               onCancelEditTitle={() => setIsEditingTitle(false)}
               onTitleKeyDown={handleKeyDownTitle}
               isUpdatingTrip={isUpdatingTrip}
+              lifecycle={trip.lifecycle}
+              onLifecycleChange={(val) =>
+                updateLifecycle({
+                  tripId: trip._id,
+                  lifecycle: val as TripLifecycle,
+                })
+              }
+              isUpdatingLifecycle={isUpdatingLifecycle}
+              dateRange={dateRange}
+              totalDays={totalDays}
               actions={
-                <TripDetailActionsMenu
-                  tripId={trip._id}
-                  tripStatus={trip.status}
-                  isAgentProcessing={trip.isAgentProcessing}
-                  hasMapData={hasMapData}
-                  dateRange={dateRange}
-                  totalDays={totalDays}
-                  lifecycle={trip.lifecycle}
-                  onLifecycleChange={(val) =>
-                    updateLifecycle({
-                      tripId: trip._id,
-                      lifecycle: val as TripLifecycle,
-                    })
-                  }
-                  isUpdatingLifecycle={isUpdatingLifecycle}
-                  showFixLocations={trip.status === "COMPLETED"}
-                  isReGeocoding={isReGeocoding}
-                  onReGeocode={handleReGeocode}
-                  showUndo={!trip.isAgentProcessing}
-                  canUndo={canUndo}
-                  isUndoing={isUndoing}
-                  onUndo={handleUndo}
-                  onViewMap={() => navigate(`/map/${trip._id}`)}
-                />
+                <>
+                  {trip.status === "COMPLETED" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleReGeocode}
+                      disabled={isReGeocoding}
+                      className="h-10 px-3 gap-1.5 cursor-pointer transition-colors duration-200"
+                      aria-label={t("trip.fixLocations")}
+                    >
+                      <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      {isReGeocoding
+                        ? t("trip.reGeocoding")
+                        : t("trip.fixLocations")}
+                    </Button>
+                  )}
+
+                  <TripCalendarSyncActions
+                    tripId={trip._id}
+                    tripStatus={trip.status}
+                    isAgentProcessing={trip.isAgentProcessing}
+                  />
+
+                  {trip.status === "COMPLETED" && hasMapData && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/map/${trip._id}`)}
+                      className="gap-1.5 min-h-10 cursor-pointer transition-colors duration-200 lg:hidden"
+                      aria-label={t("map.viewOnMap")}
+                    >
+                      <Map className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      {t("map.viewOnMap")}
+                    </Button>
+                  )}
+
+                  {!trip.isAgentProcessing && canUndo && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUndo}
+                      disabled={isUndoing}
+                      className="h-10 px-3 shrink-0 gap-1.5 cursor-pointer transition-colors duration-200"
+                      title={t("trip.undo")}
+                    >
+                      <Undo2 className="h-4 w-4 shrink-0" />
+                      {isUndoing ? t("trip.undoing") : t("trip.undo")}
+                    </Button>
+                  )}
+                </>
               }
             />
 
@@ -513,9 +564,7 @@ export default function TripDetailPage() {
             ) : null}
 
             <div>
-              <h2 className="text-lg font-semibold mb-3 text-foreground/90">
-                {t("trip.itinerary")}
-              </h2>
+              <h2 className="text-xl font-semibold mb-4">{t("trip.itinerary")}</h2>
               {isChunkedTrip && (
                 <div className="mb-4 rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
                   {t("trip.longTripBanner")}
@@ -585,14 +634,15 @@ export default function TripDetailPage() {
                             : t("trip.chunkLoadMoreHint")}
                       </p>
                       {!autoLoadLongTripChunks && (
-                        <button
-                          type="button"
-                          className="mt-3 inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium min-h-10 cursor-pointer transition-colors hover:bg-accent"
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-3 min-h-10 cursor-pointer transition-colors duration-200"
                           onClick={() => void loadNextChunk()}
                           disabled={isLoadingChunk}
                         >
                           {t("trip.chunkLoadMoreCta")}
-                        </button>
+                        </Button>
                       )}
                     </div>
                   )}
@@ -607,6 +657,7 @@ export default function TripDetailPage() {
             activeDayDate={activeDay?.date}
             activeDayCoordinates={activeDayCoordinates}
             allTripCoordinates={allTripCoordinates}
+            dateRange={dateRange}
             totalCalendarDays={totalDays}
             totalStops={totalStops}
             budgetTotal={trip.budget.totalLimit}

@@ -1,689 +1,196 @@
-# 🧳 Project Voyager: Distributed Agentic Travel Orchestrator
+# Project Voyager — TravelPlan
 
-> An agentic, distributed system that solves the "Hallucination," "Latency," and "Cost" problems in AI travel planning.
+Agentic travel planner monorepo: React web app, Express API, BullMQ workers, shared Zod contracts, MongoDB.
 
-## 📋 Table of Contents
+## Contents
 
 - [Overview](#overview)
-- [Tech Stack](#tech-stack)
-- [Architecture](#architecture)
+- [Tech stack](#tech-stack)
+- [Repository layout](#repository-layout)
 - [Prerequisites](#prerequisites)
-- [Local Development Setup](#local-development-setup)
-  - [1. Installation](#1-installation)
-  - [2. Environment Variables](#2-environment-variables)
-  - [3. Start Services](#3-start-services)
-  - [4. Run Frontend](#4-run-frontend)
-  - [5. Run Backend API](#5-run-backend-api)
-  - [6. Run Worker (Optional)](#6-run-worker-optional)
-- [Project Structure](#project-structure)
-- [Key Features](#key-features)
+- [Environment variables](#environment-variables)
+- [Redis, TLS & BullMQ](#redis-tls--bullmq)
+- [Local development](#local-development)
+- [Deployment (Railway)](#deployment-railway)
+- [Scripts](#scripts)
 - [Documentation](#documentation)
-- [Contributing](#contributing)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Overview
 
-**Voyager** is a next-generation travel planning platform that combines AI reasoning with verified real-world data. Instead of blindly trusting AI hallucinations, we implement:
+- **Planner:** Trip generation via Gemini, validation with Mapbox + Google Places (field-masked requests), Mongo `PlaceCache` for repeat queries.
+- **Queue:** BullMQ on Redis for trip generation, calendar sync, and destination insight jobs.
+- **Auth:** Clerk. **Maps:** Mapbox GL. **Contracts:** `packages/shared` (Zod).
 
-- **Smart Guardrails:** CFO Logic pre-validates budgets before AI generation
-- **Precision Mapping:** 100% valid locations via Mapbox Geocoding + Google Places verification
-- **Performance:** <20 second trip generation using parallel intent execution
-- **Scalability:** Handles 1-day sprints to 30-day marathons via paginated processing
-
-### Core Value Proposition
-
-| Pillar | Solution |
-|--------|----------|
-| **Precision** | 100% valid markers (Ratings > 4.0) using Mapbox + Google Places |
-| **Intelligence** | CFO Logic layer rejects impossible budgets upfront |
-| **Performance** | Parallel Intent Execution + Exponential Backoff polling |
-| **Scalability** | Hot/Cold batch processing for long trips (Eventual Consistency) |
+Trip lifecycle (simplified): `DRAFT → QUEUED → PROCESSING → COMPLETED` (or `FAILED`).
 
 ---
 
-## Tech Stack
+## Tech stack
 
-### 🏗️ **Monorepo & Build**
-
-| Layer | Technology |
-|-------|-----------|
-| **Monorepo** | TypeScript with npm Workspaces + Turborepo |
-| **Package Manager** | npm 10.9.3+ (npm workspaces) |
-| **Build Tool** | Vite (Frontend), TypeScript Compiler (Backend) |
-
-### 🎨 **Frontend**
-
-| Component | Technology |
-|-----------|-----------|
-| **Framework** | React 18+ (Vite) |
-| **Styling** | Tailwind CSS + CVA (Class Variance Authority) |
-| **UI Components** | Shadcn UI (Unstyled Radix Components) |
-| **State Management** | React Query (Server State) + Zustand (Client State) |
-| **Routing** | React Router v6 |
-| **Maps** | Mapbox GL JS |
-| **Forms** | React Hook Form + Zod |
-| **Async Pattern** | Polling with Exponential Backoff (1s → 10s) |
-
-### 🔧 **Backend API**
-
-| Component | Technology |
-|-----------|-----------|
-| **Runtime** | Node.js 20+ (Express) |
-| **API Framework** | Express.js |
-| **Database** | MongoDB (Mongoose) |
-| **Validation** | Zod + Envalid (Config) |
-| **Logging** | Pino (Structured JSON Logging) |
-| **Task Queue** | BullMQ + Redis |
-| **Authentication** | Clerk |
-| **Circuit Breaker** | Opossum (for external API resilience) |
-
-### 🤖 **AI & LLM**
-
-| Component | Model |
-|-----------|-------|
-| **Intent Generation** | Google Gemini 1.5 Flash |
-| **Reasoning Engine** | Google Gemini 3 Pro |
-| **Tool Framework** | LangChain |
-
-### 🔌 **External APIs**
-
-| Service | Purpose |
-|---------|---------|
-| **Mapbox Search API** | Geocoding & coordinate precision |
-| **Google Places API** | Ratings, reviews, operational status verification |
-| **Clerk Auth** | User authentication & management |
-
-### 📦 **Infrastructure**
-
-| Service | Deployment |
-|---------|-----------|
-| **Frontend** | Vercel |
-| **Backend API** | Railway / Render |
-| **Worker** | Railway / Render (Auto-scaling 1-5 replicas) |
-| **Redis** | Railway / Render (In-memory queue broker) |
-| **MongoDB** | MongoDB Atlas / Docker (local) |
-| **Containerization** | Docker (Multi-stage builds, <200MB images) |
-| **CI/CD** | GitHub Actions |
-
-### 🧪 **Testing & QA**
-
-| Layer | Tools |
-|-------|-------|
-| **Unit Tests** | Vitest |
-| **E2E Tests** | Playwright |
-| **Load Testing** | Artillery.io |
-| **Mocking** | msw (Mock Service Worker) |
+| Area | Stack |
+|------|--------|
+| Monorepo | npm workspaces (`packageManager: npm@10.9.3`) |
+| Web | React (Vite), Tailwind, shadcn/ui, TanStack Query, Zustand |
+| API | Node 20+, Express, Mongoose, Zod, Envalid, Pino |
+| Queue | BullMQ + **ioredis** |
+| Data | MongoDB Atlas or local / Docker |
+| Deploy | Frontend often Vercel; API + worker + Redis described in `railway.toml` |
 
 ---
 
-## Architecture
-
-### High-Level Flow
-
-```
-User Request (Web)
-       ↓
-   [API Layer] - Validate & Queue
-       ↓
-   [Redis Queue] - Job Management (BullMQ)
-       ↓
-   [Worker] - AI + Verification Pipeline
-       ↓
-   [MongoDB] - Persist Trip Data
-       ↓
-   [UI Poll] - Display Results
-```
-
-### Distributed State Machine
-
-```
-DRAFT → QUEUED → PROCESSING_STEP_1 → PROCESSING_STEP_2 → COMPLETED
-                                                        ↘ FAILED
-```
-
-### Monorepo Structure
+## Repository layout
 
 ```
 TravelPlan/
-├── frontend/                 # React Web App
-│   └── web/src/
-│       ├── features/         # Business domains (planner, auth, map)
-│       ├── components/       # Shared UI library
-│       ├── hooks/            # Custom React hooks
-│       └── stores/           # Zustand state slices
-├── backend/                  # Express API
-│   └── src/
-│       ├── features/         # Business domains (planner, auth)
-│       ├── lib/              # Utilities (Logger, Queue Factory)
-│       ├── middlewares/      # Auth, Rate Limiting
-│       └── config/           # Environment validation
-├── packages/shared/          # Monorepo shared kernel
-│   └── src/
-│       ├── schemas/          # Zod validation schemas
-│       ├── types/            # TypeScript interfaces
-│       └── constants/        # Shared constants
-├── docker-compose.yml        # Local dev environment (MongoDB + Redis)
-├── package.json              # Workspace root
-└── tsconfig.base.json        # Base TypeScript config
+├── backend/                 # Express API + worker entrypoints
+├── frontend/web/            # Vite SPA
+├── packages/shared/         # Zod schemas & shared types
+├── docker-compose.yml       # Local Mongo/Redis (if used)
+├── railway.toml             # Railway: API, worker, Redis service
+├── env.docker.example       # Template for Docker `.env.docker`
+└── README.md
 ```
 
 ---
 
 ## Prerequisites
 
-Before starting, ensure you have installed:
-
-- **Node.js** 20+ ([download](https://nodejs.org/))
-  - Includes npm 10.9.3+ by default
-- **Docker** & **Docker Compose** ([download](https://www.docker.com/products/docker-desktop))
-- **Git** (for cloning & version control)
-
-### Verify Installation
-
-```bash
-node --version    # v20.x.x
-npm --version     # 10.9.3+
-docker --version  # Docker version 24+
-```
+- Node.js **20+**
+- **npm** 10+
+- **Docker** (optional, for local MongoDB/Redis or compose stack)
+- Accounts as needed: Clerk, MongoDB, Mapbox, Google Places, Gemini, etc.
 
 ---
 
-## Local Development Setup
+## Environment variables
 
-### 1. Installation
+Validated in `backend/src/config/env.ts`. Common variables:
+
+| Variable | Purpose |
+|----------|---------|
+| `MONGO_URI` | MongoDB connection string |
+| `REDIS_HOST` | Redis hostname (e.g. `localhost`, `redis`, or `*.railway.internal`) |
+| `REDIS_PORT` | Default `6379` |
+| `REDIS_PASSWORD` | Optional locally; set in Docker/prod when Redis requires auth |
+| `CLERK_SECRET_KEY` / web publishable key | Auth |
+| `GEMINI_API_KEY` | Worker / AI pipeline |
+| `MAPBOX_ACCESS_TOKEN` | Geocoding / maps |
+| `GOOGLE_PLACES_API_KEY` | Places Text Search, Nearby, photo media |
+| `OPENWEATHER_API_KEY` | Weather proxy (optional) |
+| `SERPER_API_KEY` | Insight scraping (optional) |
+
+**Frontend (`frontend/web`):** `VITE_*` for API base URL, Clerk, Mapbox, feature flags (see existing sections in repo for Calendar/VIP).
+
+Create `backend/.env` (or `.env.local`) from your team’s template. For **Docker Compose** API/worker, use **`.env.docker`** at repo root (see `env.docker.example`).
+
+---
+
+## Redis, TLS & BullMQ
+
+Connection logic lives in **`backend/src/lib/queue.ts`**.
+
+- **Local / Docker Redis** (`localhost`, `127.0.0.1`): **no TLS**.
+- **Railway private Redis** (hostname contains `railway.internal`): **no TLS** — plain TCP on port 6379.
+- **Managed TLS Redis** (e.g. Upstash, `*.upstash.io`): **TLS** enabled (`rejectUnauthorized: false` for compatibility with some providers).
+
+**Retry:** ioredis `retryStrategy` backoff is configured for transient disconnects.
+
+**Workers** (`backend/src/worker.ts`, insight worker): BullMQ uses `stalledInterval: 30s` and `lockDuration: 60s` to balance long-running AI/IO jobs vs Redis polling load. On shutdown, trip, calendar, and insight workers are closed cleanly.
+
+**Billing note:** Serverless Redis products often charge **per command**. BullMQ workers generate steady traffic (EVALSHA, ZRANGE, etc.). For a single small deployment, **one Redis instance on the same host as the app** (e.g. Railway Redis service) avoids per-command surprise bills from a separate vendor.
+
+---
+
+## Local development
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/travelplan.git
+git clone <your-repo-url>
 cd TravelPlan
-
-# Install dependencies (all workspaces at once)
 npm install
 ```
 
-### 2. Environment Variables
-
-Create `.env.local` files in the appropriate directories:
-
-#### **Backend Configuration** (`backend/.env.local`)
+1. Start MongoDB and Redis (Docker Compose or local installs).
+2. Configure `backend/.env` with `MONGO_URI`, `REDIS_*`, Clerk, `GEMINI_API_KEY`, etc.
+3. From repo root:
 
 ```bash
-# API Configuration
-PORT=3000
-NODE_ENV=development
-
-# Database
-MONGO_URI=mongodb://localhost:27017/voyager
-MONGO_DB_NAME=voyager
-
-# Redis & Queue
-REDIS_URL=redis://localhost:6379
-BULLMQ_QUEUE_NAME=trip-generation
-
-# Authentication
-CLERK_SECRET_KEY=your_clerk_secret_key
-CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-
-# AI & LLM
-GEMINI_API_KEY=your_gemini_api_key
-
-# External APIs
-MAPBOX_API_KEY=your_mapbox_api_key
-GOOGLE_PLACES_API_KEY=your_google_places_api_key
-
-# Logging
-LOG_LEVEL=debug
+npm run dev:api      # API — http://localhost:3000
+npm run dev:web      # Web — http://localhost:5173
+npm run dev:worker   # Optional — processes BullMQ jobs
 ```
 
-#### **Frontend Configuration** (`frontend/web/.env.local`)
+4. Production build (all workspaces): `npm run build`
 
-```bash
-# API
-VITE_API_URL=http://localhost:3000
-VITE_API_TIMEOUT=30000
+**Health:** `GET /health` / `GET /ready` (readiness may check Mongo + Redis).
 
-# Authentication (Clerk)
-VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-
-# Maps
-VITE_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token
-
-# Environment
-VITE_ENV=development
-
-# Google Calendar sync UI (optional)
-# Production build: omit or set false to hide the button. Staging: VITE_ENABLE_GOOGLE_CALENDAR_SYNC=true
-# Local: button shows automatically in `npm run dev`; set VITE_ENABLE_GOOGLE_CALENDAR_SYNC=false to hide
-# VITE_ENABLE_GOOGLE_CALENDAR_SYNC=true
-```
-
-#### **Google Calendar sync (production vs local)**
-
-- **Production (e.g. `main`):** Omit `VITE_ENABLE_GOOGLE_CALENDAR_SYNC` or keep it not `true` so the **production build** hides the sync button. On the backend, omit `ENABLE_GOOGLE_CALENDAR_SYNC` in production so the sync route is **not registered** (calls get **404**, not a permission-style error).
-- **Local dev:** The sync **API** stays available when `NODE_ENV=development` and the backend flag is unset. The **button appears in `npm run dev` by default**; set `VITE_ENABLE_GOOGLE_CALENDAR_SYNC=false` in `frontend/web/.env.local` if you want to hide it locally.
-- **Turning sync on in production later:** Set `ENABLE_GOOGLE_CALENDAR_SYNC=true` on API + worker **and** rebuild the frontend with `VITE_ENABLE_GOOGLE_CALENDAR_SYNC=true`.
-- **VIP-only (internal / Testing OAuth):** Set **`VIP_EMAILS`** (backend) and **`VITE_VIP_EMAILS`** (frontend build) to the same comma-separated list. Only those users see the Sync control; others see a short beta notice. **Empty `VIP_EMAILS` in development** → backend allows any user; **empty `VITE_VIP_EMAILS` in dev** → UI treats everyone as VIP for convenience. **Production with a non-empty `VIP_EMAILS`:** only listed emails pass the API check (`CALENDAR_VIP_ONLY` otherwise). **`VITE_VIP_EMAILS` is public** in the bundle — real enforcement is server-side.
-- **Incremental OAuth (Clerk):** Keep default Google sign-in scopes to `openid` / `email` / `profile` only in Clerk; the app requests **`https://www.googleapis.com/auth/calendar.events`** via `externalAccount.reauthorize()` when a VIP clicks Sync. Add the post-login redirect URL to Clerk and Google OAuth allowed redirects.
-- **“App isn’t verified” / “This app is blocked” (new Google accounts):** This comes from **Google Cloud OAuth consent** (Testing mode only allows **Test users** you add in the console). Add each tester’s Google account, or move to **In production** after Google’s verification for restricted scopes.
-
-> **Tip:** Copy from `.env.example` if it exists:
-> ```bash
-> cp backend/.env.example backend/.env.local
-> cp frontend/web/.env.example frontend/web/.env.local
-> ```
-
-#### **Docker Compose: API + worker + weather**
-
-If you run **`docker compose up`** for `api` / `worker`:
-
-- Put secrets in **`.env.docker`** at the repo root (copy from [`env.docker.example`](env.docker.example)). The containers **do not** load `backend/.env`.
-- Add **`OPENWEATHER_API_KEY=`** there for trip weather (same 32-char key from [openweathermap.org](https://home.openweathermap.org/api_keys)). After editing this file, **recreate** the API so the container picks up the new env: **`docker compose up -d --force-recreate api`** (use `--build` only if you changed the image/Dockerfile).
-- Run Vite with **`VITE_API_URL=http://localhost:3000/api`** in `frontend/web/.env.local` so the browser calls the API on port **3000** (Docker maps `3000:3000`).
-
-### 3. Start Services
-
-#### **Option A: Docker Compose (Recommended for Local Dev)**
-
-```bash
-# Start MongoDB & Redis in Docker
-docker-compose up -d mongodb redis
-
-# Verify services are running
-docker-compose ps
-
-# Check logs
-docker-compose logs -f mongodb redis
-```
-
-**What This Does:**
-- 🗄️ **MongoDB** on `localhost:27017` (no auth)
-- 🔴 **Redis** on `localhost:6379` (no auth)
-- 📊 Both have persistent volumes in `./data/`
-
-#### **Option B: Local MongoDB & Redis (Without Docker)**
-
-```bash
-# macOS (Homebrew)
-brew install mongodb-community redis
-brew services start mongodb-community
-brew services start redis
-
-# Linux (Ubuntu/Debian)
-sudo apt-get install mongodb redis-server
-sudo systemctl start mongodb
-sudo systemctl start redis-server
-
-# Windows (WSL2 / Manual Install)
-# See: https://docs.mongodb.com/manual/tutorial/install-mongodb-on-windows/
-```
-
-### 4. Run Frontend
-
-```bash
-# From root directory, start frontend in dev mode
-npm run dev:web
-
-# Opens at: http://localhost:5173
-```
-
-**Or manually:**
-
-```bash
-# Navigate to frontend directory
-cd frontend/web
-
-# Start development server
-npm run dev
-
-# Opens at: http://localhost:5173
-```
-
-**Expected Output:**
-```
-VITE v5.0.0 ready in 250 ms
-
-➜  Local:   http://localhost:5173/
-➜  press h to show help
-```
-
-### 5. Run Backend API
-
-**From root directory:**
-
-```bash
-# Start backend in dev mode
-npm run dev:api
-
-# Server runs on: http://localhost:3000
-```
-
-**Or manually:**
-
-```bash
-# Navigate to backend directory
-cd backend
-
-# Run database migrations (if applicable)
-npm run migrate
-
-# Start development server
-npm run dev
-
-# Server runs on: http://localhost:3000
-```
-
-**Expected Output:**
-```
-[INFO] Server listening on port 3000
-[INFO] MongoDB connected to localhost:27017
-[INFO] Redis connected to localhost:6379
-```
-
-**Available Endpoints:**
-- `GET /health` - Health check
-- `GET /ready` - Readiness check
-- `POST /api/trips` - Create a new trip
-- `GET /api/trips` - List user's trips
-- `GET /api/trips/:tripId` - Get trip details
-
-### 6. Run Worker (Optional)
-
-To process async jobs locally, start the worker in a third terminal:
-
-**From root directory:**
-
-```bash
-# Start worker process
-npm run dev:worker
-```
-
-**Or manually:**
-
-```bash
-# Navigate to backend directory
-cd backend
-
-# Start worker process
-npm run worker
-
-# Expected Output:
-# [INFO] Worker started, processing jobs...
-```
+**Docker:** See `env.docker.example` and project notes for `VITE_API_URL` pointing at the exposed API port.
 
 ---
 
-## Development Workflow
+## Deployment (Railway)
 
-### Quick Start (All 3 Services)
+`railway.toml` defines services such as:
 
-**Terminal 1: Services (MongoDB, Redis)**
-```bash
-docker-compose up mongodb redis
-```
+- **travelplan-api** — `node dist/index.js`
+- **travelplan-worker** — `node dist/worker.js`
+- **travelplan-redis** — `redis:7-alpine`
 
-**Terminal 2: Frontend (React)**
-```bash
-npm run dev:web
-```
+Set **`REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD`** from Railway’s Redis service (private host often includes `railway.internal`). Do **not** force TLS for that internal host — the code skips TLS automatically.
 
-**Terminal 3: Backend (Express)**
-```bash
-npm run dev:api
-```
-
-**Terminal 4 (Optional): Worker (BullMQ Consumer)**
-```bash
-npm run dev:worker
-```
-
-### Testing a Trip Request
-
-```bash
-# Create a trip via curl
-curl -X POST http://localhost:3000/api/trips \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_CLERK_TOKEN" \
-  -d '{
-    "preferences": {
-      "destination": "Paris",
-      "startDate": "2026-06-01",
-      "endDate": "2026-06-07",
-      "budget": { "total": 1000, "currency": "USD" },
-      "travelers": { "adults": 2, "children": 0 }
-    }
-  }'
-
-# Expected Response:
-# {
-#   "success": true,
-#   "tripId": "67a5c2e8f1234567890abcd0",
-#   "jobId": "1",
-#   "status": "QUEUED"
-# }
-
-# Poll for status updates
-curl http://localhost:3000/api/trips/67a5c2e8f1234567890abcd0 \
-  -H "Authorization: Bearer YOUR_CLERK_TOKEN"
-```
+Scale workers conservatively if you care about Redis command volume (e.g. one replica unless you need more throughput).
 
 ---
 
-## Project Structure
+## Scripts
 
-### Frontend (`frontend/web/`)
-
-```
-src/
-├── app/                   # Routing & providers
-├── features/
-│   ├── planner/          # Trip planning domain
-│   │   ├── api/          # API calls (trips.api.ts)
-│   │   ├── components/   # UI components
-│   │   ├── hooks/        # useTripPoller, useTripActions
-│   │   ├── pages/        # Page components
-│   │   └── stores/       # Zustand state
-│   ├── auth/             # Clerk authentication
-│   └── map/              # Mapbox integration
-├── components/           # Shared UI library
-├── lib/                  # Utilities (axios, DOMPurify)
-└── utils/                # Helper functions
-```
-
-### Backend (`backend/`)
-
-```
-src/
-├── features/
-│   ├── planner/          # Trip planning domain
-│   │   ├── controllers/  # HTTP handlers
-│   │   ├── services/     # Business logic
-│   │   ├── repositories/ # Data access
-│   │   ├── jobs/         # BullMQ processors
-│   │   └── schemas/      # Zod validation
-│   └── auth/             # Authentication
-├── config/               # Environment validation
-├── lib/                  # Logger, Queue factory
-├── middlewares/          # Auth guards, rate limiting
-└── index.ts              # Entry point
-```
-
-### Shared (`packages/shared/`)
-
-```
-src/
-├── schemas/              # Zod validation (trip.schema.ts, user.schema.ts)
-├── types/                # TypeScript interfaces
-└── constants/            # Shared enums (status, currency)
-```
-
----
-
-## Key Features
-
-### ✅ Phase 1: Foundation (Complete)
-
-- [x] Monorepo with Yarn Workspaces
-- [x] Docker Compose for local dev
-- [x] BullMQ + Redis integration
-- [x] CFO Logic (Budget validation)
-- [x] DB-First Pattern (MongoDB)
-- [x] Polling endpoints with exponential backoff
-- [x] Agent locking (concurrency safety)
-
-### 🚧 Phase 2: Intent Engine (In Progress)
-
-- [ ] Mapbox Geocoding integration
-- [ ] Google Places verification
-- [ ] Parallel validation tools
-- [ ] Circuit breaker (Opossum)
-- [ ] Gemini AI integration
-
-### 📋 Phase 3-4: UX & Scale (Planned)
-
-- [ ] Travel DNA (User preferences)
-- [ ] Real-time progress updates
-- [ ] Interactive maps with clustering
-- [ ] Long trip pagination
-- [ ] Self-healing fallbacks
+| Command | Description |
+|---------|-------------|
+| `npm run dev:api` | Backend dev server |
+| `npm run dev:web` | Frontend dev server |
+| `npm run dev:worker` | BullMQ worker |
+| `npm run build` | Build all workspaces |
+| `npm run test` | Tests (where configured per package) |
+| `npm run typecheck` | TypeScript checks |
 
 ---
 
 ## Documentation
 
-For detailed architectural decisions and protocols, see:
-
-| Document | Purpose |
-|----------|---------|
-| `docs/PLAN.md` | 10-week roadmap & strategy |
-| `docs/PROGRESS.md` | Current sprint status |
-| `docs/ROLES_LOADED.md` | Agent role system |
-| `docs/agents/architect.md` | System design principles |
-| `docs/agents/backend.md` | API standards & patterns |
-| `docs/agents/frontend.md` | React & state management rules |
-| `docs/agents/devops.md` | Infrastructure & CI/CD |
-| `docs/agents/qa.md` | Testing & QA protocols |
-| `docs/agents/plan.md` | Timeline & milestones |
-
----
-
-## Development Standards
-
-### Code Quality
-
-- **Rule of 200:** No file should exceed 200 lines
-- **Repository Symmetry:** Features exist in frontend, backend, and worker
-- **Layered Architecture:** Controllers → Services → Repositories
-- **Structured Logging:** All logs include `jobId` or `correlationId`
-
-### Git Workflow
-
-```bash
-# Create feature branch
-git checkout -b feature/trip-optimization
-
-# Commit with semantic messages
-git commit -m "feat(planner): add Mapbox geocoding tool"
-
-# Push and create PR
-git push origin feature/trip-optimization
-```
-
-### PR Checklist
-
-- [ ] No files exceed 200 lines
-- [ ] Zod validation on all inputs
-- [ ] Structured logging with jobId
-- [ ] Tests pass (`npm run test:unit`)
-- [ ] Types check (`npm run typecheck`)
-- [ ] No `console.log` statements
-- [ ] Accessibility verified for UI changes
+| Path | Topic |
+|------|--------|
+| `docs/agents/*.md` | Role-specific standards (architect, backend, frontend, devops, qa) |
+| `docs/` | Roadmap, progress, roles |
 
 ---
 
 ## Troubleshooting
 
-### MongoDB Connection Failed
+**Redis connection errors after moving cloud providers**
 
-```bash
-# Check if MongoDB is running
-docker-compose ps mongodb
+- Confirm `REDIS_HOST` matches the provider (internal Railway hostname vs public Upstash hostname).
+- Wrong TLS mode: internal Railway Redis should **not** use TLS; Upstash **must** use TLS.
 
-# Restart services
-docker-compose down
-docker-compose up -d mongodb redis
+**MongoDB connection refused**
 
-# Verify on correct port
-telnet localhost 27017
-```
+- Ensure `MONGO_URI` is correct and the DB is reachable from the API (network / Atlas IP allowlist).
 
-### Redis Connection Refused
+**Worker idle but jobs stuck**
 
-```bash
-# Check Redis logs
-docker-compose logs redis
+- Ensure `npm run dev:worker` (or Railway worker service) is running and using the **same** Redis as the API.
 
-# Restart Redis
-docker-compose restart redis
-```
+**Build failures**
 
-### Port Already in Use
-
-```bash
-# Find process using port 3000
-lsof -i :3000
-
-# Kill process or use different port
-PORT=3001 npm run dev:api    # Backend
-VITE_PORT=5174 npm run dev:web  # Frontend
-```
-
-### Clerk Authentication Not Working
-
-1. Verify `CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` are correct
-2. Check Clerk dashboard for test/live key mismatch
-3. Ensure redirect URLs are configured in Clerk settings
-
----
-
-## Performance Targets (SLA)
-
-| Metric | Target |
-|--------|--------|
-| **Trip Generation** | < 20 seconds |
-| **Valid Locations** | 100% (Ratings > 4.0) |
-| **API Latency** | < 200ms (queue operation) |
-| **Worker Queue Lag** | < 60 seconds |
-| **Redis Memory** | < 500MB |
-
----
-
-## Contributing
-
-1. **Read the Docs:** Start with `docs/ROLES_LOADED.md` to understand the agent system
-2. **Pick a Role:** Understand which engineer perspective you need
-3. **Check Standards:** Review relevant agent doc (`docs/agents/*.md`)
-4. **Follow Patterns:** Use existing code as templates
-5. **Test Thoroughly:** Unit tests + E2E tests required
-6. **Submit PR:** Include description of changes and design decisions
-
----
-
-## Support & Contact
-
-For questions or issues:
-
-- 📖 Check the documentation in `docs/`
-- 🐛 Open a GitHub issue
-- 💬 Discuss in pull request comments
+- Run `npm run build` from the repo root; fix TypeScript and lint errors before merging.
 
 ---
 
 ## License
 
-MIT License - See `LICENSE` file for details
+MIT — see `LICENSE` if present.
 
 ---
 
-**Last Updated:** 2026-02-10  
-**Status:** 🟢 Phase 1 Complete, Phase 2 In Progress
+**Last updated:** 2026-04-01

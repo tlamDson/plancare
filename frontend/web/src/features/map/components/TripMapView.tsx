@@ -13,7 +13,10 @@ import { useMap } from "../hooks/useMap";
 import { useTripMarkers } from "../hooks/useTripMarkers";
 import type { SelectedActivity } from "../hooks/useTripMarkers";
 import { getDayColor, getDayColorLight } from "../utils/dayColors";
-import { useTranslationStore } from "@/stores/useTranslationStore";
+import {
+  useTranslationStore,
+  type Language,
+} from "@/stores/useTranslationStore";
 import {
   ChevronLeft,
   ChevronRight,
@@ -96,7 +99,7 @@ interface SortableMapActivityRowProps {
   isSelected: boolean;
   color: string;
   currency: string;
-  language?: any;
+  language?: Language;
   onSelect: () => void;
 }
 

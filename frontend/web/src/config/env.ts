@@ -19,6 +19,11 @@ export const MAPBOX_TOKEN =
   import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || import.meta.env.VITE_MAPBOX_TOKEN;
 
 // OpenWeather (Public key usage on client for short-term forecast)
+export const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
+export const OPENWEATHER_BASE_URL =
+  import.meta.env.VITE_OPENWEATHER_BASE_URL ||
+  "https://api.openweathermap.org/data/2.5";
+
 // Feature Flags
 export const IS_DEV = ENV === "development";
 export const IS_PROD = ENV === "production";

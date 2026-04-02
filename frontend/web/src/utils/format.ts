@@ -63,10 +63,15 @@ export function formatDateRange(
       startDate.getFullYear() !== endDate.getFullYear() ? "numeric" : undefined,
   });
 
+  const withRange = formatter as Intl.DateTimeFormat & {
+    formatRange?: (a: Date, b: Date) => string;
+  };
   try {
-    // Support modern browsers that have formatRange
-    return (formatter as any).formatRange(startDate, endDate);
-  } catch (e) {
+    if (typeof withRange.formatRange === "function") {
+      return withRange.formatRange(startDate, endDate);
+    }
+    throw new Error("formatRange unsupported");
+  } catch {
     // Fallback for older browsers
     const startStr = new Intl.DateTimeFormat(locale, {
       month: "short",
@@ -96,7 +101,7 @@ export function formatCurrency(
       currencyDisplay: "symbol",
       maximumFractionDigits: currencyCode === "VND" ? 0 : 2,
     }).format(amount);
-  } catch (e) {
+  } catch {
     // Fallback if the browser doesn't like the currency code
     return `${amount.toFixed(currencyCode === "VND" ? 0 : 2)} ${currencyCode}`;
   }

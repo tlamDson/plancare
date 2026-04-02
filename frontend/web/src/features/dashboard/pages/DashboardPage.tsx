@@ -19,7 +19,7 @@ import {
 import { CreateTripDialog } from "@/features/planner/components";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
-import { getUserMe } from "@/features/user/api/user.api";
+import { getUserMe, type UserProfile } from "@/features/user/api/user.api";
 import { apiClient } from "@/lib/axios";
 import { toast } from "sonner";
 
@@ -46,10 +46,10 @@ export default function DashboardPage() {
 
     const syncAfterCheckout = async () => {
       try {
-        const user = await getUserMe();
-        const usage = (user as any).usage;
+        const user: UserProfile = await getUserMe();
+        const usage = user.usage;
         setSubscriptionSnapshot({
-          isPro: (user as any).tier === "pro",
+          isPro: user.tier === "pro",
           tripsUsedThisCycle: usage?.tripsUsedThisCycle ?? 0,
           tripLimit: usage?.tripLimit ?? 10,
           quotaResetsAt: usage?.quotaResetsAt ?? null,
@@ -134,7 +134,7 @@ export default function DashboardPage() {
                   await apiClient.post("/dev/toggle-pro");
                   toast.success("Toggled Pro mode! Reloading page...");
                   window.location.reload();
-                } catch (e) {
+                } catch {
                   toast.error("Failed to toggle pro status");
                 }
               }}

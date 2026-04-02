@@ -1,10 +1,46 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useTranslationStore } from "@/stores/useTranslationStore";
+
+type TemperatureUnit = "C" | "F";
+type DistanceUnit = "Miles" | "Km";
+
+function readLocalizationPrefs(): {
+  currency: string;
+  temperature: TemperatureUnit;
+  distance: DistanceUnit;
+  language: string;
+  autoTranslate: boolean;
+} {
+  try {
+    const prefs = JSON.parse(
+      localStorage.getItem("user-preferences") || "{}",
+    ) as Record<string, unknown>;
+    return {
+      currency: typeof prefs.currency === "string" ? prefs.currency : "USD",
+      temperature: prefs.temperature === "F" ? "F" : "C",
+      distance: prefs.distance === "Km" ? "Km" : "Miles",
+      language:
+        typeof prefs.language === "string" ? prefs.language : "English (US)",
+      autoTranslate:
+        typeof prefs.autoTranslate === "boolean" ? prefs.autoTranslate : true,
+    };
+  } catch {
+    return {
+      currency: "USD",
+      temperature: "C",
+      distance: "Miles",
+      language: "English (US)",
+      autoTranslate: true,
+    };
+  }
+}
+
+const initialPrefs = readLocalizationPrefs();
 
 export function LocalizationSettings() {
   const {
@@ -14,33 +50,21 @@ export function LocalizationSettings() {
     setDistanceUnit: setGlobalDistance,
   } = useTranslationStore();
 
-  const [temperature, setTemperature] = useState<"C" | "F">("C");
-  const [distance, setDistance] = useState<"Miles" | "Km">("Miles");
-  const [currency, setCurrency] = useState("USD");
-  const [language, setLanguage] = useState("English (US)");
-  const [autoTranslate, setAutoTranslate] = useState(true);
-
-  useEffect(() => {
-    try {
-      const prefs = JSON.parse(
-        localStorage.getItem("user-preferences") || "{}",
-      );
-      if (prefs.currency) setCurrency(prefs.currency);
-      if (prefs.temperature) setTemperature(prefs.temperature);
-      if (prefs.distance) setDistance(prefs.distance);
-      if (prefs.language) setLanguage(prefs.language);
-      if (prefs.autoTranslate !== undefined)
-        setAutoTranslate(prefs.autoTranslate);
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
+  const [temperature, setTemperature] = useState<TemperatureUnit>(
+    initialPrefs.temperature,
+  );
+  const [distance, setDistance] = useState<DistanceUnit>(initialPrefs.distance);
+  const [currency, setCurrency] = useState(initialPrefs.currency);
+  const [language, setLanguage] = useState(initialPrefs.language);
+  const [autoTranslate, setAutoTranslate] = useState(
+    initialPrefs.autoTranslate,
+  );
 
   const handleSave = () => {
     try {
       const prefs = JSON.parse(
         localStorage.getItem("user-preferences") || "{}",
-      );
+      ) as Record<string, unknown>;
       localStorage.setItem(
         "user-preferences",
         JSON.stringify({
@@ -52,29 +76,23 @@ export function LocalizationSettings() {
           autoTranslate,
         }),
       );
-      // Immediately apply translation and units globally
       setGlobalLanguage(language as "English (US)" | "French" | "Vietnamese");
       setGlobalCurrency(currency);
-      setGlobalDistance(distance as "Miles" | "Km");
+      setGlobalDistance(distance);
 
       toast.success(t("loc.toastSave"));
-    } catch (e) {
+    } catch {
       toast.error(t("loc.toastFail"));
     }
   };
 
   const handleDiscard = () => {
-    try {
-      const prefs = JSON.parse(
-        localStorage.getItem("user-preferences") || "{}",
-      );
-      if (prefs.currency) setCurrency(prefs.currency);
-      if (prefs.temperature) setTemperature(prefs.temperature);
-      if (prefs.distance) setDistance(prefs.distance);
-      if (prefs.language) setLanguage(prefs.language);
-      if (prefs.autoTranslate !== undefined)
-        setAutoTranslate(prefs.autoTranslate);
-    } catch (e) {}
+    const snap = readLocalizationPrefs();
+    setCurrency(snap.currency);
+    setTemperature(snap.temperature);
+    setDistance(snap.distance);
+    setLanguage(snap.language);
+    setAutoTranslate(snap.autoTranslate);
   };
 
   return (
