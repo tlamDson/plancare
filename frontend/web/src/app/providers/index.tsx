@@ -43,8 +43,8 @@ export function AppProviders({ children }: AppProvidersProps) {
         publishableKey={CLERK_PUBLISHABLE_KEY}
         signInUrl="/signin"
         signUpUrl="/signup"
-        afterSignInUrl="/dashboard"
-        afterSignUpUrl="/onboarding"
+        signInFallbackRedirectUrl="/dashboard"
+        signUpFallbackRedirectUrl="/onboarding"
       >
         <ClerkTokenBridge />
         <QueryClientProvider client={queryClient}>

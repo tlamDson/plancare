@@ -46,6 +46,8 @@ export function SignUpForm({
     control,
   } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpFormSchema),
+    mode: "onChange",
+    reValidateMode: "onChange",
   });
 
   const watchedPassword = useWatch({ control, name: "password" });

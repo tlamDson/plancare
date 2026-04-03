@@ -72,26 +72,10 @@ export default function SignUpPage() {
   const handleSignUp = async (data: SignUpFormData) => {
     setSignUpError(null);
 
-    // Client-side validation (instant - no API call)
+    // Password rules enforced in Zod (signUpFormSchema); keep breach guard before API
     const strength = checkPasswordStrength(data.password);
-
-    if (!strength.checks.notCommon) {
-      setSignUpError({
-        field: "password",
-        message:
-          "This is a commonly used password. Please choose something more unique.",
-      });
-      toast.error("Please choose a stronger password");
-      return;
-    }
-
-    if (strength.score < 2) {
-      setSignUpError({
-        field: "password",
-        message:
-          "Password is too weak. Add uppercase letters, numbers, or special characters.",
-      });
-      toast.error("Please choose a stronger password");
+    if (!strength.checks.notCommon || strength.score < 3) {
+      toast.error("Please fix password strength before continuing.");
       return;
     }
 
