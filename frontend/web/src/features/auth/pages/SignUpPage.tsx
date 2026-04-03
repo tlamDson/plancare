@@ -91,7 +91,19 @@ export default function SignUpPage() {
         password: data.password,
       });
 
-      if (result.status === "missing_requirements") {
+      if (result.status === "complete") {
+        // No email verification required (e.g. Clerk config skips it)
+        await setActive({ session: result.createdSessionId });
+        navigate("/onboarding");
+        return;
+      }
+
+      if (
+        result.status === "missing_requirements" ||
+        result.status === "needs_first_factor" ||
+        result.status === "needs_second_factor" ||
+        result.unverifiedFields.includes("email_address")
+      ) {
         await signUp.prepareEmailAddressVerification({
           strategy: "email_code",
         });
@@ -99,7 +111,11 @@ export default function SignUpPage() {
         setResendCooldown(RESEND_COOLDOWN);
         setPendingVerification(true);
         toast.info("Check your email for a verification code");
+        return;
       }
+
+      // Any unhandled status — surface to user instead of staying stuck
+      toast.error(`Unexpected sign-up status: ${result.status}. Please try again.`);
     } catch (error: unknown) {
       const clerkError = error as ClerkError;
       if (clerkError.errors?.[0]) {
