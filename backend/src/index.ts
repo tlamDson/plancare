@@ -12,7 +12,7 @@ import webhookRoutes from "./features/auth/routes";
 import stripeWebhookRoutes from "./features/billing/webhook.routes";
 import { clerkMiddleware } from "@clerk/express";
 import { logger } from "./lib/logger";
-import { env } from "./config/env";
+import { corsOptions } from "./config/cors";
 
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
@@ -55,24 +55,8 @@ const app: Express = express();
 // MIDDLEWARE ORDER MATTERS!
 // ============================================
 
-//1. CORS - Allow cross-origin request
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "https://plancare-web-omega.vercel.app",
-      env.FRONTEND_URL,
-    ],
-    credentials: true, // Required for Clerk / Auth headers
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "X-Requested-With",
-      "x-idempotency-key",
-    ],
-  }),
-);
+//1. CORS — see ./config/cors.ts (Vercel previews, FRONTEND_URL, optional list)
+app.use(cors(corsOptions));
 //2. Webhook routes - BEFORE express.json() for signature verification
 app.use(
   "/api/webhooks",

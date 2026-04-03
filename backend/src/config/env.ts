@@ -23,9 +23,11 @@ export const env = cleanEnv(process.env, {
   MAPBOX_ACCESS_TOKEN: str({ desc: "Mapbox Access Token", default: "" }), // Week 3
   GOOGLE_PLACES_API_KEY: str({ desc: "Google Places API Key", default: "" }), // Week 3
   FRONTEND_URL: str({
-    desc: "Frontend URL for CORS",
+    desc: "Frontend URL for CORS and redirects",
     default: "http://localhost:5173",
   }),
+  /** Comma-separated extra browser origins allowed by CORS (e.g. alternate domains). */
+  CORS_ALLOWED_ORIGINS: str({ default: "" }),
   STRIPE_SECRET_KEY: str({ desc: "Stripe Secret Key", default: "" }),
   STRIPE_WEBHOOK_SECRET: str({
     desc: "Stripe Webhook Secret for Local Dev",
