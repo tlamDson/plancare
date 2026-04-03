@@ -441,7 +441,14 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.reGeocodeFailed": "Re-geocode failed. Check your API keys.",
     "trip.weatherTitle": "Weather forecast",
     "trip.weatherLoading": "Loading expected weather...",
-    "trip.weatherMissingConfig": "Weather API key is missing. Add VITE_OPENWEATHER_API_KEY for this environment.",
+    "trip.weatherMissingConfigTitle": "Weather unavailable",
+    "trip.weatherMissingConfig":
+      "Forecasts can't be shown because the weather service isn't configured for this deployment.",
+    "trip.weatherMissingConfigDev":
+      "Local dev: add VITE_OPENWEATHER_API_KEY to your .env file.",
+    "trip.weatherLoadErrorTitle": "Couldn't load weather",
+    "trip.weatherLoadError":
+      "We couldn't load the forecast. Try again later.",
     "trip.weatherExpectedForSelectedDay": "Expected high / low for selected day",
     "trip.weatherUnavailable": "Weather forecast unavailable for this day.",
     "trip.minimapTitle": "Mini map preview",
@@ -902,7 +909,14 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.reGeocodeFailed": "Échec du re-géocodage. Vérifiez vos clés API.",
     "trip.weatherTitle": "Prévisions météo",
     "trip.weatherLoading": "Chargement de la météo prévue...",
-    "trip.weatherMissingConfig": "La clé API météo est absente. Ajoutez VITE_OPENWEATHER_API_KEY dans cet environnement.",
+    "trip.weatherMissingConfigTitle": "Météo indisponible",
+    "trip.weatherMissingConfig":
+      "Les prévisions ne peuvent pas s'afficher car le service météo n'est pas configuré pour ce déploiement.",
+    "trip.weatherMissingConfigDev":
+      "Développement local : ajoutez VITE_OPENWEATHER_API_KEY dans votre fichier .env.",
+    "trip.weatherLoadErrorTitle": "Impossible de charger la météo",
+    "trip.weatherLoadError":
+      "Nous n'avons pas pu charger les prévisions. Réessayez plus tard.",
     "trip.weatherExpectedForSelectedDay": "Températures prévues pour le jour sélectionné",
     "trip.weatherUnavailable": "Prévisions indisponibles pour ce jour.",
     "trip.minimapTitle": "Mini carte",
@@ -1353,7 +1367,14 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.reGeocodeFailed": "Geocode lại thất bại. Vui lòng kiểm tra API key.",
     "trip.weatherTitle": "Dự báo thời tiết",
     "trip.weatherLoading": "Đang tải thời tiết dự kiến...",
-    "trip.weatherMissingConfig": "Thiếu Weather API key. Hãy thêm VITE_OPENWEATHER_API_KEY cho môi trường này.",
+    "trip.weatherMissingConfigTitle": "Không tải được thời tiết",
+    "trip.weatherMissingConfig":
+      "Không hiển thị dự báo vì dịch vụ thời tiết chưa được cấu hình trên phiên bản này.",
+    "trip.weatherMissingConfigDev":
+      "Khi dev local: thêm VITE_OPENWEATHER_API_KEY vào file .env.",
+    "trip.weatherLoadErrorTitle": "Không tải được dự báo",
+    "trip.weatherLoadError":
+      "Không thể tải dự báo. Vui lòng thử lại sau.",
     "trip.weatherExpectedForSelectedDay": "Nhiệt độ cao/thấp dự kiến cho ngày đã chọn",
     "trip.weatherUnavailable": "Không có dữ liệu thời tiết cho ngày này.",
     "trip.minimapTitle": "Bản đồ thu nhỏ",

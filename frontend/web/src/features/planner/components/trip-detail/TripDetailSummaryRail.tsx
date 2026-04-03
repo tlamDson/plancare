@@ -1,10 +1,9 @@
 import { useMemo } from "react";
-import { CalendarDays, CloudSun, Droplets, Map, MapPin } from "lucide-react";
+import { CalendarDays, Map, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 import { convertCurrency } from "@/utils/format";
-import { useTripDayWeather } from "@/features/planner/hooks";
-import { canFetchWeather } from "@/features/planner/api/weather.api";
+import { TripDetailWeatherPanel } from "@/features/planner/components/trip-detail/TripDetailWeatherPanel";
 import { MAPBOX_TOKEN } from "@/config/env";
 
 interface TripDetailSummaryRailProps {
@@ -39,13 +38,6 @@ export function TripDetailSummaryRail({
   onViewMap,
 }: TripDetailSummaryRailProps) {
   const { t } = useTranslationStore();
-  const weatherQuery = useTripDayWeather({
-    destination,
-    dayDateIso: activeDayDate,
-  });
-
-  const weatherConfigReady = canFetchWeather();
-
   const previewCoordinates =
     activeDayCoordinates.length > 0 ? activeDayCoordinates : allTripCoordinates;
 
@@ -153,50 +145,10 @@ export function TripDetailSummaryRail({
         ) : null}
       </div>
 
-      <div className="rounded-xl border bg-card/50 backdrop-blur-sm shadow-sm p-5 space-y-3 transition-shadow duration-200 hover:shadow-md">
-        <div className="flex items-center gap-2">
-          <CloudSun className="h-4 w-4 text-primary" aria-hidden />
-          <h3 className="text-sm font-semibold text-foreground">
-            {t("trip.weatherTitle")}
-          </h3>
-        </div>
-
-        {!weatherConfigReady ? (
-          <p className="text-sm text-muted-foreground">
-            {t("trip.weatherMissingConfig")}
-          </p>
-        ) : weatherQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground animate-pulse motion-reduce:animate-none">
-            {t("trip.weatherLoading")}
-          </p>
-        ) : weatherQuery.data ? (
-          <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-3 space-y-2">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
-              {t("trip.weatherExpectedForSelectedDay")}
-            </p>
-            <div className="flex items-end justify-between gap-3">
-              <div>
-                <p className="text-2xl font-semibold tabular-nums leading-none">
-                  {weatherQuery.data.expectedHighC}C / {weatherQuery.data.expectedLowC}C
-                </p>
-                <p className="mt-1 text-sm text-foreground/80 capitalize">
-                  {weatherQuery.data.description}
-                </p>
-              </div>
-              {weatherQuery.data.precipitationChance != null ? (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Droplets className="h-3.5 w-3.5 text-sky-500" aria-hidden />
-                  {weatherQuery.data.precipitationChance}%
-                </div>
-              ) : null}
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            {t("trip.weatherUnavailable")}
-          </p>
-        )}
-      </div>
+      <TripDetailWeatherPanel
+        destination={destination}
+        activeDayDate={activeDayDate}
+      />
 
       <div className="rounded-xl border bg-card/50 backdrop-blur-sm shadow-sm p-3 space-y-3 transition-shadow duration-200 hover:shadow-md">
         <div className="px-2 pt-1">
