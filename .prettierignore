@@ -1,0 +1,10 @@
+dist
+build
+coverage
+node_modules
+frontend/web/src/components/ui
+frontend/web/src/_legacy
+backend/scripts/seed-data
+*.min.js
+pnpm-lock.yaml
+package-lock.json

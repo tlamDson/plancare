@@ -2,6 +2,11 @@
 # RAILWAY DEPLOYMENT CONFIGURATION
 # Infrastructure as Code (IaC)
 # ============================================
+# This file is shared by every Railway Environment in the project — it does
+# NOT distinguish staging from production on its own. That split is a
+# dashboard concept: create a second Environment named "staging" tracking
+# the `develop` branch, with its own Mongo/Redis and staging-mode secrets.
+# See README.md "Staging environment" for the full checklist.
 
 [build]
 builder = "DOCKERFILE"

@@ -46,6 +46,7 @@ export default function OnBoardingPage() {
 
   useEffect(() => {
     if (isLoaded && user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from Clerk's async `user` once it loads, not a per-render derivation
       setName(user.fullName || user.firstName || "");
     }
 

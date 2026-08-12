@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { userRepository } from "../repositories/user.repository";
 import { ClerkRequest } from "../../../types/express";
 import { updateUserSchema } from "../schemas/user.schema";

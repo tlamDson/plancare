@@ -19,7 +19,6 @@ import { aiAgentService } from "./ai-agent.service";
 import { intentParserService } from "./intent-parser.service";
 import { validationService } from "./validation.service";
 import { buildItinerary, updateJobProgress } from "../jobs/itinerary-builder";
-import { geoValidatorService } from "./geo-validator.service";
 import type { TripPreferences } from "@travelplan/shared";
 import type { TripIntents } from "./intent-parser.service";
 import { CityCost } from "../models/CityCost";

@@ -137,7 +137,7 @@ app.get("/ready", async (req: Request, res: Response) => {
 });
 
 // 8. Global error handler (MUST BE LAST)
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.error({ err, stack: err.stack }, "Unhandled error");
 
   res.status(500).json({
