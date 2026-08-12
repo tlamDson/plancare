@@ -30,13 +30,15 @@ Theo `docs/PROGRESS.md`: tiến độ tổng thể ~85%. Đang có thay đổi d
 
 **Git Flow**: `develop` (staging) → `main` (production, chỉ chủ repo merge). Hai môi trường deploy tách biệt qua Railway/Vercel — xem checklist staging trong README nếu cần set up.
 
+**GitHub MCP đã verify hoạt động thật** (không chỉ cấu hình lý thuyết) — client_id `Ov23lijeoeW3qbp7cH35` của OAuth App "TravelPlan" đã đăng ký và test xong luồng OAuth đầy đủ. Chi tiết cạm bẫy (DCR không hỗ trợ, path callback thật, lỗi do Windows Git Bash vs PowerShell tính khác project) ở `.claude/rules/tech-defaults.md`.
+
 ## MCP Servers
 
 Khai báo ở `.mcp.json`, mỗi người tự approve/authorize khi dùng lần đầu (`/mcp`).
 
-| Server            | Dùng để                                                                      | Cần gì trên máy                       |
-| ----------------- | ------------------------------------------------------------------------------ | -------------------------------------- |
-| `github`          | Thao tác PR / issue / code search trực tiếp qua remote HTTP, OAuth qua `/mcp`  | Không cần cài gì, chỉ cần authorize    |
-| `chrome-devtools` | Mở app thật trong Chrome để xem UI, đọc console/network, đo performance/a11y | Google Chrome + Node (chạy qua `npx`) |
+| Server            | Dùng để                                                                       | Cần gì trên máy                                                                                                                                                                                      |
+| ----------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `github`          | Thao tác PR / issue / code search trực tiếp qua remote HTTP, OAuth qua `/mcp` | Đăng ký OAuth App thủ công + `--client-id`/`--client-secret`/`--callback-port` — xem cạm bẫy "GitHub MCP OAuth" ở `.claude/rules/tech-defaults.md`, đừng chỉ bấm `/mcp` suông vì sẽ fail với lỗi DCR |
+| `chrome-devtools` | Mở app thật trong Chrome để xem UI, đọc console/network, đo performance/a11y  | Google Chrome + Node (chạy qua `npx`)                                                                                                                                                                |
 
 Chỉ nhóm tool đọc (`screenshot`, `snapshot`, `console`, `network`) auto-allow trên `chrome-devtools`; `navigate_page` / `click` / gõ phím / `evaluate_script` vẫn hỏi xác nhận từng lần.
