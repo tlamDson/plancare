@@ -13,7 +13,7 @@ interface TranslationState {
   t: (key: string) => string;
 }
 
-const TRANSLATIONS: Record<Language, Record<string, string>> = {
+export const TRANSLATIONS: Record<Language, Record<string, string>> = {
   "English (US)": {
     // Settings Nav
     "nav.personal": "Personal Information",
@@ -304,7 +304,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.focusLifestyle": "Lifestyle",
     "wizard.focusLifestyleDesc": "Shopping, spa, bar & nightlife",
     "wizard.includedMealsLabel": "Included Meals",
-    "wizard.includedMealsDesc": "(Injects dedicated dining spots into timeline)",
+    "wizard.includedMealsDesc":
+      "(Injects dedicated dining spots into timeline)",
     "wizard.meal_breakfast": "Breakfast",
     "wizard.meal_lunch": "Lunch",
     "wizard.meal_dinner": "Dinner",
@@ -453,16 +454,18 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.weatherMissingConfigDev":
       "Local dev: add VITE_OPENWEATHER_API_KEY to your .env file.",
     "trip.weatherLoadErrorTitle": "Couldn't load weather",
-    "trip.weatherLoadError":
-      "We couldn't load the forecast. Try again later.",
-    "trip.weatherExpectedForSelectedDay": "Expected high / low for selected day",
+    "trip.weatherLoadError": "We couldn't load the forecast. Try again later.",
+    "trip.weatherExpectedForSelectedDay":
+      "Expected high / low for selected day",
     "trip.weatherUnavailable": "Weather forecast unavailable for this day.",
     "trip.minimapTitle": "Mini map preview",
-    "trip.minimapSubtitle": "Quick look at your selected day before opening full map.",
+    "trip.minimapSubtitle":
+      "Quick look at your selected day before opening full map.",
     "trip.minimapEmpty": "No geocoded locations for this day yet.",
     "trip.openMapFullscreen": "Open fullscreen map",
     "trip.diningTag": "Dining",
-    "trip.transportWarning": "Too far to walk. Consider a ride or public transport.",
+    "trip.transportWarning":
+      "Too far to walk. Consider a ride or public transport.",
     // Trips page sort
     "trips.sortPlaceholder": "Sort by",
     "trips.sortNewest": "Newest first",
@@ -773,7 +776,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.focusLifestyle": "Style de vie",
     "wizard.focusLifestyleDesc": "Shopping, spa, bar et vie nocturne",
     "wizard.includedMealsLabel": "Repas inclus",
-    "wizard.includedMealsDesc": "(Ajoute des recommandations de restaurants à l'itinéraire)",
+    "wizard.includedMealsDesc":
+      "(Ajoute des recommandations de restaurants à l'itinéraire)",
     "wizard.meal_breakfast": "Petit-déjeuner",
     "wizard.meal_lunch": "Déjeuner",
     "wizard.meal_dinner": "Dîner",
@@ -917,7 +921,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.fixLocations": "Corriger les positions",
     "trip.reGeocoding": "Géocodage...",
     "trip.reGeocodeLoading": "Re-géocodage des activités...",
-    "trip.reGeocodeSuccess": "{updated} activités mises à jour ({failed} échecs).",
+    "trip.reGeocodeSuccess":
+      "{updated} activités mises à jour ({failed} échecs).",
     "trip.reGeocodeFailed": "Échec du re-géocodage. Vérifiez vos clés API.",
     "trip.weatherTitle": "Prévisions météo",
     "trip.weatherLoading": "Chargement de la météo prévue...",
@@ -929,14 +934,17 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.weatherLoadErrorTitle": "Impossible de charger la météo",
     "trip.weatherLoadError":
       "Nous n'avons pas pu charger les prévisions. Réessayez plus tard.",
-    "trip.weatherExpectedForSelectedDay": "Températures prévues pour le jour sélectionné",
+    "trip.weatherExpectedForSelectedDay":
+      "Températures prévues pour le jour sélectionné",
     "trip.weatherUnavailable": "Prévisions indisponibles pour ce jour.",
     "trip.minimapTitle": "Mini carte",
-    "trip.minimapSubtitle": "Aperçu rapide du jour sélectionné avant d'ouvrir la carte complète.",
+    "trip.minimapSubtitle":
+      "Aperçu rapide du jour sélectionné avant d'ouvrir la carte complète.",
     "trip.minimapEmpty": "Aucun lieu géocodé pour ce jour.",
     "trip.openMapFullscreen": "Ouvrir la carte plein écran",
     "trip.diningTag": "Restauration",
-    "trip.transportWarning": "Trop loin pour marcher. Pensez au transport public ou à un trajet en voiture.",
+    "trip.transportWarning":
+      "Trop loin pour marcher. Pensez au transport public ou à un trajet en voiture.",
     // Trips page sort
     "trips.sortPlaceholder": "Trier par",
     "trips.sortNewest": "Plus récent",
@@ -1243,7 +1251,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "wizard.focusLifestyle": "Phong cách sống",
     "wizard.focusLifestyleDesc": "Mua sắm, spa, bar & nightlife",
     "wizard.includedMealsLabel": "Gợi ý ăn uống",
-    "wizard.includedMealsDesc": "(Tự động chèn quán ăn xen kẽ hoạt động tham quan)",
+    "wizard.includedMealsDesc":
+      "(Tự động chèn quán ăn xen kẽ hoạt động tham quan)",
     "wizard.meal_breakfast": "Sáng",
     "wizard.meal_lunch": "Trưa",
     "wizard.meal_dinner": "Tối",
@@ -1391,16 +1400,18 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "trip.weatherMissingConfigDev":
       "Khi dev local: thêm VITE_OPENWEATHER_API_KEY vào file .env.",
     "trip.weatherLoadErrorTitle": "Không tải được dự báo",
-    "trip.weatherLoadError":
-      "Không thể tải dự báo. Vui lòng thử lại sau.",
-    "trip.weatherExpectedForSelectedDay": "Nhiệt độ cao/thấp dự kiến cho ngày đã chọn",
+    "trip.weatherLoadError": "Không thể tải dự báo. Vui lòng thử lại sau.",
+    "trip.weatherExpectedForSelectedDay":
+      "Nhiệt độ cao/thấp dự kiến cho ngày đã chọn",
     "trip.weatherUnavailable": "Không có dữ liệu thời tiết cho ngày này.",
     "trip.minimapTitle": "Bản đồ thu nhỏ",
-    "trip.minimapSubtitle": "Xem nhanh ngày đã chọn trước khi mở bản đồ toàn màn hình.",
+    "trip.minimapSubtitle":
+      "Xem nhanh ngày đã chọn trước khi mở bản đồ toàn màn hình.",
     "trip.minimapEmpty": "Chưa có tọa độ địa điểm cho ngày này.",
     "trip.openMapFullscreen": "Mở bản đồ toàn màn hình",
     "trip.diningTag": "Ăn uống",
-    "trip.transportWarning": "Quãng đường quá xa để đi bộ. Hãy cân nhắc gọi xe hoặc dùng phương tiện công cộng.",
+    "trip.transportWarning":
+      "Quãng đường quá xa để đi bộ. Hãy cân nhắc gọi xe hoặc dùng phương tiện công cộng.",
     // Trips page sort
     "trips.sortPlaceholder": "Sắp xếp",
     "trips.sortNewest": "Mới nhất",
