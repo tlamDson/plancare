@@ -108,7 +108,11 @@ pino-*.log
 temp/
 tmp/
 *.tmp
-frontend/web/lint_unix.txt
-frontend/web/lint.txt
 
-.design-docs/
+# ============================================
+# SCRATCH / DEBUG SCRIPTS — never commit ad-hoc debug output
+# ============================================
+tsc-output.txt
+eslint_report.json
+backend/tz-test*.js
+backend/test-db.js
