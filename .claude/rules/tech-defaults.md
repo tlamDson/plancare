@@ -43,7 +43,11 @@ npm run build                # tất cả workspace (--if-present)
 npm run typecheck
 npm run lint
 npm run test
+npm run check:services       # ping Mongo/Redis/Clerk/Gemini/Places/Mapbox/… in bảng OK/FAIL/SKIP
+npm run check:services -- --strict   # exit 1 nếu có FAIL (dùng cho CI)
 ```
+
+`check:services` (`backend/scripts/check-services.ts`) **cố ý không import `src/config/env.ts`** — envalid fail-fast sẽ giết process khi thiếu key, mà script này phải _báo cáo_ tình trạng thiếu key chứ không chết theo. Nó đọc `backend/.env` rồi `.env` ở root (shell env thắng cả hai) và in ra biến nào đến từ file nào. Logic thật nằm ở `backend/src/lib/service-checks/` để test được; `scripts/` chỉ là runner mỏng.
 
 `docker-compose.yml`: services `mongodb`, `redis`, `api`, `worker`, network `travelplan-network` — dùng khi cần môi trường gần giống production ở local.
 
@@ -58,6 +62,8 @@ npm run test
 - **Pino "empty error object"**: `logger.error({ error }, "msg")` in ra `{}` rỗng vô dụng. Dùng `logger.error({ err: error }, "msg")` hoặc destructure `error.message`/`error.stack`.
 - **CORS**: mỗi khi thêm custom header mới cho request (vd `x-idempotency-key`) **bắt buộc** thêm vào mảng `allowedHeaders` trong `backend/src/config/cors.ts`, nếu không request bị block ở preflight.
 - **CI trước đây "nói dối"**: `lint`/`test` từng bị bọc `|| echo` trong workflow nên không bao giờ làm fail job — đã sửa ở `ci-pr.yml`/`ci-main.yml` (xem `.claude/rules/workflow.md`), nhưng nếu thấy pattern `|| echo` xuất hiện lại ở bất kỳ step CI nào thì đó là dấu hiệu ai đó đang vô hiệu hoá gate, cần hỏi lại trước khi giữ nguyên.
+- **ioredis nuốt nguyên nhân thật**: `connect()` reject với message vô dụng `"Connection is closed."`, còn lỗi thật (`ECONNREFUSED`, `ENOTFOUND`, `NOAUTH`) chỉ đi ra qua event `"error"`. Luôn gắn `client.on("error", …)` và ưu tiên lỗi đó khi báo cáo — bỏ qua thì vừa mất thông tin chẩn đoán, vừa bị Node cảnh báo "Unhandled error event". Xem `backend/src/lib/service-checks/redis.check.ts`.
+- **Logic connection Redis nằm ở `backend/src/lib/redis-options.ts`** (pure, có test), `queue.ts` chỉ gọi `buildRedisConnectionOptions(env)`. Đừng copy heuristic TLS ra chỗ khác — `queue.ts` import `config/env` và mở sẵn một IORedis connection lúc module load, nên **không import được từ script/tooling**; dùng `redis-options.ts` thay vì nhân bản.
 - **Redis TLS**: `backend/src/lib/queue.ts` tự nhận diện `redis://` vs `rediss://` từ `REDIS_URL`, và có heuristic theo host (`railway.internal`/`localhost`/`127.0.0.1`/`redis` → không TLS). Khi bật TLS, code đặt `rejectUnauthorized: false` — chấp nhận được cho vài managed Redis có self-signed cert, nhưng đừng mở rộng phạm vi này mà không cân nhắc.
 - **GitHub MCP OAuth — GitHub không hỗ trợ Dynamic Client Registration**: server `github` trong `.mcp.json` (remote HTTP, `https://api.githubcopilot.com/mcp/`) không tự đăng ký được client như một số MCP server khác — bắt buộc đăng ký thủ công một GitHub OAuth App rồi cấu hình `--client-id`/`--client-secret`/`--callback-port` ở scope local (không commit secret). Nếu bỏ qua bước này sẽ gặp lỗi `SDK auth failed: Incompatible auth server: does not support dynamic client registration`.
   - Callback URL Claude Code thực sự gửi là **`http://localhost:<port>/callback`** (không phải `/oauth/callback` như path hay đoán nhầm) — phải khớp **chính xác** với "Authorization callback URL" đã đăng ký trên GitHub, sai một ký tự cũng fail với lỗi "redirect_uri is not associated with this application".
@@ -80,6 +86,8 @@ Thứ tự 6 bước **không được đổi, không được bỏ**: `flattenI
 
 ## Nợ kỹ thuật đã xác minh (không tự sửa trừ khi được giao)
 
+- **Mapbox lệch tên biến ở frontend (bug thật, chưa sửa)**: `frontend/web/src/features/map/hooks/useMap.ts` chỉ đọc `VITE_MAPBOX_TOKEN`, còn `frontend/web/src/config/env.ts` chấp nhận `VITE_MAPBOX_ACCESS_TOKEN || VITE_MAPBOX_TOKEN`. `render.yaml`, `ci-pr.yml`, `ci-main.yml` và `.env.example` **chỉ** cấp `VITE_MAPBOX_ACCESS_TOKEN` → bản đồ chạy ở local (vì `frontend/web/.env` có `VITE_MAPBOX_TOKEN`) nhưng token là `undefined` trên deploy cấu hình theo docs.
+- **`railway.toml` lệch hẳn với project Railway thật**: file khai báo `travelplan-api` / `travelplan-worker` / `travelplan-redis` và `startCommand = node dist/index.js`; project `travelplan` thật có `travelplan-web` / `travelplan-worker` / `Redis`, source repo là `tlamDson/plancare`, và `backend/package.json` `start` là `node dist/backend/src/index.js` (do `rootDir: ".."`). Đừng tin `railway.toml` là mô tả đúng hiện trạng.
 - `backend/src/features/planner/controllers/trip.controller.ts` — 882 dòng, vi phạm Rule of 200, 33 chỗ `as any` (`(trip as any).regenCount`…) vì type Mongoose `Trip` lệch schema thật code đang dùng.
 - 119 chỗ `any` rải rác 33 file backend, phần lớn ở `catch (error: any)`.
 - `generalLimiter` (rate limiter) định nghĩa trong `backend/src/middlewares/rate-limiter.ts` nhưng **không gắn vào route nào** — chỉ `tripCreationLimiter` thật sự hoạt động trên `/api/trips`.
