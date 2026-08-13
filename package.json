@@ -16,7 +16,8 @@
     "build:shared": "npm run build --workspace=@travelplan/shared",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "check:services": "npm run check:services --workspace=backend"
   },
   "engines": {
     "node": ">=20.0.0"
