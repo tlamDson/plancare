@@ -79,6 +79,21 @@ jobs:
           CLERK_SECRET_KEY: sk_test_dummy_key_for_ci
           CLERK_WEBHOOK_SIGNING_SECRET: whsec_dummy_secret
           GEMINI_API_KEY: sk-dummy-key-for-ci
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci
+
+      - name: Backend Integration Tests
+        run: npm run test:integration -w backend
+        env:
+          CI: true
+          NODE_ENV: test
+          MONGO_URI: mongodb://test_user:test_password@localhost:27017/test_db?authSource=admin
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_PASSWORD: ""
+          CLERK_SECRET_KEY: sk_test_dummy_key_for_ci
+          CLERK_WEBHOOK_SIGNING_SECRET: whsec_dummy_secret
+          GEMINI_API_KEY: sk-dummy-key-for-ci
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci
 
       - name: Upload coverage report
         if: always()
