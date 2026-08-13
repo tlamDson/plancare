@@ -21,7 +21,7 @@ const SLOT_ORDER_MAP: Record<string, number> = Object.fromEntries(
   INTENT_SLOT_ORDER.map((s, i) => [s, i]),
 );
 
-interface TaggedPlace {
+export interface TaggedPlace {
   place: ValidatedPlace;
   slotType: string;
   slotOrder: number;
@@ -30,7 +30,7 @@ interface TaggedPlace {
 // Reconstruct the (slot, ValidatedPlace) correspondence by iterating intents
 // in the same order as flattenIntents so that validated[i] maps to the correct
 // (day, slot) pair. Supports 2–6 slots per day.
-function buildTaggedPlaces(
+export function buildTaggedPlaces(
   intents: TripIntents,
   validated: ValidatedPlace[],
 ): TaggedPlace[] {
@@ -62,7 +62,7 @@ function buildTaggedPlaces(
 // After each cluster is assembled, it is sorted by slotOrder so that
 // "morning-type" places always precede "afternoon-type" which precede "evening-type".
 // Result: geographic grouping + preserved temporal intent within each day.
-function clusterByProximity(
+export function clusterByProximity(
   taggedPlaces: TaggedPlace[],
   numDays: number,
   slotsPerDay: number,
@@ -131,7 +131,10 @@ function clusterByProximity(
   // Fill short clusters with passthrough places ([0,0] coords — dev fallback)
   let passthroughIdx = 0;
   for (const cluster of clusters) {
-    while (cluster.length < slotsPerDay && passthroughIdx < withoutCoords.length) {
+    while (
+      cluster.length < slotsPerDay &&
+      passthroughIdx < withoutCoords.length
+    ) {
       cluster.push(withoutCoords[passthroughIdx++]!);
     }
   }
@@ -263,18 +266,18 @@ export async function buildItinerary(
           activity.priceLevel = place.priceLevel;
         if (place.photoUrl) activity.photoUrl = place.photoUrl;
 
-          if (place.openingHoursArray && place.openingHoursArray.length > 0) {
-            const dayJs = dayDate.getDay();
-            const googleIdx = dayJs === 0 ? 6 : dayJs - 1;
-            const entry = place.openingHoursArray[googleIdx];
-            if (entry) {
-              const colonIdx = entry.indexOf(":");
-              activity.openingHours =
-                colonIdx !== -1 ? entry.slice(colonIdx + 1).trim() : entry;
-            }
-          } else if (place.openingHours) {
-            activity.openingHours = place.openingHours;
+        if (place.openingHoursArray && place.openingHoursArray.length > 0) {
+          const dayJs = dayDate.getDay();
+          const googleIdx = dayJs === 0 ? 6 : dayJs - 1;
+          const entry = place.openingHoursArray[googleIdx];
+          if (entry) {
+            const colonIdx = entry.indexOf(":");
+            activity.openingHours =
+              colonIdx !== -1 ? entry.slice(colonIdx + 1).trim() : entry;
           }
+        } else if (place.openingHours) {
+          activity.openingHours = place.openingHours;
+        }
 
         // ─── Nearby food suggestions ─────────────────────────────────────
         // Fire-and-forget with cache: costs 0 API calls on cache hit
