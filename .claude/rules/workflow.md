@@ -61,10 +61,10 @@ Trước khi đề xuất merge, tự verify: nhánh tạo từ `develop` mới 
 
 ### Merge policy
 
-| Target    | Ai merge             | Điều kiện                                                                            |
-| --------- | --------------------- | ------------------------------------------------------------------------------------- |
+| Target    | Ai merge                                                          | Điều kiện                                                                            |
+| --------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | `develop` | Claude/dev được phép (nhưng không tự merge, chỉ báo cáo sẵn sàng) | **Cả 3 CI job pass** + toàn bộ test local pass. CI đỏ/đang chạy → đợi, không merge.  |
-| `main`    | **Chỉ chủ repo**     | Claude không merge, không push, không tự mở PR release trừ khi được yêu cầu rõ ràng. |
+| `main`    | **Chỉ chủ repo**                                                  | Claude không merge, không push, không tự mở PR release trừ khi được yêu cầu rõ ràng. |
 
 Kiểm tra CI trước khi merge:
 
@@ -72,6 +72,10 @@ Kiểm tra CI trước khi merge:
 gh pr checks <PR-number>          # xem trạng thái từng check
 gh pr merge <PR-number> --squash  # chỉ chủ repo chạy, sau khi tất cả check xanh
 ```
+
+### Theo dõi CI sau khi mở PR
+
+Mặc định: ngay sau khi mở PR, dùng `ScheduleWakeup` để tự đánh thức lại sau **120 giây** rồi check `gh pr checks <PR-number>` — không giữ turn chờ đồng bộ và không để user tự check tay. Pipeline `ci-pr.yml` hiện tại mất khoảng 2-3 phút để chạy xong cả 3 job bắt buộc; mốc 120s là ước lượng ban đầu, nếu CI chưa xong thì `ScheduleWakeup` lại một vòng nữa thay vì báo sai. Điều chỉnh lại con số này khi có dữ liệu thời gian chạy thực tế.
 
 ### Sửa `ci-pr.yml` — đừng làm mất required check
 
