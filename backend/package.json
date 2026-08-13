@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "seed:destinations": "tsx scripts/seed-destinations.ts"
+    "seed:destinations": "tsx scripts/seed-destinations.ts",
+    "check:services": "tsx scripts/check-services.ts"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.59.2",
