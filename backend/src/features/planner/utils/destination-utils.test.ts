@@ -21,4 +21,20 @@ describe("isMVPDestination", () => {
     expect(isMVPDestination("Tokyo, Japan")).toBe(false);
     expect(isMVPDestination("Bangkok")).toBe(false);
   });
+
+  it("returns false for accented Vietnamese city names — only the ASCII form is in the known-name set", () => {
+    expect(isMVPDestination("Đà Nẵng")).toBe(false);
+  });
+
+  it("returns false for a string that is only a comma", () => {
+    expect(isMVPDestination(",")).toBe(false);
+  });
+
+  it("matches when both city and country parts are MVP", () => {
+    expect(isMVPDestination("Hanoi, Vietnam")).toBe(true);
+  });
+
+  it("returns false for a city belonging to a non-MVP country", () => {
+    expect(isMVPDestination("Some Town, Germany")).toBe(false);
+  });
 });

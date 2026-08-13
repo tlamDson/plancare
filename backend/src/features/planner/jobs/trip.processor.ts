@@ -41,7 +41,7 @@ function hasValidCoords(coords?: [number, number]): coords is [number, number] {
   return !!coords && (coords[0] !== 0 || coords[1] !== 0);
 }
 
-function dedupeValidatedPlaces(validated: any[]) {
+export function dedupeValidatedPlaces(validated: any[]) {
   const kept: any[] = [];
   const seenNames = new Set<string>();
   const seenGoogleIds = new Set<string>();
@@ -216,51 +216,59 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
           tripId,
           destination: preferences.destination,
         },
-        "[RAG_USED] Trip generation invoked RAG retrieval"
+        "[RAG_USED] Trip generation invoked RAG retrieval",
       );
 
       logger.info(
-        { 
+        {
           destination: preferences.destination,
           cityIdKey: preferences.cityIdKey,
           countryIdKey: preferences.countryIdKey,
           focus: preferences.focus,
-          pace: preferences.pace
+          pace: preferences.pace,
         },
-        "📚 RAG: Starting PlaceInsight retrieval for trip generation"
+        "📚 RAG: Starting PlaceInsight retrieval for trip generation",
       );
 
       localInsight = await getRelevantPlaceInsights(
         preferences.destination,
         {
-          ...(preferences.countryIdKey ? { countryIdKey: preferences.countryIdKey } : {}),
-          ...(preferences.cityIdKey ? { cityIdKey: preferences.cityIdKey } : {}),
+          ...(preferences.countryIdKey
+            ? { countryIdKey: preferences.countryIdKey }
+            : {}),
+          ...(preferences.cityIdKey
+            ? { cityIdKey: preferences.cityIdKey }
+            : {}),
         },
-        preferences
+        preferences,
       );
       // Fallback: if Vector Search returned empty, try legacy getCityInsight
       if (!localInsight) {
         logger.info(
           { destination: preferences.destination },
-          "📚 RAG: Vector search returned empty, attempting legacy getCityInsight"
+          "📚 RAG: Vector search returned empty, attempting legacy getCityInsight",
         );
         localInsight =
           (await getCityInsight(preferences.destination, {
-            ...(preferences.countryIdKey ? { countryIdKey: preferences.countryIdKey } : {}),
-            ...(preferences.cityIdKey ? { cityIdKey: preferences.cityIdKey } : {}),
+            ...(preferences.countryIdKey
+              ? { countryIdKey: preferences.countryIdKey }
+              : {}),
+            ...(preferences.cityIdKey
+              ? { cityIdKey: preferences.cityIdKey }
+              : {}),
           })) ?? null;
       }
       if (localInsight) {
         logger.info(
-          { 
+          {
             jobId: job.id,
             tripId,
-            destination: preferences.destination, 
+            destination: preferences.destination,
             chars: localInsight.length,
-            lines: localInsight.split('\n').length,
-            preview: localInsight.substring(0, 100) + '...'
+            lines: localInsight.split("\n").length,
+            preview: localInsight.substring(0, 100) + "...",
           },
-          "✅ RAG: Local insight loaded — injecting into AI prompt"
+          "✅ RAG: Local insight loaded — injecting into AI prompt",
         );
         logger.info(
           {
@@ -269,12 +277,12 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
             ragUsed: true,
             localInsightLength: localInsight.length,
           },
-          "[RAG_USED] Trip generation used RAG context"
+          "[RAG_USED] Trip generation used RAG context",
         );
       } else {
         logger.warn(
           { jobId: job.id, tripId, destination: preferences.destination },
-          "⚠️ RAG: No local insight found (neither vector nor legacy) — using generalized AI prompt"
+          "⚠️ RAG: No local insight found (neither vector nor legacy) — using generalized AI prompt",
         );
         logger.info(
           {
@@ -282,18 +290,18 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
             tripId,
             ragUsed: false,
           },
-          "[RAG_USED] Trip generation proceeded without RAG context"
+          "[RAG_USED] Trip generation proceeded without RAG context",
         );
       }
     } catch (ragErr) {
       logger.error(
-        { 
+        {
           jobId: job.id,
           tripId,
           ragErr: ragErr instanceof Error ? ragErr.message : String(ragErr),
-          destination: preferences.destination
-        }, 
-        "❌ RAG: Failed to fetch insight — continuing without it"
+          destination: preferences.destination,
+        },
+        "❌ RAG: Failed to fetch insight — continuing without it",
       );
       logger.info(
         {
@@ -302,7 +310,7 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
           ragUsed: false,
           reason: "rag_exception",
         },
-        "[RAG_USED] Trip generation proceeded without RAG context"
+        "[RAG_USED] Trip generation proceeded without RAG context",
       );
     }
 

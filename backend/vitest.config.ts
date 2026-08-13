@@ -4,6 +4,17 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    // Hermetic defaults for envalid's fail-fast required vars (config/env.ts),
+    // so unit tests don't depend on a local .env file or CI-provided secrets.
+    // Mirrors the dummy values ci-pr.yml sets for the "Unit Tests" step.
+    env: {
+      NODE_ENV: "test",
+      MONGO_URI:
+        "mongodb://test_user:test_password@localhost:27017/test_db?authSource=admin",
+      CLERK_SECRET_KEY: "sk_test_dummy_key_for_tests",
+      CLERK_WEBHOOK_SIGNING_SECRET: "whsec_dummy_secret",
+      GEMINI_API_KEY: "sk-dummy-key-for-tests",
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
