@@ -24,7 +24,9 @@ Theo `docs/PROGRESS.md`: tiến độ tổng thể ~85%. Đang có thay đổi d
 
 **Kiến trúc thật khác tài liệu**: `docs/agents/*.md` và `docs/PLAN.md` mô tả layout lý tưởng (`web/`, `api/`, `worker/` tách riêng) không khớp code thật. Layout thật: `backend/` (1 workspace chứa cả API và worker), `frontend/web/`, `frontend/mobile/`, `packages/shared` (tên package `@travelplan/shared`). Chi tiết đầy đủ ở `.claude/rules/tech-defaults.md`.
 
-**Nợ kỹ thuật đã xác minh** (không tự sửa trừ khi được giao — xem `.claude/rules/tech-defaults.md` để có danh sách đầy đủ): `trip.controller.ts` 882 dòng vi phạm Rule of 200 với 33 chỗ `as any`; `generalLimiter` chưa gắn route nào; `POST /api/dev/scrape-insights` thiếu auth (lỗ hổng thật trên repo public); frontend chưa có test nào trước đợt setup này.
+**Nợ kỹ thuật đã xác minh** (không tự sửa trừ khi được giao — xem `.claude/rules/tech-defaults.md` để có danh sách đầy đủ): `trip.controller.ts` 882 dòng vi phạm Rule of 200 với 33 chỗ `as any`; `generalLimiter` chưa gắn route nào; `POST /api/dev/scrape-insights` thiếu auth (lỗ hổng thật trên repo public); `places.service.ts` không dùng `PlaceCache` dù `nearby-food.service.ts` đã có sẵn (cost driver thật khi scale nhiều user); frontend chưa có test nào trước đợt setup này.
+
+**Google Cloud billing đã tách theo project, có killswitch**: `GOOGLE_PLACES_API_KEY` ở project `travelplan-486522` (billing account riêng, tự ngắt billing nếu vượt $5/tháng), `GEMINI_API_KEY` ở project `gen-lang-client-0544187342` (không gắn billing account nào, chỉ chạy free tier). Không bao giờ dùng chung billing account cho nhiều app — bài học từ sự cố tháng 4/2026 khiến Places bị đóng oan theo project khác bị lộ key. Chi tiết đầy đủ + lệnh `gcloud` ở `.claude/rules/tech-defaults.md`.
 
 **CI trước đây "nói dối"**: `lint`/`test` từng bị bọc `|| echo` nên không bao giờ fail — CI xanh không có nghĩa test pass. Đã sửa trong `ci-pr.yml`/`ci-main.yml`.
 
