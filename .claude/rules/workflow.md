@@ -77,7 +77,7 @@ gh pr merge <PR-number> --squash  # chỉ chủ repo chạy, sau khi tất cả 
 
 Mặc định: ngay sau khi mở PR, dùng `ScheduleWakeup` để tự đánh thức lại sau **120 giây** rồi check `gh pr checks <PR-number>` — không giữ turn chờ đồng bộ và không để user tự check tay. Pipeline `ci-pr.yml` hiện tại mất khoảng 2-3 phút để chạy xong cả 3 job bắt buộc; mốc 120s là ước lượng ban đầu, nếu CI chưa xong thì `ScheduleWakeup` lại một vòng nữa thay vì báo sai. Điều chỉnh lại con số này khi có dữ liệu thời gian chạy thực tế.
 
-**Trước khi push thêm commit vào một PR đã mở**, luôn `gh pr view <PR-number> --json state,merged` trước — nếu `state` đã `MERGED`/`CLOSED` thì push đó **không** trigger CI mới (`ci-pr.yml` chỉ chạy trên event `pull_request`, PR đóng thì không có `synchronize`). Tạo nhánh mới từ `develop` mới nhất cho phần việc còn lại thay vì push vào branch đã merged rồi ngồi chờ CI không bao giờ tới.
+**Trước khi push thêm commit vào một PR đã mở**, luôn `gh pr view <PR-number> --json state,mergedAt` trước — nếu `state` đã `MERGED`/`CLOSED` thì push đó **không** trigger CI mới (`ci-pr.yml` chỉ chạy trên event `pull_request`, PR đóng thì không có `synchronize`). Tạo nhánh mới từ `develop` mới nhất cho phần việc còn lại thay vì push vào branch đã merged rồi ngồi chờ CI không bao giờ tới.
 
 ### Sửa `ci-pr.yml` — đừng làm mất required check
 
