@@ -12,6 +12,15 @@ process.env.REDIS_PORT ??= "6379";
 process.env.REDIS_PASSWORD ??= "dev_redis_password";
 process.env.CLERK_SECRET_KEY ??= "sk_test_dummy_key_for_tests";
 process.env.CLERK_WEBHOOK_SIGNING_SECRET ??= "whsec_dummy_secret";
+// @clerk/express's clerkMiddleware() (mounted globally in app.ts, ahead of
+// every route — including fully public ones like /health) reads
+// CLERK_PUBLISHABLE_KEY straight from process.env on every request and
+// throws "Publishable key is missing" if it's unset, even though
+// config/env.ts never declares this var as required. Must be a
+// realistically-shaped pk_test_<base64(host$)> key or Clerk's own format
+// check rejects it before ever getting to "missing".
+process.env.CLERK_PUBLISHABLE_KEY ??=
+  "pk_test_" + Buffer.from("clerk.example.com$").toString("base64");
 process.env.GEMINI_API_KEY ??= "sk-dummy-key-for-tests";
 // billing/stripe.service.ts does `new Stripe(env.STRIPE_SECRET_KEY)` at
 // *import* time (not lazily) — an empty key throws immediately, which means
