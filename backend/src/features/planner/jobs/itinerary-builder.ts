@@ -163,32 +163,6 @@ export async function updateJobProgress(
   await job.updateProgress({ percent, currentStep });
 }
 
-// ─── Dynamic time slots based on activitiesPerDay ─────────────────────────
-// Generates slot names for 2–6 activities per day.
-function generateTimeSlots(count: number): string[] {
-  const allSlots = [
-    "morning",
-    "late morning",
-    "afternoon",
-    "late afternoon",
-    "evening",
-    "night",
-  ];
-  // Always start from "morning", take `count` evenly spaced slots
-  if (count <= 2) return ["morning", "evening"];
-  if (count === 3) return ["morning", "afternoon", "evening"];
-  if (count === 4) return ["morning", "late morning", "afternoon", "evening"];
-  if (count === 5)
-    return [
-      "morning",
-      "late morning",
-      "afternoon",
-      "late afternoon",
-      "evening",
-    ];
-  return allSlots; // 6
-}
-
 // Default start times mapped to slot names
 const SLOT_START_TIMES: Record<string, string> = {
   breakfast: "08:00",
@@ -223,9 +197,6 @@ export async function buildItinerary(
   const activitiesPerDay = preferences.activitiesPerDay ?? 3;
   const transportMode: TransportMode =
     (preferences.transportMode as TransportMode) ?? "walking";
-  const timeSlots = generateTimeSlots(activitiesPerDay);
-
-  const aiDayKeys = Object.keys(intents).sort();
 
   // Tag each validated place with its original slot intent (morning/afternoon/evening),
   // then cluster by geographic proximity while sorting within each cluster by slot order.
@@ -248,9 +219,6 @@ export async function buildItinerary(
   );
 
   for (let dayNum = 0; dayNum < expectedDays; dayNum++) {
-    const dayKey = aiDayKeys[dayNum] ?? `day${dayNum + 1}`;
-    const slots = intents[dayKey];
-
     const dayDate = new Date(
       new Date(startDateStr).getTime() + dayNum * msPerDay,
     );

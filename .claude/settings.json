@@ -1,0 +1,139 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh auth status)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr diff *)",
+      "Bash(gh pr status *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh run list *)",
+      "Bash(gh run view *)",
+      "Bash(gh workflow list *)",
+      "Bash(gh workflow view *)",
+      "Bash(gh repo view *)",
+
+      "Bash(git status *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git diff)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git branch *)",
+      "Bash(git branch)",
+      "Bash(git rev-parse *)",
+      "Bash(git remote -v)",
+      "Bash(git fetch *)",
+      "Bash(git stash list)",
+
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git checkout -b *)",
+      "Bash(git push -u origin *)",
+
+      "Bash(npm run build)",
+      "Bash(npm run build *)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run typecheck *)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint *)",
+      "Bash(npm run test)",
+      "Bash(npm run test *)",
+      "Bash(npm run build:shared)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc --noEmit *)",
+      "Bash(npx vitest run *)",
+      "Bash(npx eslint *)",
+      "Bash(npx prettier --write *)",
+      "Bash(npm ls *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.docker)",
+      "Read(./backend/.env)",
+      "Read(./frontend/web/.env*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d);const f=(j.tool_response&&j.tool_response.filePath)||(j.tool_input&&j.tool_input.file_path);if(f)require('child_process').execFileSync('npx',['prettier','--write',f],{stdio:'ignore',shell:true});}catch(e){}})\" 2>/dev/null || true",
+            "statusMessage": "Formatting with prettier"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "(New-Object Media.SoundPlayer 'C:\\Windows\\Media\\chimes.wav').PlaySync()",
+            "async": true,
+            "timeout": 10,
+            "statusMessage": "done chime"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/scripts/ci-stop-guard.ps1\"",
+            "timeout": 120,
+            "statusMessage": "Checking CI before ending turn"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "(New-Object Media.SoundPlayer 'C:\\Windows\\Media\\Windows Exclamation.wav').PlaySync()",
+            "async": true,
+            "timeout": 10,
+            "statusMessage": "permission chime"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "(New-Object Media.SoundPlayer 'C:\\Windows\\Media\\Windows Exclamation.wav').PlaySync()",
+            "async": true,
+            "timeout": 10,
+            "statusMessage": "needs-input chime"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "rm -f \"$CLAUDE_PROJECT_DIR/.claude/.ci-watch.json\"",
+            "async": true,
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

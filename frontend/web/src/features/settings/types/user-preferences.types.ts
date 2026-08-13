@@ -130,6 +130,7 @@ export function mapGroupToTravelStyle(groupType: GroupTypeKey | null): string {
   return GROUP_TO_TRAVEL_STYLE[groupType] ?? "";
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- migrating an unknown legacy localStorage shape; the shape genuinely isn't known at this boundary
 export function migrateUserPreferences(raw: any): UserPreferences {
   const focus = Array.isArray(raw?.focus)
     ? (raw.focus.filter((x: unknown) => typeof x === "string") as FocusKey[])

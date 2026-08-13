@@ -17,7 +17,8 @@ export interface IUser extends Document {
     travelStyle?: string[];
     travelDNA?: {
       travelFrequency?: "rarely" | "1-2_trips" | "3-5_trips" | "6+_trips";
-      archetype?: "backpacker" | "luxury" | "digital_nomad" | "family" | "adventure";
+      archetype?:
+        "backpacker" | "luxury" | "digital_nomad" | "family" | "adventure";
       pacing?: "relaxed" | "balanced" | "packed";
       constraints?: {
         accessibility?: string[];
@@ -27,11 +28,11 @@ export interface IUser extends Document {
     };
   };
   notificationPreferences: {
-    tripReminders: { type: Boolean; default: true };
-    budgetAlerts: { type: Boolean; default: true };
-    tripInvites: { type: Boolean; default: true };
-    aiSuggestions: { type: Boolean; default: true };
-    doNotDisturb: { type: Boolean; default: false };
+    tripReminders: boolean;
+    budgetAlerts: boolean;
+    tripInvites: boolean;
+    aiSuggestions: boolean;
+    doNotDisturb: boolean;
   };
   createdAt: Date;
   updatedAt: Date;
@@ -108,7 +109,13 @@ const UserSchema = new Schema<IUser>(
         },
         archetype: {
           type: String,
-          enum: ["backpacker", "luxury", "digital_nomad", "family", "adventure"],
+          enum: [
+            "backpacker",
+            "luxury",
+            "digital_nomad",
+            "family",
+            "adventure",
+          ],
         },
         pacing: {
           type: String,
@@ -124,7 +131,7 @@ const UserSchema = new Schema<IUser>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.model<IUser>("User", UserSchema);

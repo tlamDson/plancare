@@ -1446,7 +1446,9 @@ export const useTranslationStore = create<TranslationState>((set, get) => ({
         "user-preferences",
         JSON.stringify({ ...prefs, language: lang }),
       );
-    } catch (e) {}
+    } catch {
+      // localStorage unavailable (e.g. Safari private mode) - ignore
+    }
   },
   setCurrency: (curr) => {
     set({ currency: curr });
@@ -1456,7 +1458,9 @@ export const useTranslationStore = create<TranslationState>((set, get) => ({
         "user-preferences",
         JSON.stringify({ ...prefs, currency: curr }),
       );
-    } catch (e) {}
+    } catch {
+      // localStorage unavailable (e.g. Safari private mode) - ignore
+    }
   },
   setDistanceUnit: (unit) => {
     set({ distanceUnit: unit });
@@ -1466,7 +1470,9 @@ export const useTranslationStore = create<TranslationState>((set, get) => ({
         "user-preferences",
         JSON.stringify({ ...prefs, distance: unit }),
       );
-    } catch (e) {}
+    } catch {
+      // localStorage unavailable (e.g. Safari private mode) - ignore
+    }
   },
   t: (key: string) => {
     const lang = get().language;

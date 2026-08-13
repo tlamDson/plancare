@@ -1,0 +1,26 @@
+{
+  "_id": "65f0a1b2c3d4e5f6a7b8c9d2",
+  "userId": "user_test_2n8x7k3q",
+  "title": "Trip with no validated places",
+  "destination": "Unknown Remote Village",
+  "startDate": "2026-09-10T00:00:00.000Z",
+  "endDate": "2026-09-12T00:00:00.000Z",
+  "budget": {
+    "currency": "USD",
+    "totalLimit": 500,
+    "totalSpent": 0,
+    "breakdown": []
+  },
+  "itinerary": [
+    { "day": 1, "date": "2026-09-10T00:00:00.000Z", "activities": [] },
+    { "day": 2, "date": "2026-09-11T00:00:00.000Z", "activities": [] },
+    { "day": 3, "date": "2026-09-12T00:00:00.000Z", "activities": [] }
+  ],
+  "cities": [],
+  "isAgentProcessing": false,
+  "version": 1,
+  "status": "FAILED",
+  "lifecycle": "UPCOMING",
+  "createdAt": "2026-08-01T09:00:00.000Z",
+  "updatedAt": "2026-08-01T09:05:00.000Z"
+}

@@ -1,0 +1,71 @@
+{
+  "_id": "65f0a1b2c3d4e5f6a7b8c9d0",
+  "userId": "user_test_2n8x7k3q",
+  "title": "Đà Nẵng 4 ngày 3 đêm",
+  "destination": "Da Nang, Vietnam",
+  "startDate": "2026-09-10T00:00:00.000Z",
+  "endDate": "2026-09-13T00:00:00.000Z",
+  "purpose": "leisure",
+  "groupType": "couple",
+  "priorities": { "money": 2, "comfort": 3, "unique": 4 },
+  "mood": "beach",
+  "budget": {
+    "currency": "VND",
+    "totalLimit": 12000000,
+    "totalSpent": 0,
+    "breakdown": [
+      { "name": "accommodation", "limit": 4000000, "spent": 0 },
+      { "name": "food", "limit": 3000000, "spent": 0 },
+      { "name": "activities", "limit": 3000000, "spent": 0 },
+      { "name": "transport", "limit": 2000000, "spent": 0 }
+    ]
+  },
+  "itinerary": [
+    {
+      "day": 1,
+      "date": "2026-09-10T00:00:00.000Z",
+      "activities": [
+        {
+          "type": "poi",
+          "name": "Bãi biển Mỹ Khê",
+          "location": {
+            "type": "Point",
+            "coordinates": [108.2447, 16.0605],
+            "googlePlaceId": "ChIJtest_my_khe_beach"
+          },
+          "time": "08:00",
+          "endTime": "10:00",
+          "cost": 0,
+          "status": "planned",
+          "order": 0,
+          "rating": 4.5
+        }
+      ]
+    }
+  ],
+  "cities": [
+    {
+      "cityId": "65f0a1b2c3d4e5f6a7b8c9c1",
+      "order": 0,
+      "stayNights": 3,
+      "stays": [
+        {
+          "name": "Danang Beach Hotel",
+          "type": "hotel",
+          "checkIn": "2026-09-10T14:00:00.000Z",
+          "checkOut": "2026-09-13T12:00:00.000Z",
+          "pricePerNight": 1200000,
+          "totalPrice": 3600000,
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "isAgentProcessing": false,
+  "version": 1,
+  "status": "COMPLETED",
+  "lifecycle": "UPCOMING",
+  "tags": ["beach", "couple"],
+  "createdAt": "2026-08-01T09:00:00.000Z",
+  "updatedAt": "2026-08-01T09:05:00.000Z"
+}

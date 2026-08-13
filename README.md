@@ -144,6 +144,23 @@ Set **`REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD`** from Railway’s Redis se
 
 Scale workers conservatively if you care about Redis command volume (e.g. one replica unless you need more throughput).
 
+### Staging environment (`develop` → staging, `main` → production)
+
+The repo's Git Flow (see `.claude/rules/workflow.md`) assumes two deploy targets. As of this writing, **only production is set up** — the steps below are a checklist for creating the staging side, done through each provider's dashboard (not something `railway.toml`/`vercel.json` alone can express, since environment membership and which secrets belong to which environment are dashboard/CLI concepts, not repo config).
+
+**Railway** — `railway.toml` is shared by every Railway Environment in the project; it does not itself distinguish staging from production.
+1. In the Railway project, create a second Environment named `staging`.
+2. Set its **branch tracking to `develop`** (Settings → Environment → deploy trigger) so pushes to `develop` redeploy staging automatically, mirroring how `main` already redeploys production.
+3. Provision a separate MongoDB and Redis for staging — do not point staging at the production database. Set `MONGO_URI`, `REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD` (or `REDIS_URL`) for the new environment from those staging instances.
+4. Copy every other required var from `.env.example` into the staging Environment's variables (Clerk, Gemini, Mapbox, Stripe, etc.) — using **test-mode** keys where the provider supports them (Clerk test instance, Stripe test keys) so staging never touches real user data or charges real cards.
+
+**Vercel** — by default every branch push gets an automatic preview deployment; only the branch configured as the **Production Branch** (Project Settings → Git) deploys to the production domain. To get a stable staging URL instead of a rotating preview link:
+1. Assign a custom domain (e.g. `staging.yourdomain.com`) to deployments of the `develop` branch (Project Settings → Domains → add domain → attach to `develop`).
+2. Add a Vercel **Environment** scoped to `develop`/Preview with its own `VITE_API_URL` (pointing at the Railway staging API), `VITE_CLERK_PUBLISHABLE_KEY` (Clerk test instance), and `VITE_MAPBOX_ACCESS_TOKEN`.
+3. `frontend/web/.env.staging` already exists locally for `npm run build:staging` — keep it in sync with whatever the Vercel staging Environment uses, minus secrets (it's gitignored).
+
+Once both are wired, `develop` becomes a real staging deploy target and PRs merged there are verifiable before they ever reach `main`.
+
 ---
 
 ## Scripts

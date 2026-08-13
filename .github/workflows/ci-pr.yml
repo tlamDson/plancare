@@ -1,45 +1,43 @@
-name: CI Pipeline
+name: CI - PR Check
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [develop, main]
+
+concurrency:
+  group: ci-pr-${{ github.head_ref }}
+  cancel-in-progress: true
 
 jobs:
-  # ============================================
-  # CHANGE DETECTION
-  # ============================================
+  # Job phụ, KHÔNG phải check bắt buộc — chỉ để biết PR có đụng backend không,
+  # dùng để gate step build Docker image cho rẻ. KHÔNG dùng để gate job "ci"/"quality"
+  # (required check phải luôn chạy, xem .claude/rules/workflow.md).
   changes:
-    name: Detect Changes
+    name: Detect changed paths
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-      shared: ${{ steps.filter.outputs.shared }}
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Filter paths
+      - name: Detect backend-related changes
         uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
             backend:
               - 'backend/**'
-            frontend:
-              - 'frontend/web/**'
-            shared:
               - 'packages/shared/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'turbo.json'
+              - '.dockerignore'
+              - '.github/workflows/ci-pr.yml'
 
-  # ============================================
-  # BACKEND CI
-  # ============================================
-  backend:
-    name: Backend CI
+  ci:
+    name: Lint + Unit Tests
     runs-on: ubuntu-latest
-    needs: changes
-    if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.shared == 'true' }}
 
     services:
       mongodb:
@@ -66,7 +64,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -74,26 +72,22 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: |
-            package-lock.json
-            backend/package-lock.json
 
-      - name: Install root dependencies (monorepo workspace)
+      - name: Install dependencies
         run: npm ci
 
       - name: Build shared package
-        run: npm run build -w packages/shared
+        run: npm run build:shared
 
-      - name: Lint backend
-        run: npm run lint -w backend || echo "⚠️  No lint script found"
-
-      - name: Type check backend
-        working-directory: ./backend
-        run: npx tsc --noEmit
-
-      - name: Run backend tests
-        run: npm test -w backend || echo "⚠️  No tests found (skipping)"
+      - name: Lint
+        run: npm run lint
         env:
+          CI: true
+
+      - name: Unit Tests - Backend + Frontend
+        run: npm run test
+        env:
+          CI: true
           NODE_ENV: test
           MONGO_URI: mongodb://test_user:test_password@localhost:27017/test_db?authSource=admin
           REDIS_HOST: localhost
@@ -101,22 +95,25 @@ jobs:
           REDIS_PASSWORD: ""
           CLERK_SECRET_KEY: sk_test_dummy_key_for_ci
           CLERK_WEBHOOK_SIGNING_SECRET: whsec_dummy_secret
-          GEMINI_API_KEY: sk-dummy-key
+          GEMINI_API_KEY: sk-dummy-key-for-ci
 
-      - name: Build backend
-        run: npm run build -w backend
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.run_id }}
+          path: |
+            backend/coverage/
+            frontend/web/coverage/
+          retention-days: 7
 
-  # ============================================
-  # FRONTEND WEB CI
-  # ============================================
-  frontend-web:
-    name: Frontend Web CI
+  # Tách job riêng để không đổi tên check bắt buộc "Lint + Unit Tests"
+  quality:
+    name: Typecheck + Build
     runs-on: ubuntu-latest
-    needs: changes
-    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shared == 'true' }}
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -124,60 +121,63 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: |
-            package-lock.json
-            frontend/web/package-lock.json
 
-      - name: Install root dependencies (monorepo workspace)
+      - name: Install dependencies
         run: npm ci
 
       - name: Build shared package
-        run: npm run build -w packages/shared
+        run: npm run build:shared
 
-      - name: Lint frontend
-        run: npm run lint -w frontend/web || echo "⚠️  Lint errors (non-blocking)"
-
-      - name: Type check frontend
-        working-directory: ./frontend/web
-        run: npx tsc --noEmit
-
-      - name: Build frontend
-        run: npm run build -w frontend/web
+      - name: Typecheck
+        run: npm run typecheck
         env:
+          CI: true
+
+      - name: Build
+        run: npm run build
+        env:
+          CI: true
           VITE_CLERK_PUBLISHABLE_KEY: pk_test_dummy_key_for_ci
           VITE_API_URL: http://localhost:3000
           VITE_MAPBOX_ACCESS_TOKEN: pk.dummy_token_for_ci
 
-  # ============================================
-  # DOCKER BUILD TEST
-  # ============================================
+  # Image này là thứ được deploy lên Railway — hỏng ở đây thì hỏng cả deploy
   docker:
-    name: Docker Build Test
+    name: Backend Docker Build
     runs-on: ubuntu-latest
     needs: changes
-    if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.shared == 'true' }}
+    # KHÔNG đặt `if:` ở cấp job và KHÔNG đổi tên job: đây là required status check.
+    # Job phải luôn chạy và luôn kết thúc Success, chỉ các step nặng mới gate bằng `if:`.
+    env:
+      # PR release develop → main luôn build thật, không tin vào filter
+      SHOULD_BUILD: ${{ needs.changes.outputs.backend == 'true' || github.base_ref == 'main' }}
 
     steps:
-      - name: Checkout code
+      - name: Checkout
+        if: env.SHOULD_BUILD == 'true'
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
+        if: env.SHOULD_BUILD == 'true'
         uses: docker/setup-buildx-action@v3
 
-      - name: Build API Docker image
+      - name: Build backend image
+        if: env.SHOULD_BUILD == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./backend/Dockerfile
+          target: production
           push: false
           tags: travelplan-api:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          target: production
 
-  # ============================================
-  # SECURITY SCAN
-  # ============================================
+      - name: Bỏ qua build image
+        if: env.SHOULD_BUILD != 'true'
+        run: echo "PR không đụng backend, packages/shared hay manifest gốc — bỏ qua build image."
+
+  # Không phải required check — báo cáo lỗ hổng, không chặn merge.
   security:
     name: Security Scan
     runs-on: ubuntu-latest
@@ -186,7 +186,7 @@ jobs:
       actions: read
       contents: read
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Run Trivy vulnerability scanner
@@ -197,7 +197,7 @@ jobs:
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "HIGH,CRITICAL"
-          exit-code: "0" # Don't fail build, just report
+          exit-code: "0"
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
