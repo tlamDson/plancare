@@ -11,8 +11,8 @@ Các rule chi tiết dưới đây áp dụng luôn, không chỉ khi được h
 ## Quy tắc bắt buộc (không được vi phạm)
 
 - **Mọi thay đổi đi qua PR** — không commit thẳng vào `develop`/`main`. Tạo nhánh → commit → push → mở PR vào `develop`.
-- **`main` do chủ repo quản lý** — Claude không merge, không push vào `main`.
-- **Chỉ merge vào `develop` khi CI + test pass hết** — phải xanh **cả 3 job**: `Lint + Unit Tests`, `Typecheck + Build`, `Backend Docker Build`. Claude không tự merge bất kỳ PR nào, kể cả khi xanh — chỉ báo cáo sẵn sàng.
+- **`main` do chủ repo quản lý** — Claude không merge, không push vào `main`, không tự mở PR release trừ khi được yêu cầu rõ ràng.
+- **Chỉ merge vào `develop` khi CI + test pass hết** — phải xanh **cả 3 job**: `Lint + Unit Tests`, `Typecheck + Build`, `Backend Docker Build`. Claude **được phép tự merge** PR vào `develop` khi cả 3 job đã xanh và test local đã pass, không cần hỏi lại. CI đỏ hoặc đang chạy → không merge, đợi hoặc fix.
 - **TDD bắt buộc** (Red → Green → Refactor) — không commit code mới thiếu test. Chi tiết: `.claude/rules/workflow.md`.
 - **Cập nhật `CLAUDE.md` + `.claude/rules/*`** khi task làm thay đổi convention, tooling hay quy trình.
 - **Sửa bug quan sát được qua trình duyệt phải verify bằng MCP `chrome-devtools` cả trước lẫn sau khi fix** — không báo "đã fix" nếu chưa tái hiện lại thao tác gây bug sau khi sửa. Chi tiết: `.claude/rules/workflow.md` mục _Debug bug_.

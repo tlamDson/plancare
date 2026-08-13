@@ -3,11 +3,11 @@
 ## Quy tắc bất di bất dịch
 
 1. **Mọi thay đổi đều phải qua PR.** Không bao giờ commit thẳng vào `develop` hay `main`. Có gì cần commit → tạo nhánh mới → commit → push → mở PR vào `develop`.
-2. **`main` do chủ repo quản lý.** Claude/dev **không được** merge vào `main` dưới bất kỳ hình thức nào (kể cả khi CI xanh). PR `develop → main` chỉ chủ repo tự thực hiện khi release.
+2. **`main` do chủ repo quản lý.** Claude/dev **không được** merge vào `main` dưới bất kỳ hình thức nào (kể cả khi CI xanh), không push thẳng, không tự mở PR release trừ khi được yêu cầu rõ ràng. PR `develop → main` chỉ chủ repo tự thực hiện khi release.
 3. **Chỉ merge PR vào `develop` khi CI + toàn bộ test pass.** Bắt buộc xác nhận **cả 3 job** đã xanh: `Lint + Unit Tests`, `Typecheck + Build`, `Backend Docker Build`. CI đỏ hoặc đang chạy → không merge, đợi hoặc fix.
 4. **Cập nhật `CLAUDE.md` và `.claude/rules/*` khi task làm thay đổi convention/tooling**, để lần sau còn áp dụng đúng.
 5. **Sửa bug quan sát được qua trình duyệt (UI/frontend, hoặc backend bug lộ ra qua UI) phải verify bằng `chrome-devtools` MCP cả trước lẫn sau khi fix** — xem mục [Debug bug](#debug-bug--verify-bằng-chrome-devtools-mcp).
-6. **Claude không tự merge PR nào**, kể cả vào `develop`, kể cả khi CI xanh — chỉ báo cáo trạng thái và để người dùng quyết định merge.
+6. **Claude được tự merge PR vào `develop`** ngay khi cả 3 CI job bắt buộc đã xanh và test local đã pass — không cần hỏi lại người dùng trước khi merge. **Merge vào `main` thì không bao giờ tự làm**, dù CI xanh — luôn để chủ repo tự thực hiện.
 
 ## Git Flow
 
@@ -61,16 +61,16 @@ Trước khi đề xuất merge, tự verify: nhánh tạo từ `develop` mới 
 
 ### Merge policy
 
-| Target    | Ai merge                                                          | Điều kiện                                                                            |
-| --------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `develop` | Claude/dev được phép (nhưng không tự merge, chỉ báo cáo sẵn sàng) | **Cả 3 CI job pass** + toàn bộ test local pass. CI đỏ/đang chạy → đợi, không merge.  |
-| `main`    | **Chỉ chủ repo**                                                  | Claude không merge, không push, không tự mở PR release trừ khi được yêu cầu rõ ràng. |
+| Target    | Ai merge                                    | Điều kiện                                                                            |
+| --------- | ------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `develop` | **Claude được tự merge**, không cần hỏi lại | **Cả 3 CI job pass** + toàn bộ test local pass. CI đỏ/đang chạy → đợi, không merge.  |
+| `main`    | **Chỉ chủ repo**                            | Claude không merge, không push, không tự mở PR release trừ khi được yêu cầu rõ ràng. |
 
 Kiểm tra CI trước khi merge:
 
 ```bash
 gh pr checks <PR-number>          # xem trạng thái từng check
-gh pr merge <PR-number> --squash  # chỉ chủ repo chạy, sau khi tất cả check xanh
+gh pr merge <PR-number> --squash  # PR target develop: Claude tự chạy sau khi cả 3 check bắt buộc xanh; PR target main: chỉ chủ repo chạy
 ```
 
 ### Theo dõi CI sau khi mở PR
