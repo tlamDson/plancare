@@ -70,6 +70,7 @@ npm run test
 - **`claude mcp` chạy khác shell → khác project-key**: CLI dùng đường dẫn thư mục làm key lưu config theo project trong `~/.claude.json`, và **không chuẩn hoá chữ hoa/thường ổ đĩa trên Windows** — `claude mcp ...` chạy từ Git Bash (tự động viết thường `d:/...`) và từ PowerShell (`D:\...`) bị coi là **hai project khác nhau**, dẫn tới hiện tượng config "biến mất"/"already exists" giả tạo dù vừa mới add xong. Luôn quản lý MCP server (`claude mcp add/remove/get/list`) từ **cùng một shell** bạn dùng để chạy `claude` tương tác (trong repo này: PowerShell).
 - **Paste vào prompt ẩn của `claude mcp add --client-secret` trên PowerShell 5.1 có thể bị lỗi** (thiếu ký tự khi paste vào hidden input) — dùng biến môi trường `$env:MCP_CLIENT_SECRET` trước khi chạy `--client-secret` để tránh hẳn việc paste vào prompt ẩn.
 - **`github.com` (trang web) có thể chập chờn tách biệt với `api.github.com`/`api.githubcopilot.com`** (luôn ổn định) — nếu OAuth fail với `SDK auth failed: The socket connection was closed unexpectedly`, thường chỉ cần thử lại `/mcp` vài lần là qua, không phải lỗi cấu hình.
+- **Đừng để script scratch/debug trong `backend/src/`**: `src/**` nằm trong `include` của `backend/tsconfig.json` nên mọi file ở đó vào thẳng typecheck/lint/build thật (từng xảy ra với `src/test-rag.ts`, `test-db.js`, `tz-test*.js` bị commit nhầm và sống trong repo cả tháng). Script one-off phải nằm ở `backend/scripts/` (đã bị `tsconfig.json` `exclude`), và nếu cần giữ lại logic thì viết thành Vitest thật theo TDD rule chứ không để script rời.
 
 ## Itinerary Builder Protocol
 
@@ -84,6 +85,7 @@ Thứ tự 6 bước **không được đổi, không được bỏ**: `flattenI
 - `generalLimiter` (rate limiter) định nghĩa trong `backend/src/middlewares/rate-limiter.ts` nhưng **không gắn vào route nào** — chỉ `tripCreationLimiter` thật sự hoạt động trên `/api/trips`.
 - `POST /api/dev/scrape-insights` **không có middleware auth**, mount vô điều kiện trong `index.ts` — trên repo public đây là lỗ hổng thật, nên xử lý bằng PR riêng.
 - `frontend/web` không có test nào, không có script `test`/`typecheck` (đã bổ sung hạ tầng — xem `.claude/rules/workflow.md` mục TDD). Backend chỉ có 3 file test, đều trong `features/destinations/services/`.
+- 19 component shadcn trong `frontend/web/src/components/ui/` (accordion, breadcrumb, carousel, chart, table, tabs, sheet, sidebar, menubar, drawer, pagination, scroll-area, collapsible, context-menu, hover-card, input-otp, navigation-menu, aspect-ratio, resizeable) **chưa được import ở đâu** — cố ý giữ lại (shadcn vốn copy-in on demand), nhưng đừng `npx shadcn add` thêm component mới nếu chưa dùng ngay.
 
 ## Deploy & vận hành
 
