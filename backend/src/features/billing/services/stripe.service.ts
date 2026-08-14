@@ -1,15 +1,34 @@
 import Stripe from "stripe";
 import { env } from "../../../config/env";
 
-// Initialize Stripe singleton
-export const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-  apiVersion: "2025-01-27.acacia" as any,
-});
+let stripeClient: Stripe | null = null;
+
+/**
+ * Lazily constructs (and memoizes) the Stripe client. STRIPE_SECRET_KEY is
+ * not required by envalid — billing is optional infra, not everything
+ * needs it — so constructing eagerly at import time used to crash the
+ * *entire* server at boot whenever the key was missing, since app.ts
+ * imports billing routes unconditionally. Callers must catch
+ * STRIPE_NOT_CONFIGURED and degrade (503), not let it propagate to a
+ * process crash.
+ */
+export function getStripe(): Stripe {
+  if (!env.STRIPE_SECRET_KEY) {
+    throw new Error("STRIPE_NOT_CONFIGURED");
+  }
+  if (!stripeClient) {
+    stripeClient = new Stripe(env.STRIPE_SECRET_KEY, {
+      apiVersion: "2025-01-27.acacia" as any,
+    });
+  }
+  return stripeClient;
+}
 
 /**
  * Creates a Stripe Checkout Session for upgrading to Pro.
  */
 export const createCheckoutSession = async (userId: string) => {
+  const stripe = getStripe();
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     mode: "subscription",

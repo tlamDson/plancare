@@ -12,6 +12,13 @@ export const env = cleanEnv(process.env, {
   MONGO_URI: str({ desc: "MongoDB Connection String" }),
   CLERK_SECRET_KEY: str({ desc: "Clerk Secret Key" }),
   CLERK_WEBHOOK_SIGNING_SECRET: str({ desc: "Clerk Webhook Signing Secret" }),
+  // clerkMiddleware() is mounted globally in app.ts (ahead of every route,
+  // including public ones) and reads this straight from @clerk/express's
+  // own options — without it passed explicitly, @clerk/express falls back
+  // to reading process.env itself and throws "Publishable key is missing"
+  // on every request. Previously undeclared here, so a deployment missing
+  // it would only fail at first *request*, not at boot.
+  CLERK_PUBLISHABLE_KEY: str({ desc: "Clerk Publishable Key" }),
   REDIS_HOST: str({ default: "localhost" }),
   REDIS_PORT: port({ default: 6379 }),
   REDIS_PASSWORD: str({ desc: "Redis Password", default: "" }), // Optional for local dev

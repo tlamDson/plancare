@@ -134,9 +134,9 @@ Thứ tự 6 bước **không được đổi, không được bỏ**: `flattenI
 - **`intent-parser.service.ts`'s `extractJson()` hỏng với JSON array trần không bọc code fence**: nhánh fallback chỉ cắt theo `{`…`}` (giả định object), nên response AI dạng array không có ` ```json ` sẽ bị cắt sai và parse fail — dù `coerceRoot()` rõ ràng có nhánh xử lý array.
 - **`flattenIntents`/`buildTaggedPlaces` sort ngày kiểu string** (`Object.keys(intents).sort()`) — `"day10" < "day2"` theo thứ tự chữ cái, trip từ 10 ngày trở lên bị đảo lộn thứ tự ngày.
 - **`useJobPoller`'s nhánh normalize `DELAYED`/`WAITING` → `PROCESSING` không bao giờ chạy được**: `jobStatusSchema` không có 2 giá trị này, nên `validateAPI` throw trước khi tới nhánh đó — response server gửi `DELAYED` sẽ khiến poll hiển thị `IDLE` thay vì thông báo "đang thử lại".
-- **`billing/stripe.service.ts` gọi `new Stripe(env.STRIPE_SECRET_KEY)` lúc _import_, không lazy** — key rỗng làm throw ngay lập tức. `STRIPE_SECRET_KEY` không được `envalid` khai bắt buộc (default `""`), nên **thiếu biến này khiến cả server crash lúc boot**, không chỉ khi gọi route billing.
-- **`clerkMiddleware()` (mount toàn cục, trước mọi route kể cả route public như `/health`) đọc `CLERK_PUBLISHABLE_KEY` trực tiếp từ `process.env` mỗi request** — thiếu biến này throw "Publishable key is missing" ngay cả trên route không cần auth. `config/env.ts` không khai biến này. Test integration từng pass "tình cờ" ở local vì `backend/.env` có sẵn key thật; CI fail vì không set — đã fix bằng cách set dummy `pk_test_...` hợp lệ format trong `backend/src/test/integration-setup.ts`.
 - **`job.controller.ts`'s `getJobStatus` catch `FORBIDDEN_JOB_ACCESS` bằng `return;` trắng, không gọi `res.status()`/`res.json()`** — request của user không sở hữu job sẽ **treo vô thời hạn** thay vì trả 403.
+
+(Đã fix: `billing/stripe.service.ts` giờ lazy-init qua `getStripe()`, throw `STRIPE_NOT_CONFIGURED` khi thiếu key thay vì crash lúc import; `CLERK_PUBLISHABLE_KEY` giờ được `envalid` khai bắt buộc trong `config/env.ts` và truyền tường minh vào `clerkMiddleware({ publishableKey, secretKey })` ở `app.ts` — xem PR `fix/boot-env-resilience`.)
 
 ### Bug phát hiện khi mở rộng integration test coverage (đưa từ ~4 lên ~30 route — chưa sửa, đi PR riêng nếu được giao)
 
