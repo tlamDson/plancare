@@ -42,12 +42,7 @@ import { DataError } from "@/components/DataError";
 import { PageLoader } from "@/components/PageLoader";
 import { retryJob, cancelJob } from "../api/jobs.api";
 import { toast } from "sonner";
-import {
-  CalendarDays,
-  Map,
-  MapPin,
-  Undo2,
-} from "lucide-react";
+import { CalendarDays, Map, MapPin, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
@@ -563,8 +558,10 @@ export default function TripDetailPage() {
               />
             ) : null}
 
-            <div>
-              <h2 className="text-xl font-semibold mb-4">{t("trip.itinerary")}</h2>
+            <div data-testid="trip-detail-itinerary">
+              <h2 className="text-xl font-semibold mb-4">
+                {t("trip.itinerary")}
+              </h2>
               {isChunkedTrip && (
                 <div className="mb-4 rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
                   {t("trip.longTripBanner")}

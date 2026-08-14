@@ -24,8 +24,7 @@ export function BackgroundProcessingModal({
 
   useEffect(() => {
     const wantsRetry =
-      Boolean(currentStep?.toLowerCase().includes("retry")) &&
-      !hasShownModal;
+      Boolean(currentStep?.toLowerCase().includes("retry")) && !hasShownModal;
     if (wantsRetry) {
       queueMicrotask(() => {
         setHasShownModal(true);
@@ -43,7 +42,10 @@ export function BackgroundProcessingModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        data-testid="background-processing-modal"
+      >
         <DialogHeader>
           <div className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-primary" />
@@ -55,7 +57,12 @@ export function BackgroundProcessingModal({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-end mt-4">
-          <Button onClick={() => setOpen(false)}>Tôi hiểu</Button>
+          <Button
+            data-testid="background-processing-dismiss"
+            onClick={() => setOpen(false)}
+          >
+            Tôi hiểu
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

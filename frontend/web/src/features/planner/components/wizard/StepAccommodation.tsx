@@ -31,7 +31,11 @@ export function StepAccommodation() {
         >
           {options.map((option) => (
             <div key={option.value} className="flex items-center space-x-2">
-              <RadioGroupItem value={option.value} id={option.value} />
+              <RadioGroupItem
+                value={option.value}
+                id={option.value}
+                data-testid={`trip-wizard-accommodation-${option.value}`}
+              />
               <Label htmlFor={option.value}>{option.label}</Label>
             </div>
           ))}

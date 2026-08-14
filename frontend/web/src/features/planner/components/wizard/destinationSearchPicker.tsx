@@ -32,6 +32,10 @@ type DestinationSearchPickerProps = {
   emptyLabel: string;
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  /** data-testid for the trigger button */
+  testId?: string;
+  /** Prefix for each item's data-testid: `${itemTestIdPrefix}-${item.value}` */
+  itemTestIdPrefix?: string;
 };
 
 export function DestinationSearchPicker({
@@ -43,6 +47,8 @@ export function DestinationSearchPicker({
   emptyLabel,
   open,
   onOpenChange,
+  testId,
+  itemTestIdPrefix,
 }: DestinationSearchPickerProps) {
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -52,6 +58,7 @@ export function DestinationSearchPicker({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          data-testid={testId}
           className="w-full justify-between font-normal"
         >
           {triggerLabel}
@@ -71,6 +78,11 @@ export function DestinationSearchPicker({
                 <CommandItem
                   key={it.value}
                   value={`${it.filterText} ${it.value}`}
+                  data-testid={
+                    itemTestIdPrefix
+                      ? `${itemTestIdPrefix}-${it.value}`
+                      : undefined
+                  }
                   onSelect={() => {
                     onValueChange(it.value);
                     onOpenChange(false);

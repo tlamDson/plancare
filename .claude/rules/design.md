@@ -26,12 +26,12 @@ Luôn bắt đầu bằng `--design-system`, rồi bổ sung `--domain ux "<patt
 
 ## State boundaries
 
-| Loại state | Dùng gì | Ghi chú |
-|---|---|---|
-| Server state | TanStack Query | **Không bao giờ** nhét data API vào Zustand store |
-| Client/UI state | Zustand | Store nhỏ, atomic, theo từng feature |
-| URL state | React Router | Nếu nó định nghĩa "tôi đang ở đâu" → thuộc về URL |
-| Form state | React Hook Form | Không đẩy lên global store trước khi submit |
+| Loại state      | Dùng gì         | Ghi chú                                           |
+| --------------- | --------------- | ------------------------------------------------- |
+| Server state    | TanStack Query  | **Không bao giờ** nhét data API vào Zustand store |
+| Client/UI state | Zustand         | Store nhỏ, atomic, theo từng feature              |
+| URL state       | React Router    | Nếu nó định nghĩa "tôi đang ở đâu" → thuộc về URL |
+| Form state      | React Hook Form | Không đẩy lên global store trước khi submit       |
 
 ## Polling & optimistic UI
 
@@ -49,6 +49,16 @@ Cấm `dangerouslySetInnerHTML` trực tiếp. Pipeline bắt buộc cho output 
 
 Không viết chuỗi text thẳng trong component. Luôn lấy qua `const { t } = useTranslationStore()` (`frontend/web/src/stores/useTranslationStore.ts`). Mỗi chuỗi mới phải thêm đủ **cả 3 ngôn ngữ** đang hỗ trợ: English (US), French, Vietnamese.
 
+## `data-testid` cho E2E (Playwright)
+
+Thêm từ PR `chore/e2e-testids` để lớp E2E Playwright (đang dựng, xem `.claude/rules/tech-defaults.md` mục "Hạ tầng test") không phải bám text đã qua i18n (3 ngôn ngữ) hay đoán tên class Tailwind.
+
+- Quy ước: `data-testid="<feature>-<component>-<element>"`, kebab-case, tiếng Anh, **không bao giờ** lấy từ copy hiển thị. Instance động thêm hậu tố id thật: `trip-card-${tripId}`, `itinerary-day-${dayIndex}`, `itinerary-activity-${activityId}`.
+- **Component mang trạng thái** (`JobStatusIndicator`, `JobStatusBadge`, `TripStatusBadge`, `AgentLockBanner`) đi kèm `data-status`/`data-state` chứa giá trị máy (`"COMPLETED"`, không phải `"Completed"`/`"Đã hủy"`) — để test đổi locale mà không phải sửa assertion. Ưu tiên assert theo `data-status`, không assert theo text hiển thị, khi cả hai đều có sẵn.
+- **Không thêm testid ở nơi đã có handle accessible tốt** (`id`, `aria-label` ổn định) — vd `id="title"`, `aria-label="Start date"`, radio `id="transport-car"`. Chỉ thêm khi thật sự không có cách chạm ổn định qua locale (điển hình: item cmdk/Command trong destination picker, nút hành động không có label cố định).
+- Literal `data-testid` viết thẳng trong component (không import hằng số từ module dùng chung) — bản mirror phía test sống ở `e2e/support/testids.ts`, tách biệt code sản phẩm khỏi code test.
+- Đây chỉ là thêm attribute, **không** đổi layout/màu/spacing/interaction → không thuộc phạm vi bắt buộc chạy skill `ui-ux-pro-max`.
+
 ## Component vs feature
 
 Component có business logic (vd: tự kiểm tra job status) → đặt trong `features/<domain>/components/`. Component chỉ nhận props, không tự biết gì về domain → đặt trong `components/` dùng chung.
@@ -65,10 +75,10 @@ Component có business logic (vd: tự kiểm tra job status) → đặt trong `
 
 ## Skills có sẵn (`.claude/skills/`)
 
-| Skill | Dùng khi |
-|---|---|
-| `ui-ux-pro-max` | Bất kỳ thay đổi UI nào — bắt buộc chạy trước |
-| `ui-styling` | Cần tra cứu pattern shadcn/Tailwind cụ thể (theming, accessibility, responsive utilities) |
-| `itinerary-builder` | Đụng vào pipeline sinh lịch trình (backend, nhưng ảnh hưởng UI hiển thị) |
-| `rag-destinations` | Đụng vào module destinations/world list |
-| `voyager-devops` | Dockerfile, GitHub Actions, railway/render/vercel config |
+| Skill               | Dùng khi                                                                                  |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| `ui-ux-pro-max`     | Bất kỳ thay đổi UI nào — bắt buộc chạy trước                                              |
+| `ui-styling`        | Cần tra cứu pattern shadcn/Tailwind cụ thể (theming, accessibility, responsive utilities) |
+| `itinerary-builder` | Đụng vào pipeline sinh lịch trình (backend, nhưng ảnh hưởng UI hiển thị)                  |
+| `rag-destinations`  | Đụng vào module destinations/world list                                                   |
+| `voyager-devops`    | Dockerfile, GitHub Actions, railway/render/vercel config                                  |

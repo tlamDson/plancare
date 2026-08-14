@@ -60,6 +60,7 @@ export function StepTransport() {
               <RadioGroupItem
                 value={option.value}
                 id={`transport-${option.value}`}
+                data-testid={`trip-wizard-transport-${option.value}`}
                 className="mt-0.5"
               />
               <div className="flex-1">

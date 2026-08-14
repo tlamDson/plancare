@@ -185,6 +185,7 @@ export function StepActivities() {
                 type="radio"
                 name="pace"
                 value={option.value}
+                data-testid={`trip-wizard-pace-${option.value}`}
                 checked={data.pace === option.value}
                 onChange={() => {
                   const isProOnly =
@@ -201,9 +202,8 @@ export function StepActivities() {
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{option.icon}</span>
                   <span className="font-medium">{t(option.labelKey)}</span>
-                  {(option.value === "relaxed" || option.value === "packed") && (
-                    <ProBadge />
-                  )}
+                  {(option.value === "relaxed" ||
+                    option.value === "packed") && <ProBadge />}
                 </div>
                 <p className="mt-0.5 text-sm text-muted-foreground">
                   {t(option.descriptionKey)}
@@ -239,6 +239,7 @@ export function StepActivities() {
               <ToggleGroupItem
                 key={opt.value}
                 value={opt.value}
+                data-testid={`trip-wizard-focus-${opt.value}`}
                 disabled={disabled}
                 className={`flex h-auto flex-col items-start gap-1 rounded-lg border p-3 text-left data-[state=on]:border-primary data-[state=on]:bg-primary/5 ${
                   incompatible ? "cursor-not-allowed opacity-40" : ""
@@ -277,9 +278,7 @@ export function StepActivities() {
               className="mt-0.5"
             />
             <div>
-              <p className="font-medium">
-                {t("wizard.constraintFoodAsMain")}
-              </p>
+              <p className="font-medium">{t("wizard.constraintFoodAsMain")}</p>
               <p className="text-xs text-muted-foreground">
                 {t("wizard.constraintFoodAsMainDesc")}
               </p>

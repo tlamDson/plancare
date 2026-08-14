@@ -160,7 +160,11 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
       }}
     >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent
+        className="sm:max-w-2xl"
+        data-testid="trip-wizard"
+        data-step={stepIndex}
+      >
         <DialogHeader>
           <DialogTitle>{t(stepMeta.titleKey)}</DialogTitle>
           <DialogDescription>{t(stepMeta.descKey)}</DialogDescription>
@@ -169,7 +173,10 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
         <div className="space-y-4">
           <div>
             <Progress value={progressValue} />
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p
+              className="mt-2 text-sm text-muted-foreground"
+              data-testid="trip-wizard-step-indicator"
+            >
               {t("wizard.step")} {stepIndex + 1} {t("wizard.of")} {TOTAL_STEPS}
             </p>
           </div>
@@ -179,6 +186,7 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
         <DialogFooter className="pt-2">
           <Button
             variant="outline"
+            data-testid="trip-wizard-reset"
             onClick={() => {
               reset();
               setStepIndex(0);
@@ -188,6 +196,7 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
           </Button>
           <Button
             variant="ghost"
+            data-testid="trip-wizard-back"
             onClick={handleBack}
             disabled={stepIndex === 0}
           >
@@ -195,6 +204,7 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
           </Button>
           {stepIndex < TOTAL_STEPS - 1 ? (
             <Button
+              data-testid="trip-wizard-next"
               onClick={handleNext}
               disabled={!stepValid}
               className={
@@ -208,7 +218,11 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
                 : t("wizard.btnNext")}
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={!stepValid || isPending}>
+            <Button
+              data-testid="trip-wizard-create"
+              onClick={handleSubmit}
+              disabled={!stepValid || isPending}
+            >
               {isPending ? t("wizard.btnCreating") : t("wizard.btnCreate")}
             </Button>
           )}

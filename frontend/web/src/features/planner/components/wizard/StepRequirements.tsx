@@ -30,6 +30,7 @@ export function StepRequirements() {
 
       <Textarea
         id="special-requirements"
+        data-testid="trip-wizard-special-requirements"
         placeholder={`Ví dụ: "${EXAMPLES[exampleIx]}"`}
         value={data.specialRequirements}
         onChange={(e) =>

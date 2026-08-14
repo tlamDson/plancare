@@ -68,7 +68,11 @@ export function JobStatusIndicator({
   const isAnimated = status === "PROCESSING" || status === "QUEUED";
 
   return (
-    <div className={cn("space-y-2", className)}>
+    <div
+      className={cn("space-y-2", className)}
+      data-testid="job-status"
+      data-status={status}
+    >
       {/* Status Header */}
       <div className="flex items-center gap-2">
         <Icon
@@ -80,7 +84,10 @@ export function JobStatusIndicator({
 
       {/* Current Step - Section 2.2: Display intermediate steps */}
       {currentStep && status === "PROCESSING" && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div
+          className="flex items-center gap-2 text-sm text-muted-foreground"
+          data-testid="job-status-step"
+        >
           <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
           <span>{currentStep}</span>
         </div>
@@ -110,6 +117,8 @@ export function JobStatusBadge({
 
   return (
     <div
+      data-testid="job-status-badge"
+      data-status={status}
       className={cn(
         "inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium",
         status === "PROCESSING" && "bg-primary/10 text-primary",
@@ -119,7 +128,8 @@ export function JobStatusBadge({
           "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
         status === "FAILED" &&
           "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-        status === "CANCELLED" && "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+        status === "CANCELLED" &&
+          "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
         status === "IDLE" && "bg-muted text-muted-foreground",
       )}
     >
