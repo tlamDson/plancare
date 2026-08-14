@@ -38,6 +38,8 @@ services:
           name: travelplan-redis
           type: redis
           property: port
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false # Set manually in Render dashboard — required by envalid, boots crash without it
       - key: CLERK_SECRET_KEY
         sync: false # Set manually in Render dashboard
       - key: CLERK_WEBHOOK_SIGNING_SECRET

@@ -3,12 +3,23 @@ import Stripe from "stripe";
 import { env } from "../../../config/env";
 import { userRepository } from "../../user/repositories/user.repository";
 import { logger } from "../../../lib/logger";
-import { stripe } from "../services/stripe.service";
+import { getStripe } from "../services/stripe.service";
 
 export const handleStripeWebhook = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  let stripe: Stripe;
+  try {
+    stripe = getStripe();
+  } catch (err: any) {
+    if (err?.message === "STRIPE_NOT_CONFIGURED") {
+      res.status(503).json({ message: "Billing is not configured" });
+      return;
+    }
+    throw err;
+  }
+
   const sig = req.headers["stripe-signature"];
 
   if (!sig) {

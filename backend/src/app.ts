@@ -7,6 +7,7 @@ import { clerkMiddleware } from "@clerk/express";
 import { logger } from "./lib/logger";
 import { corsOptions } from "./config/cors";
 import { generalLimiter } from "./middlewares/rate-limiter";
+import { env } from "./config/env";
 
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
@@ -63,8 +64,15 @@ export function createApp(): Express {
     stripeWebhookRoutes, // Billing (stripe) hooks inside here use /stripe
   );
 
-  // 3. Clerk middleware - After webhooks
-  app.use(clerkMiddleware());
+  // 3. Clerk middleware - After webhooks. Passed explicitly (rather than
+  // relying on @clerk/express reading process.env itself) so a missing key
+  // is caught by envalid's fail-fast at boot, not at the first request.
+  app.use(
+    clerkMiddleware({
+      publishableKey: env.CLERK_PUBLISHABLE_KEY,
+      secretKey: env.CLERK_SECRET_KEY,
+    }),
+  );
 
   // 3.5 General rate limiter — after Clerk (so req.auth is populated) and
   // before body parsers, covering every route below except /api/webhooks

@@ -26,6 +26,12 @@ export default defineConfig({
       // *import* time — an empty key throws immediately, so any test that
       // transitively imports app.ts/billing routes needs this set.
       STRIPE_SECRET_KEY: "sk_test_dummy_key_for_tests",
+      // Required by envalid (config/env.ts) — clerkMiddleware() is now
+      // passed this explicitly in app.ts rather than reading process.env
+      // itself, so importing app.ts without it fails at cleanEnv, not at
+      // the first request.
+      CLERK_PUBLISHABLE_KEY:
+        "pk_test_" + Buffer.from("clerk.example.com$").toString("base64"),
     },
     coverage: {
       provider: "v8",
