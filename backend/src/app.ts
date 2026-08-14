@@ -7,7 +7,7 @@ import { clerkMiddleware } from "@clerk/express";
 import { logger } from "./lib/logger";
 import { corsOptions } from "./config/cors";
 import { generalLimiter } from "./middlewares/rate-limiter";
-import { env } from "./config/env";
+import { env, appEnv } from "./config/env";
 
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
@@ -105,7 +105,7 @@ export function createApp(): Express {
 
   //7. Health checks
   app.get("/health", (req: Request, res: Response) => {
-    res.json({ status: "ok", timestamp: new Date() });
+    res.json({ status: "ok", env: appEnv, timestamp: new Date() });
   });
 
   // Ready check (verifies DB + Redis connectivity)
@@ -122,6 +122,7 @@ export function createApp(): Express {
       if (mongoStatus !== "connected") {
         return res.status(503).json({
           status: "not_ready",
+          env: appEnv,
           mongodb: mongoStatus,
           redis: "connected",
           timestamp: new Date(),
@@ -130,6 +131,7 @@ export function createApp(): Express {
 
       res.json({
         status: "ready",
+        env: appEnv,
         mongodb: mongoStatus,
         redis: "connected",
         timestamp: new Date(),
@@ -138,6 +140,7 @@ export function createApp(): Express {
       logger.error({ err: error }, "Readiness check failed (Mongo or Redis)");
       res.status(503).json({
         status: "not_ready",
+        env: appEnv,
         error: "Service dependencies unavailable",
         timestamp: new Date(),
         ...(process.env.NODE_ENV !== "production" && error instanceof Error
