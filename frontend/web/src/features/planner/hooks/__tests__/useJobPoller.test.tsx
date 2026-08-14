@@ -122,12 +122,17 @@ describe("useJobPoller — polling to a terminal state", () => {
   });
 });
 
-describe("useJobPoller — [BUG #3] DELAYED/WAITING are not valid jobStatusSchema values", () => {
-  it("errors out (via Zod) instead of showing the intended retry message when the server sends DELAYED", async () => {
-    // useJobPoller's rawStatus === "DELAYED" branch (dead code): the fetcher
-    // validates the response against jobStatusSchema first, which does not
-    // include "DELAYED" — so the request throws before that branch can ever
-    // run. This documents the CURRENT (broken) behavior.
+describe("useJobPoller — DELAYED/WAITING are not valid jobStatusSchema values", () => {
+  it("errors out (via Zod) rather than reaching any DELAYED-specific handling", async () => {
+    // jobStatusSchema doesn't include "DELAYED" (the backend always
+    // collapses BullMQ's delayed/waiting states to "QUEUED" before
+    // serializing — see trip-status.service.ts's JOB_STATE_TO_STATUS), so
+    // fetchJobStatus's Zod validation throws before any such response could
+    // ever reach the hook's return value. useJobPoller previously had a
+    // dead `rawStatus === "DELAYED"` normalization branch for this that
+    // could never run; it's been removed rather than kept as unreachable
+    // code. This test documents the actual (reachable) behavior if the
+    // server were ever to regress and send "DELAYED" over the wire.
     server.use(
       http.get("*/jobs/:jobId", () =>
         HttpResponse.json({

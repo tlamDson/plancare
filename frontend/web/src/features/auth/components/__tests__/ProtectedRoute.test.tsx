@@ -31,7 +31,12 @@ describe("ProtectedRoute", () => {
     vi.mocked(useAuth).mockReturnValue({
       isLoaded: false,
       isSignedIn: false,
-    } as ReturnType<typeof useAuth>);
+      // Clerk's real UseAuthReturn is a discriminated union keyed on
+      // isLoaded — when false, every other field (userId, sessionId,
+      // signOut, getToken, ...) is typed as `undefined` too. This partial
+      // mock only needs isLoaded/isSignedIn for the component under test,
+      // so cast through unknown rather than fleshing out every field.
+    } as unknown as ReturnType<typeof useAuth>);
     renderProtected();
     expect(screen.getByText("Loading...")).toBeInTheDocument();
     expect(screen.queryByText("Dashboard Content")).not.toBeInTheDocument();

@@ -179,18 +179,17 @@ export function useJobPoller({
     };
   }
 
-  // Normalise DELAYED → PROCESSING for UI (user sees "working" not "delayed")
+  // BullMQ's "delayed"/"waiting" states are already collapsed to "QUEUED"
+  // server-side (trip-status.service.ts's JOB_STATE_TO_STATUS) before the
+  // response is serialized, and jobStatusSchema doesn't include "DELAYED"/
+  // "WAITING" — the wire format never carries them, so there is nothing to
+  // normalise here.
   const rawStatus = job?.status || (isLoading ? "QUEUED" : "IDLE");
-  const displayStatus: JobStatus =
-    rawStatus === "DELAYED" || rawStatus === "WAITING" ? "PROCESSING" : rawStatus as JobStatus;
 
   return {
-    status: displayStatus,
+    status: rawStatus,
     progress: job?.progress || 0,
-    currentStep:
-      rawStatus === "DELAYED"
-        ? "AI timed out — retrying automatically..."
-        : job?.currentStep || null,
+    currentStep: job?.currentStep || null,
     result: job?.result || null,
     error: job?.error || null,
     isPolling: !isComplete && !!jobId,
