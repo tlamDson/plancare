@@ -73,14 +73,19 @@ describe("POST /api/dev/toggle-pro", () => {
 });
 
 describe("POST /api/dev/scrape-insights", () => {
-  it("[BUG] runs with NO authentication at all — DoS vector on a public repo", async () => {
-    // This route fans out one BullMQ job per stale city with zero auth
-    // middleware, mounted unconditionally in app.ts. Any anonymous caller
-    // can trigger it repeatedly. Documented as a known vulnerability in
-    // .claude/rules/tech-defaults.md — fix belongs in its own PR, not here.
+  it("requires authentication", async () => {
     const res = await request(app).post("/api/dev/scrape-insights");
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(typeof res.body.jobsAdded).toBe("number");
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 403 outside local development even once authenticated", async () => {
+    // requireUserAuth runs before triggerInsightScraping, so an authenticated
+    // request is the only way to reach the controller's own
+    // `env.NODE_ENV !== "development"` guard — which trips in the "test" env
+    // this suite runs under. Mirrors POST /api/dev/toggle-pro above.
+    const res = await request(app)
+      .post("/api/dev/scrape-insights")
+      .set(asUser("user-1"));
+    expect(res.status).toBe(403);
   });
 });
