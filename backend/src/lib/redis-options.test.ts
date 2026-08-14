@@ -133,6 +133,20 @@ describe("buildRedisConnectionOptions - TLS resolution", () => {
   });
 });
 
+describe("buildRedisConnectionOptions - [BUG] REDIS_URL db-index is dropped", () => {
+  // Discovered while planning Redis isolation for the E2E test environment:
+  // the function reads hostname/port/username/password off the parsed URL
+  // but never `u.pathname`, so a REDIS_URL with a db-index segment silently
+  // connects to db 0 instead. This blocks the cheapest way to isolate a
+  // second logical Redis (e.g. E2E) on a shared instance via `redis://host:6379/1`.
+  // This test documents the CURRENT (buggy) behavior; flip the assertion to
+  // `toBe(1)` once buildRedisConnectionOptions reads the db-index.
+  it("[BUG] ignores the db-index segment of REDIS_URL", () => {
+    const opts = withEnv({ REDIS_URL: "redis://h.example.com:6379/1" });
+    expect(opts.db).toBeUndefined();
+  });
+});
+
 describe("buildRedisConnectionOptions - transport defaults", () => {
   it("pins IPv4 and a 15s connect timeout", () => {
     const opts = withEnv({});

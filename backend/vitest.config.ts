@@ -16,7 +16,11 @@ export default defineConfig({
       MONGO_URI:
         "mongodb://test_user:test_password@localhost:27017/test_db?authSource=admin",
       CLERK_SECRET_KEY: "sk_test_dummy_key_for_tests",
-      CLERK_WEBHOOK_SIGNING_SECRET: "whsec_dummy_secret",
+      // Must be valid base64 after the "whsec_" prefix — svix's Webhook
+      // constructor throws "Base64Coder: incorrect characters for decoding"
+      // otherwise (verified while adding webhooks-clerk.integration.test.ts).
+      CLERK_WEBHOOK_SIGNING_SECRET:
+        "whsec_aW50ZWdyYXRpb24tdGVzdC1jbGVyay13ZWJob29rLXNlY3JldC0zMg==",
       GEMINI_API_KEY: "sk-dummy-key-for-tests",
       // billing/stripe.service.ts does `new Stripe(env.STRIPE_SECRET_KEY)` at
       // *import* time — an empty key throws immediately, so any test that

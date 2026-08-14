@@ -11,7 +11,16 @@ process.env.REDIS_HOST ??= "localhost";
 process.env.REDIS_PORT ??= "6379";
 process.env.REDIS_PASSWORD ??= "dev_redis_password";
 process.env.CLERK_SECRET_KEY ??= "sk_test_dummy_key_for_tests";
-process.env.CLERK_WEBHOOK_SIGNING_SECRET ??= "whsec_dummy_secret";
+// [BUG, found while adding webhooks-clerk.integration.test.ts] the old
+// default "whsec_dummy_secret" is not valid base64 (underscore isn't in the
+// base64 alphabet) — `new Webhook(secret)` from svix throws
+// "Base64Coder: incorrect characters for decoding" at construction time, so
+// authService.handleWebhooks() would 500 on every real Clerk webhook if this
+// value were ever used outside tests. Also hardcoded in ci-pr.yml — kept in
+// sync there.
+process.env.CLERK_WEBHOOK_SIGNING_SECRET ??=
+  "whsec_" +
+  Buffer.from("integration-test-clerk-webhook-secret-32").toString("base64");
 // @clerk/express's clerkMiddleware() (mounted globally in app.ts, ahead of
 // every route — including fully public ones like /health) reads
 // CLERK_PUBLISHABLE_KEY straight from process.env on every request and
@@ -28,6 +37,18 @@ process.env.GEMINI_API_KEY ??= "sk-dummy-key-for-tests";
 // This is itself a real finding: any deployment missing STRIPE_SECRET_KEY
 // would crash at server boot, not just when a billing endpoint is hit.
 process.env.STRIPE_SECRET_KEY ??= "sk_test_dummy_key_for_tests";
+// Needed to sign+verify test Stripe webhook payloads with
+// `stripe.webhooks.generateTestHeaderString()` / `constructEvent()`.
+process.env.STRIPE_WEBHOOK_SECRET ??= "whsec_test_" + "x".repeat(24);
+
+// config/env.ts runs `dotenv.config()` with CWD=backend/, which loads
+// backend/.env *before* this setup file runs — so on a machine whose
+// backend/.env has a real GOOGLE_PLACES_API_KEY/MAPBOX_ACCESS_TOKEN (normal
+// for local dev), `??=` below would never fire and any test that reaches
+// validateIntent()/places.service.ts would bill Google Places for real.
+// These two are therefore forced unconditionally, not defaulted.
+process.env.GOOGLE_PLACES_API_KEY = "";
+process.env.MAPBOX_ACCESS_TOKEN = "";
 
 beforeAll(async () => {
   await mongoose.connect(process.env.MONGO_URI!);
