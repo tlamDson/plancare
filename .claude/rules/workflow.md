@@ -93,7 +93,7 @@ Mẫu đang dùng: job `changes` (`dorny/paths-filter`) xuất `outputs.backend`
 
 ## TDD (Red → Green → Refactor) — bắt buộc cho mọi feature/fix
 
-1. **RED** — viết test fail trước, chưa viết implementation. Backend: `backend/src/features/<domain>/**/<name>.test.ts` (theo đúng vị trí 3 test hiện có trong `features/destinations/services/`). Frontend: `frontend/web/src/features/<domain>/__tests__/<Component>.test.tsx`. Xác nhận thấy đỏ thật (assertion fail hoặc import error đúng nghĩa, **không phải lỗi cấu hình**) trước khi tiếp tục.
+1. **RED** — viết test fail trước, chưa viết implementation. Backend unit: `backend/src/features/<domain>/**/<name>.test.ts`. Backend integration: `backend/src/test/integration/<name>.integration.test.ts` (chỉ khi cần verify qua HTTP thật với Mongo/Redis thật — xem `.claude/rules/tech-defaults.md` mục "Hạ tầng test"). Frontend: `frontend/web/src/features/<domain>/__tests__/<Component>.test.tsx` (hoặc `hooks/__tests__/`, `stores/__tests__/` tuỳ vị trí file gốc). Xác nhận thấy đỏ thật (assertion fail hoặc import error đúng nghĩa, **không phải lỗi cấu hình**) trước khi tiếp tục.
 2. **GREEN** — code tối thiểu để pass, không thêm logic chưa có test bao phủ.
 3. **REFACTOR** — cải thiện code, chạy lại toàn bộ test, không được break.
 
@@ -101,22 +101,30 @@ Mẫu đang dùng: job `changes` (`dorny/paths-filter`) xuất `outputs.backend`
 # Toàn repo
 npm run test
 
-# Backend
+# Backend unit
 npm run test -w backend
 npm run test -w backend -- --watch
 
+# Backend integration (cần docker compose up -d mongodb redis trước)
+npm run test:integration -w backend
+
 # Frontend
 npm run test -w frontend/web
+
+# E2E (dở dang — xem tech-defaults.md, cần .env.e2e hoặc GH secrets)
+npm run e2e
 ```
 
-Backend mock **repository layer** bằng `vi.mock()` — không dùng Mongo thật trong unit test. Mock `bullmq` và chạy processor đồng bộ. **Không bao giờ** gọi API AI/Mapbox/Google Places thật trong unit test — dùng golden fixture ở `backend/src/test/fixtures/` (`valid-trip.json`, `malformed-trip.json`, `empty-results.json`).
+Backend **unit** mock repository layer bằng `vi.mock()` — không dùng Mongo thật. Mock `bullmq` và chạy processor đồng bộ. **Không bao giờ** gọi API AI/Mapbox/Google Places thật trong unit test — dùng golden fixture ở `backend/src/test/fixtures/` (`valid-trip.json`, `malformed-trip.json`, `empty-results.json`). Backend **integration** thì ngược lại — dùng Mongo/Redis/BullMQ **thật** qua `supertest` + `createApp()` (`backend/src/app.ts`), chỉ mock `@clerk/express` (xem pattern trong `trips.integration.test.ts`) vì không có session Clerk thật.
 
-Frontend mock API bằng MSW (`http`/`HttpResponse` từ `msw`), không mock module trực tiếp nếu MSW đủ dùng. Component gọi API phải render trong `AppProviders` (QueryClient + Clerk + Router) — dùng helper `frontend/web/src/test/renderWithProviders.tsx` thay cho `render()` trần.
+Frontend mock API bằng MSW (`http`/`HttpResponse` từ `msw`), không mock module trực tiếp nếu MSW đủ dùng. Component gọi API phải render trong `AppProviders` (QueryClient + Clerk + Router) — dùng helper `frontend/web/src/test/renderWithProviders.tsx` (component) hoặc `renderHookWithQuery.tsx` (hook) thay cho `render()`/`renderHook()` trần.
 
 Quy ước bổ sung rút ra khi dựng hạ tầng test:
 
-- Test timer (polling job status, exponential backoff): `vi.useFakeTimers()` + `await vi.advanceTimersByTimeAsync(ms)`; nhớ `vi.useRealTimers()` trong `afterEach`.
-- Backend integration test dùng `mongo:7.0` + `redis:7-alpine` mà CI đã dựng sẵn trong `ci-pr.yml` services — không cần mock ở tầng này.
+- Test timer (polling job status, exponential backoff): `vi.useFakeTimers()` + `await vi.advanceTimersByTimeAsync(ms)`; nhớ `vi.useRealTimers()` trong `afterEach`. Khi test cần cả fake timer lẫn `userEvent` (click/type), dùng `userEvent.setup({ advanceTimers: vi.advanceTimersByTime })` — trộn `waitFor()` với fake timer dễ deadlock vì `waitFor` cũng poll bằng `setTimeout`.
+- Zustand store không có `reset()` riêng thì snapshot state ban đầu (`const INITIAL = useXStore.getState()`) rồi `useXStore.setState(INITIAL, true)` trong `beforeEach` — tránh rò rỉ state giữa test.
+- Test đụng Radix Popover/Select/cmdk cần polyfill `ResizeObserver`/`scrollIntoView` — đã có sẵn trong `frontend/web/src/test/setup.ts`, không cần thêm lại.
+- Bug tìm thấy khi viết test mà không thuộc phạm vi task hiện tại → viết test khẳng định hành vi **hiện tại** (dù là bug) kèm comment `[BUG]` giải thích, không tự sửa ngoài phạm vi được giao. Ghi lại vào `.claude/rules/tech-defaults.md` mục "Nợ kỹ thuật đã xác minh".
 
 Coverage >= 80% cho file mới. Test độc lập (reset state trong `beforeEach`/`afterEach`), assertion cụ thể theo hành vi. Không skip test bằng `test.skip` mà không giải thích lý do. Không commit code mới thiếu test.
 

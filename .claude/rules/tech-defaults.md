@@ -43,6 +43,9 @@ npm run build                # tất cả workspace (--if-present)
 npm run typecheck
 npm run lint
 npm run test
+npm run test:integration -w backend  # cần `docker compose up -d mongodb redis` trước — xem mục "Hạ tầng test"
+npm run e2e                  # Playwright — hiện chỉ có config, chưa có spec (xem mục "Hạ tầng test")
+npm run e2e -- --ui
 npm run check:services       # ping Mongo/Redis/Clerk/Gemini/Places/Mapbox/… in bảng OK/FAIL/SKIP
 npm run check:services -- --strict   # exit 1 nếu có FAIL (dùng cho CI)
 ```
@@ -50,6 +53,18 @@ npm run check:services -- --strict   # exit 1 nếu có FAIL (dùng cho CI)
 `check:services` (`backend/scripts/check-services.ts`) **cố ý không import `src/config/env.ts`** — envalid fail-fast sẽ giết process khi thiếu key, mà script này phải _báo cáo_ tình trạng thiếu key chứ không chết theo. Nó đọc `backend/.env` rồi `.env` ở root (shell env thắng cả hai) và in ra biến nào đến từ file nào. Logic thật nằm ở `backend/src/lib/service-checks/` để test được; `scripts/` chỉ là runner mỏng.
 
 `docker-compose.yml`: services `mongodb`, `redis`, `api`, `worker`, network `travelplan-network` — dùng khi cần môi trường gần giống production ở local.
+
+## Hạ tầng test
+
+4 lớp test, 3 lớp đầu đã merge vào `develop` (PR #6 shared+backend unit, #8 frontend unit/component, #9 backend integration):
+
+- **`packages/shared`** — `vitest.config.ts` riêng (trước đây **không có** script `test`/`typecheck`/`lint`, giờ đã có). Test schema Zod tại `src/schemas/__tests__/`.
+- **Backend unit** (`backend/vitest.config.ts`) — `include: ["src/**/*.test.ts"]`, **loại trừ** `*.integration.test.ts` (tách khỏi bằng `exclude`, nếu không sẽ bị unit run bắt nhầm và crash vì thiếu Mongo/Redis thật). `test.env` set sẵn 5 biến envalid bắt buộc (`MONGO_URI`, `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`, `GEMINI_API_KEY`, `STRIPE_SECRET_KEY`) để hermetic — không phụ thuộc `.env` local hay CI. Mock repository/`lib/queue`/`@clerk/express` bằng `vi.mock()`.
+- **Backend integration** (`backend/vitest.integration.config.ts`, chạy qua `npm run test:integration -w backend`) — Mongo + Redis **thật**, không mock. Setup file `backend/src/test/integration-setup.ts`: set fallback env bằng `??=` (ưu tiên giá trị CI/thật nếu đã set), connect Mongo trong `beforeAll`, xoá sạch collection trong `afterEach`, disconnect + obliterate BullMQ queue `trip-generation` trong `afterAll` (tránh rác tích luỹ trong Redis dev dùng chung). Local cần `docker compose up -d mongodb redis` trước — dùng credentials của `docker-compose.yml` (`travelplan_admin`/`dev_password_change_in_prod`, db riêng `travelplan_test` để không đụng `travelplan_db`). Test file ở `backend/src/test/integration/*.integration.test.ts`, dùng `supertest` + `createApp()` từ `backend/src/app.ts` (xem mục dưới). Auth giả lập bằng `vi.mock("@clerk/express")` đọc header test `x-test-user-id` — xem `trips.integration.test.ts`/`jobs.integration.test.ts` để copy pattern.
+- **Frontend unit/component** (`frontend/web/vitest.config.ts`, không đổi) — helper `src/test/renderWithProviders.tsx` (component) + `src/test/renderHookWithQuery.tsx` (hook, mới thêm — **không** đặt `gcTime: 0` như `renderWithProviders` vì nhiều hook đọc/ghi cache qua `setQueryData`/`getQueryData` mà không có `useQuery` subscriber, `gcTime: 0` sẽ garbage-collect ngay). Factory fixture ở `src/test/factories/` (`trip.ts`: `makeTrip`, `makeActivity`). `src/test/setup.ts` có polyfill `ResizeObserver`/`IntersectionObserver`/`matchMedia`/`Element.prototype.scrollIntoView` — bắt buộc cho test đụng Radix Popover/Select hoặc cmdk (Command palette, dùng trong destination picker).
+- **E2E Playwright** (`e2e/`) — **dở dang**, mới có `e2e/playwright.config.ts` (webServer chạy song song `dev:api`+`dev:web`, project Chromium) trên nhánh `test/e2e-playwright`, chưa mở PR. Còn thiếu: `global-setup.ts` (gọi `clerkSetup()` từ `@clerk/testing`), storage-state fixture cho user đã login, và toàn bộ spec. Credentials Clerk **test instance** (không phải production): local đọc từ `.env.e2e` ở root (đã gitignore theo pattern `.env.*`), CI đọc GitHub Actions secrets `CLERK_PUBLISHABLE_KEY_E2E`/`CLERK_SECRET_KEY_E2E`/`E2E_USER_EMAIL`/`E2E_USER_PASSWORD` (đã set sẵn trên repo). Không bao giờ dùng key `pk_live_`/`sk_live_` cho việc này.
+
+**`backend/src/app.ts` tách khỏi `index.ts`**: `createApp()` dựng toàn bộ Express app (middleware + routes + error handler) mà **không** gọi `startServer()`/connect Mongo/bind port — cho phép `supertest` dùng thẳng. `index.ts` giờ chỉ còn bootstrap (`dotenv.config()` → `createApp()` → `connectDB()` → `app.listen()`).
 
 ## Bản đồ API (`backend/src/index.ts`)
 
@@ -98,8 +113,17 @@ Thứ tự 6 bước **không được đổi, không được bỏ**: `flattenI
 - 119 chỗ `any` rải rác 33 file backend, phần lớn ở `catch (error: any)`.
 - `generalLimiter` (rate limiter) định nghĩa trong `backend/src/middlewares/rate-limiter.ts` nhưng **không gắn vào route nào** — chỉ `tripCreationLimiter` thật sự hoạt động trên `/api/trips`.
 - `POST /api/dev/scrape-insights` **không có middleware auth**, mount vô điều kiện trong `index.ts` — trên repo public đây là lỗ hổng thật, nên xử lý bằng PR riêng.
-- `frontend/web` không có test nào, không có script `test`/`typecheck` (đã bổ sung hạ tầng — xem `.claude/rules/workflow.md` mục TDD). Backend chỉ có 3 file test, đều trong `features/destinations/services/`.
 - 19 component shadcn trong `frontend/web/src/components/ui/` (accordion, breadcrumb, carousel, chart, table, tabs, sheet, sidebar, menubar, drawer, pagination, scroll-area, collapsible, context-menu, hover-card, input-otp, navigation-menu, aspect-ratio, resizeable) **chưa được import ở đâu** — cố ý giữ lại (shadcn vốn copy-in on demand), nhưng đừng `npx shadcn add` thêm component mới nếu chưa dùng ngay.
+
+### Bug phát hiện khi dựng hạ tầng test (PR #6/#8/#9 — chưa sửa, đi PR riêng nếu được giao)
+
+- **`budget-validator.service.ts`'s `convertToUSD` nhân với tỷ giá thay vì chia** — ngân sách JPY (và các currency khác quy đổi từ base thấp) bị quy đổi sai chiều, dễ bị từ chối oan dù số tiền thực tế đủ.
+- **`intent-parser.service.ts`'s `extractJson()` hỏng với JSON array trần không bọc code fence**: nhánh fallback chỉ cắt theo `{`…`}` (giả định object), nên response AI dạng array không có ` ```json ` sẽ bị cắt sai và parse fail — dù `coerceRoot()` rõ ràng có nhánh xử lý array.
+- **`flattenIntents`/`buildTaggedPlaces` sort ngày kiểu string** (`Object.keys(intents).sort()`) — `"day10" < "day2"` theo thứ tự chữ cái, trip từ 10 ngày trở lên bị đảo lộn thứ tự ngày.
+- **`useJobPoller`'s nhánh normalize `DELAYED`/`WAITING` → `PROCESSING` không bao giờ chạy được**: `jobStatusSchema` không có 2 giá trị này, nên `validateAPI` throw trước khi tới nhánh đó — response server gửi `DELAYED` sẽ khiến poll hiển thị `IDLE` thay vì thông báo "đang thử lại".
+- **`billing/stripe.service.ts` gọi `new Stripe(env.STRIPE_SECRET_KEY)` lúc _import_, không lazy** — key rỗng làm throw ngay lập tức. `STRIPE_SECRET_KEY` không được `envalid` khai bắt buộc (default `""`), nên **thiếu biến này khiến cả server crash lúc boot**, không chỉ khi gọi route billing.
+- **`clerkMiddleware()` (mount toàn cục, trước mọi route kể cả route public như `/health`) đọc `CLERK_PUBLISHABLE_KEY` trực tiếp từ `process.env` mỗi request** — thiếu biến này throw "Publishable key is missing" ngay cả trên route không cần auth. `config/env.ts` không khai biến này. Test integration từng pass "tình cờ" ở local vì `backend/.env` có sẵn key thật; CI fail vì không set — đã fix bằng cách set dummy `pk_test_...` hợp lệ format trong `backend/src/test/integration-setup.ts`.
+- **`job.controller.ts`'s `getJobStatus` catch `FORBIDDEN_JOB_ACCESS` bằng `return;` trắng, không gọi `res.status()`/`res.json()`** — request của user không sở hữu job sẽ **treo vô thời hạn** thay vì trả 403.
 
 ## Deploy & vận hành
 
