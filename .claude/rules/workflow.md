@@ -89,6 +89,8 @@ Tên ba job trong `.github/workflows/ci-pr.yml` **chính là** định danh requ
 
 Mẫu đang dùng: job `changes` (`dorny/paths-filter`) xuất `outputs.backend`; job `docker` đặt `env.SHOULD_BUILD` rồi gắn `if: env.SHOULD_BUILD == 'true'` lên từng step build, kèm một step `echo` cho nhánh còn lại. PR target `main` (release) luôn build thật, không tin vào filter.
 
+Job phụ không-bắt-buộc (`security`, `e2e`) đứng ngoài ba job trên, được phép đỏ mà không chặn merge — nhưng **đừng tự ý thêm chúng vào branch protection required checks**, kể cả khi thấy chúng đã ổn định lâu.
+
 > `gh` có thể chưa được auth trên máy khác. Khi đó dùng GitHub MCP server, hoặc gọi thẳng REST API bằng token.
 
 ## TDD (Red → Green → Refactor) — bắt buộc cho mọi feature/fix
@@ -111,8 +113,9 @@ npm run test:integration -w backend
 # Frontend
 npm run test -w frontend/web
 
-# E2E (dở dang — xem tech-defaults.md, cần .env.e2e hoặc GH secrets)
+# E2E (4 spec CI-safe — cần .env.e2e local hoặc GH secrets trên CI, xem tech-defaults.md)
 npm run e2e
+npm run e2e -- --ui
 ```
 
 Backend **unit** mock repository layer bằng `vi.mock()` — không dùng Mongo thật. Mock `bullmq` và chạy processor đồng bộ. **Không bao giờ** gọi API AI/Mapbox/Google Places thật trong unit test — dùng golden fixture ở `backend/src/test/fixtures/` (`valid-trip.json`, `malformed-trip.json`, `empty-results.json`). Backend **integration** thì ngược lại — dùng Mongo/Redis/BullMQ **thật** qua `supertest` + `createApp()` (`backend/src/app.ts`), chỉ mock `@clerk/express` (xem pattern trong `trips.integration.test.ts`) vì không có session Clerk thật.
