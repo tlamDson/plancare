@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { intentParserService, SLOT_ORDER } from "./intent-parser.service";
+import {
+  intentParserService,
+  SLOT_ORDER,
+  sortedDayKeys,
+} from "./intent-parser.service";
 
 describe("intentParserService.parseIntents — JSON extraction", () => {
   it("parses a plain JSON response", () => {
@@ -159,17 +163,32 @@ describe("intentParserService.flattenIntents", () => {
     expect(flat).toEqual(SLOT_ORDER.map((s) => `${s} place`));
   });
 
-  // Plan bug #1: Object.keys(intents).sort() is a lexicographic string sort,
-  // so "day10" < "day2" as strings — trips of 10+ days get their day order
-  // scrambled. This test documents the CURRENT (buggy) behavior; it should
-  // be flipped to assert numeric day order once fixed.
-  it("[BUG #1] currently sorts day10 before day2 (lexicographic, not numeric)", () => {
+  it("sorts day keys numerically, not lexicographically (day2 before day10)", () => {
+    // Object.keys(intents).sort() alone is a lexicographic string sort, so
+    // "day10" < "day2" as strings — this used to scramble trips of 10+
+    // days. flattenIntents must use sortedDayKeys() instead.
     const intents = {
-      day2: { morning: "Day 2 place" },
       day10: { morning: "Day 10 place" },
+      day2: { morning: "Day 2 place" },
     };
     const flat = intentParserService.flattenIntents(intents);
-    expect(flat).toEqual(["Day 10 place", "Day 2 place"]);
+    expect(flat).toEqual(["Day 2 place", "Day 10 place"]);
+  });
+});
+
+describe("sortedDayKeys", () => {
+  it("sorts numerically across the day9/day10 boundary", () => {
+    const intents = {
+      day10: { morning: "x" },
+      day1: { morning: "x" },
+      day9: { morning: "x" },
+      day2: { morning: "x" },
+    };
+    expect(sortedDayKeys(intents)).toEqual(["day1", "day2", "day9", "day10"]);
+  });
+
+  it("returns an empty array for an empty intents object", () => {
+    expect(sortedDayKeys({})).toEqual([]);
   });
 });
 

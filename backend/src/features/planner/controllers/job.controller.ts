@@ -32,6 +32,7 @@ export const getJobStatus = async (
     res.json({ success: true, data: jobStatus });
   } catch (error: any) {
     if (error?.message === "FORBIDDEN_JOB_ACCESS") {
+      res.status(403).json({ message: "Forbidden" });
       return;
     }
 
