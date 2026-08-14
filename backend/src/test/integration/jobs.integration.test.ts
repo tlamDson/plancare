@@ -1,36 +1,9 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import request from "supertest";
 import { createApp } from "../../app";
-import { validTripPreferences } from "../integration-fixtures";
-
-vi.mock("@clerk/express", () => ({
-  clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) =>
-    next(),
-  requireAuth:
-    () =>
-    (
-      req: {
-        headers: Record<string, string | undefined>;
-        auth?: () => { userId: string } | null;
-      },
-      res: { status: (n: number) => { json: (b: unknown) => void } },
-      next: () => void,
-    ) => {
-      const userId = req.headers["x-test-user-id"];
-      if (!userId) {
-        res.status(401).json({ message: "Unauthorized" });
-        return;
-      }
-      req.auth = () => ({ userId });
-      next();
-    },
-}));
+import { validTripPreferences, asUser } from "../integration-fixtures";
 
 const app = createApp();
-
-function asUser(userId: string) {
-  return { "x-test-user-id": userId };
-}
 
 async function createQueuedJob(userId: string) {
   const res = await request(app)
