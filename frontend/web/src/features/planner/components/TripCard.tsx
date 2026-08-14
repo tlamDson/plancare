@@ -110,7 +110,7 @@ export function TripCard({ trip, priority = false }: TripCardProps) {
 
   return (
     <>
-      <div className="relative">
+      <div className="relative" data-testid={`trip-card-${trip._id}`}>
         <Link to={`/trips/${trip._id}`}>
           <Card className="group hover:border-primary/50 transition-all duration-300 hover:shadow-md overflow-hidden cursor-pointer">
             {/* ── Fixed-ratio image area ─────────────────────────────── */}
@@ -218,7 +218,10 @@ export function TripCard({ trip, priority = false }: TripCardProps) {
 
             {/* ── Card body ───────────────────────────────────────────── */}
             <CardContent className="p-4 space-y-2">
-              <h3 className="font-semibold text-base group-hover:text-primary transition-colors line-clamp-1">
+              <h3
+                className="font-semibold text-base group-hover:text-primary transition-colors line-clamp-1"
+                data-testid="trip-card-title"
+              >
                 {getLocalizedTripTitle(trip.title, t)}
               </h3>
 

@@ -45,6 +45,7 @@ export function StepBasics() {
         <Label htmlFor="title">{t("wizard.title")}</Label>
         <Input
           id="title"
+          data-testid="trip-wizard-title"
           placeholder={t("wizard.titlePlaceholder")}
           value={data.title}
           onChange={(e) => setData({ title: e.target.value })}
@@ -64,6 +65,7 @@ export function StepBasics() {
             onChange={(date) => setData({ startDate: date })}
             placeholder={t("wizard.pickStartDate")}
             ariaLabel="Start date"
+            testId="trip-wizard-start-date"
           />
         </div>
         <div className="space-y-2">
@@ -73,6 +75,7 @@ export function StepBasics() {
             onChange={(date) => setData({ endDate: date })}
             placeholder={t("wizard.pickEndDate")}
             ariaLabel="End date"
+            testId="trip-wizard-end-date"
             minDate={
               data.startDate
                 ? addDays(new Date(data.startDate + "T00:00:00"), 1)
@@ -109,17 +112,22 @@ export function StepBasics() {
               <Button
                 variant="outline"
                 size="icon"
+                data-testid="trip-wizard-adults-decrease"
                 onClick={() => updateTravelers("adults", -1)}
                 aria-label="Decrease adults"
               >
                 -
               </Button>
-              <span className="w-6 text-center font-medium">
+              <span
+                className="w-6 text-center font-medium"
+                data-testid="trip-wizard-adults-value"
+              >
                 {data.travelers.adults}
               </span>
               <Button
                 variant="outline"
                 size="icon"
+                data-testid="trip-wizard-adults-increase"
                 onClick={() => updateTravelers("adults", 1)}
                 aria-label="Increase adults"
               >
@@ -139,17 +147,22 @@ export function StepBasics() {
               <Button
                 variant="outline"
                 size="icon"
+                data-testid="trip-wizard-children-decrease"
                 onClick={() => updateTravelers("children", -1)}
                 aria-label="Decrease children"
               >
                 -
               </Button>
-              <span className="w-6 text-center font-medium">
+              <span
+                className="w-6 text-center font-medium"
+                data-testid="trip-wizard-children-value"
+              >
                 {data.travelers.children}
               </span>
               <Button
                 variant="outline"
                 size="icon"
+                data-testid="trip-wizard-children-increase"
                 onClick={() => updateTravelers("children", 1)}
                 aria-label="Increase children"
               >

@@ -151,7 +151,7 @@ export default function TripsPage() {
           </div>
           <CreateTripDialog
             trigger={
-              <Button>
+              <Button data-testid="trips-new-trip-button">
                 <Plus className="h-4 w-4 mr-2" />
                 {t("trips.newTrip")}
               </Button>
@@ -264,7 +264,7 @@ export default function TripsPage() {
               {!search && statusFilter === "all" && (
                 <CreateTripDialog
                   trigger={
-                    <Button>
+                    <Button data-testid="trips-empty-create-button">
                       <Plus className="h-4 w-4 mr-2" />
                       {t("trips.createFirst")}
                     </Button>

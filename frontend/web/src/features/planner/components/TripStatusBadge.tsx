@@ -61,6 +61,8 @@ export function TripStatusBadge({ status, className }: TripStatusBadgeProps) {
 
   return (
     <span
+      data-testid="trip-status-badge"
+      data-status={status}
       className={cn(
         "px-2 py-1 rounded-full text-xs font-medium",
         config.className,

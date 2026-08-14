@@ -214,27 +214,39 @@ function ActivityRow({
   };
 
   const distPrev = activity.distanceFromPrevious;
-  const showDistance =
-    !isFirst &&
-    distPrev !== undefined &&
-    distPrev > 0;
+  const showDistance = !isFirst && distPrev !== undefined && distPrev > 0;
   const showStatusBadge = activity.status !== "planned";
 
   // Detect if this is a meal based on name/notes presence of keywords
   const isMeal = (() => {
     // If it's already an accommodation or transport, it's not a meal
     if (activity.type !== "poi" && activity.type !== "custom") return false;
-    
+
     const text = `${activity.name} ${activity.notes || ""}`.toLowerCase();
-    const mealKeywords = ["breakfast", "lunch", "dinner", "restaurant", "cafe", "café", "eatery", "dining", "street food", "bakery", "brunch", "supper"];
-    return mealKeywords.some(kw => text.includes(kw));
+    const mealKeywords = [
+      "breakfast",
+      "lunch",
+      "dinner",
+      "restaurant",
+      "cafe",
+      "café",
+      "eatery",
+      "dining",
+      "street food",
+      "bakery",
+      "brunch",
+      "supper",
+    ];
+    return mealKeywords.some((kw) => text.includes(kw));
   })();
 
   // Apply vibrant dining styling inspired by ui-ux-pro-max
   const iconBg = isMeal ? "bg-red-100 dark:bg-red-950/40" : meta.bg;
   const iconColor = isMeal ? "text-red-600 dark:text-red-400" : meta.color;
   const MealIcon = isMeal ? Coffee : Icon;
-  const cardBorder = isMeal ? "border-red-200/60 hover:border-red-400 dark:border-red-900/30 dark:hover:border-red-500/50" : "border-border hover:border-primary/50";
+  const cardBorder = isMeal
+    ? "border-red-200/60 hover:border-red-400 dark:border-red-900/30 dark:hover:border-red-500/50"
+    : "border-border hover:border-primary/50";
   const cardBg = isMeal ? "bg-red-50/20 dark:bg-red-950/10" : "bg-card";
 
   return (
@@ -290,7 +302,10 @@ function ActivityRow({
             )}
             <div className="flex gap-2 items-center flex-wrap justify-end">
               {isMeal && (
-                <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 border-none text-xs capitalize h-5 gap-1 shadow-sm">
+                <Badge
+                  variant="secondary"
+                  className="bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 border-none text-xs capitalize h-5 gap-1 shadow-sm"
+                >
                   <Utensils className="h-3 w-3" />
                   {t("trip.diningTag")}
                 </Badge>
@@ -307,7 +322,9 @@ function ActivityRow({
           </div>
 
           {/* Activity name */}
-          <p className={`font-medium text-base sm:text-lg leading-snug line-clamp-2 transition-colors ${isMeal ? "group-hover:text-red-600 dark:group-hover:text-red-400" : "group-hover:text-primary"}`}>
+          <p
+            className={`font-medium text-base sm:text-lg leading-snug line-clamp-2 transition-colors ${isMeal ? "group-hover:text-red-600 dark:group-hover:text-red-400" : "group-hover:text-primary"}`}
+          >
             {activity.name}
           </p>
 
@@ -360,9 +377,7 @@ function ActivityRow({
           {activity.requiresTransport && (
             <div className="flex items-center gap-1.5 mt-2 px-2 py-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-md text-xs text-amber-700 dark:text-amber-400">
               <Car className="h-3 w-3 shrink-0" aria-hidden="true" />
-              <span>
-                {t("trip.transportWarning")}
-              </span>
+              <span>{t("trip.transportWarning")}</span>
             </div>
           )}
 
@@ -482,14 +497,22 @@ export function ItineraryDayCard({
   })();
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-md">
+    <div
+      className="rounded-xl border border-border bg-card shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-md"
+      data-testid={`itinerary-day-${dayIndex}`}
+    >
       {/* Day header */}
       <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/40">
         <div>
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Day {day.day}
           </span>
-          <p className="font-semibold text-sm text-foreground">{dateLabel}</p>
+          <p
+            className="font-semibold text-sm text-foreground"
+            data-testid="itinerary-day-title"
+          >
+            {dateLabel}
+          </p>
         </div>
         <Badge variant="secondary" className="text-xs">
           {day.activities.length}{" "}

@@ -79,7 +79,14 @@ export function SortableActivityRow({
   return (
     /* ── Outer: position:relative so the regen button can be absolutely placed
          but NO overflow:hidden here — card's overflow-hidden won't clip it.  ── */
-    <div ref={setNodeRef} style={style} className="relative flex items-start gap-1">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative flex items-start gap-1"
+      data-testid={
+        activity._id ? `itinerary-activity-${activity._id}` : undefined
+      }
+    >
       {!isDragDisabled ? (
         <button
           type="button"
@@ -142,7 +149,9 @@ export function SortableActivityRow({
             <div className="flex items-center gap-2 px-4 py-3 border-b bg-muted/40">
               <Sparkles className="h-4 w-4 text-primary shrink-0" />
               <div>
-                <p className="text-sm font-semibold leading-none">Regenerate Activity</p>
+                <p className="text-sm font-semibold leading-none">
+                  Regenerate Activity
+                </p>
                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                   Replacing: {activity.name}
                 </p>
@@ -154,7 +163,9 @@ export function SortableActivityRow({
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-foreground">
                   Requirements{" "}
-                  <span className="text-muted-foreground font-normal">(optional)</span>
+                  <span className="text-muted-foreground font-normal">
+                    (optional)
+                  </span>
                 </label>
                 <Textarea
                   placeholder="E.g. something outdoor near the lake, family-friendly, no shopping malls…"
@@ -162,7 +173,8 @@ export function SortableActivityRow({
                   value={hint}
                   onChange={(e) => setHint(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSubmit();
+                    if (e.key === "Enter" && (e.ctrlKey || e.metaKey))
+                      handleSubmit();
                   }}
                   autoFocus
                 />
@@ -175,7 +187,10 @@ export function SortableActivityRow({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => { setOpen(false); setHint(""); }}
+                  onClick={() => {
+                    setOpen(false);
+                    setHint("");
+                  }}
                   className="h-8 text-xs"
                 >
                   Cancel

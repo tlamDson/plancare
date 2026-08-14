@@ -45,6 +45,8 @@ export interface DatePickerProps {
   className?: string;
   /** aria-label for the trigger button */
   ariaLabel?: string;
+  /** data-testid for the trigger button */
+  testId?: string;
 }
 
 // ─── Helper ───────────────────────────────────────────────
@@ -65,6 +67,7 @@ export function DatePicker({
   placeholder = "Select date",
   className,
   ariaLabel,
+  testId,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
 
@@ -89,6 +92,7 @@ export function DatePicker({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
+          data-testid={testId}
           className={cn(
             "w-full justify-start text-left font-normal h-10 px-3",
             !label && "text-muted-foreground",
