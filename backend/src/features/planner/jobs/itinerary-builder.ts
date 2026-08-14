@@ -3,6 +3,7 @@ import sanitizeHtml from "sanitize-html";
 import {
   type TripIntents,
   SLOT_ORDER as INTENT_SLOT_ORDER,
+  sortedDayKeys,
 } from "../services/intent-parser.service";
 import type { ValidatedPlace } from "../services/validation.service";
 import type { TripPreferences } from "@travelplan/shared";
@@ -37,7 +38,7 @@ export function buildTaggedPlaces(
   const tagged: TaggedPlace[] = [];
   let idx = 0;
 
-  for (const dayKey of Object.keys(intents).sort()) {
+  for (const dayKey of sortedDayKeys(intents)) {
     const slots = intents[dayKey];
     if (!slots || typeof slots !== "object") continue;
 

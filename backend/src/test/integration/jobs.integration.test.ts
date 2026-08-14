@@ -35,20 +35,14 @@ describe("GET /api/jobs/:jobId", () => {
     expect(res.status).toBe(404);
   });
 
-  it("[BUG #9] hangs (no response) instead of returning 403 when a different user requests the job", async () => {
+  it("returns 403 (not a hang) when a different user requests the job", async () => {
     const { jobId } = await createQueuedJob("owner");
 
-    // job.controller.ts's getJobStatus catches FORBIDDEN_JOB_ACCESS with a
-    // bare `return;` — no res.status()/res.json() call — so the request
-    // never completes. We bound it with a short response timeout and
-    // assert it times out, documenting the current (broken) behavior
-    // rather than hanging the test suite indefinitely.
-    await expect(
-      request(app)
-        .get(`/api/jobs/${jobId}`)
-        .set(asUser("someone-else"))
-        .timeout({ response: 1500, deadline: 2000 }),
-    ).rejects.toThrow(/timeout/i);
+    const res = await request(app)
+      .get(`/api/jobs/${jobId}`)
+      .set(asUser("someone-else"))
+      .timeout({ response: 1500, deadline: 2000 });
+    expect(res.status).toBe(403);
   });
 });
 

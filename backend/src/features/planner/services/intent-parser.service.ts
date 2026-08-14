@@ -17,14 +17,31 @@ export const SLOT_ORDER = [
 export type SlotName = (typeof SLOT_ORDER)[number];
 
 /** Day slots: record of slot name → search query. Supports 2–6 slots per day. */
-const DaySlotsSchema = z.record(z.string(), z.string()).refine(
-  (obj) => Object.keys(obj).length > 0,
-  "At least one slot required",
-);
+const DaySlotsSchema = z
+  .record(z.string(), z.string())
+  .refine((obj) => Object.keys(obj).length > 0, "At least one slot required");
 
 export const TripIntentsSchema = z.record(z.string(), DaySlotsSchema);
 
 export type TripIntents = z.infer<typeof TripIntentsSchema>;
+
+/**
+ * Sorts day keys ("day1", "day2", … "day10", …) numerically instead of
+ * lexicographically. Object.keys(intents).sort() alone is a plain string
+ * sort, so "day10" < "day2" as strings — this scrambled the day order for
+ * any trip of 10+ days. Keys are always normalizeDayKey()'s unpadded
+ * `day${n}` form, so extracting the numeric suffix is safe.
+ *
+ * Shared by flattenIntents() and itinerary-builder's buildTaggedPlaces(),
+ * which MUST iterate in the exact same order — buildTaggedPlaces indexes
+ * validated[idx] assuming 1:1 alignment with flattenIntents' output, so
+ * fixing one without the other would desync places from the wrong day.
+ */
+export function sortedDayKeys(intents: TripIntents): string[] {
+  return Object.keys(intents).sort(
+    (a, b) => Number(a.slice(3)) - Number(b.slice(3)),
+  );
+}
 
 export class IntentParserService {
   private extractJson(aiResponse: string): string {
@@ -91,7 +108,8 @@ export class IntentParserService {
 
     if (["breakfast", "brunch"].includes(normalized)) return "breakfast";
 
-    if (["morning", "am", "a.m.", "morn"].includes(normalized)) return "morning";
+    if (["morning", "am", "a.m.", "morn"].includes(normalized))
+      return "morning";
     if (["late morning", "mid morning"].includes(normalized))
       return "late morning";
 
@@ -140,7 +158,9 @@ export class IntentParserService {
     return slots;
   }
 
-  private normalizeIntents(raw: unknown): Record<string, Record<string, string>> {
+  private normalizeIntents(
+    raw: unknown,
+  ): Record<string, Record<string, string>> {
     const root = this.coerceRoot(raw);
     const normalized: Record<string, Record<string, string>> = {};
 
@@ -204,7 +224,7 @@ export class IntentParserService {
   flattenIntents(intents: TripIntents): string[] {
     const all: string[] = [];
 
-    for (const day of Object.keys(intents).sort()) {
+    for (const day of sortedDayKeys(intents)) {
       const slots = intents[day];
       if (!slots) continue;
       for (const slotName of SLOT_ORDER) {

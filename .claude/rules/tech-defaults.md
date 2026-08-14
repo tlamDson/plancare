@@ -132,11 +132,9 @@ Thứ tự 6 bước **không được đổi, không được bỏ**: `flattenI
 
 - **`budget-validator.service.ts`'s `convertToUSD` nhân với tỷ giá thay vì chia** — ngân sách JPY (và các currency khác quy đổi từ base thấp) bị quy đổi sai chiều, dễ bị từ chối oan dù số tiền thực tế đủ.
 - **`intent-parser.service.ts`'s `extractJson()` hỏng với JSON array trần không bọc code fence**: nhánh fallback chỉ cắt theo `{`…`}` (giả định object), nên response AI dạng array không có ` ```json ` sẽ bị cắt sai và parse fail — dù `coerceRoot()` rõ ràng có nhánh xử lý array.
-- **`flattenIntents`/`buildTaggedPlaces` sort ngày kiểu string** (`Object.keys(intents).sort()`) — `"day10" < "day2"` theo thứ tự chữ cái, trip từ 10 ngày trở lên bị đảo lộn thứ tự ngày.
 - **`useJobPoller`'s nhánh normalize `DELAYED`/`WAITING` → `PROCESSING` không bao giờ chạy được**: `jobStatusSchema` không có 2 giá trị này, nên `validateAPI` throw trước khi tới nhánh đó — response server gửi `DELAYED` sẽ khiến poll hiển thị `IDLE` thay vì thông báo "đang thử lại".
-- **`job.controller.ts`'s `getJobStatus` catch `FORBIDDEN_JOB_ACCESS` bằng `return;` trắng, không gọi `res.status()`/`res.json()`** — request của user không sở hữu job sẽ **treo vô thời hạn** thay vì trả 403.
 
-(Đã fix: `billing/stripe.service.ts` giờ lazy-init qua `getStripe()`, throw `STRIPE_NOT_CONFIGURED` khi thiếu key thay vì crash lúc import; `CLERK_PUBLISHABLE_KEY` giờ được `envalid` khai bắt buộc trong `config/env.ts` và truyền tường minh vào `clerkMiddleware({ publishableKey, secretKey })` ở `app.ts` — xem PR `fix/boot-env-resilience`.)
+(Đã fix: `billing/stripe.service.ts` giờ lazy-init qua `getStripe()`, throw `STRIPE_NOT_CONFIGURED` khi thiếu key thay vì crash lúc import; `CLERK_PUBLISHABLE_KEY` giờ được `envalid` khai bắt buộc trong `config/env.ts` và truyền tường minh vào `clerkMiddleware({ publishableKey, secretKey })` ở `app.ts` — xem PR `fix/boot-env-resilience`. `flattenIntents`/`buildTaggedPlaces` giờ sort ngày qua `sortedDayKeys()` (numeric, không lexicographic); `job.controller.ts`'s `getJobStatus` giờ trả 403 thay vì treo — xem PR `fix/day-order-and-job-403`.)
 
 ### Bug phát hiện khi mở rộng integration test coverage (đưa từ ~4 lên ~30 route — chưa sửa, đi PR riêng nếu được giao)
 

@@ -91,6 +91,36 @@ describe("buildTaggedPlaces", () => {
       "Day 2 place",
     ]);
   });
+
+  it("walks day-key order numerically across the day9/day10 boundary", () => {
+    // Object.keys(...).sort() alone is lexicographic ("day10" < "day2" as
+    // strings), which would desync validated[idx] from the wrong (day, slot)
+    // pair for any trip of 10+ days. buildTaggedPlaces must iterate in
+    // exactly the same numeric order flattenIntents produces.
+    //
+    // Each day uses a distinct slot type so the bug is actually observable:
+    // buildTaggedPlaces always pushes validated[idx] in strict incrementing
+    // order regardless of which day triggered the push, so a same-named
+    // validated place per day would trivially "pass" either way — the
+    // slotType each place ends up paired with is what reveals a real
+    // misattribution.
+    const intents: TripIntents = {
+      day10: { dinner: "Q10" },
+      day2: { breakfast: "Q2" },
+      day9: { lunch: "Q9" },
+    };
+    const validated = [
+      place({ name: "Day 2 place" }),
+      place({ name: "Day 9 place" }),
+      place({ name: "Day 10 place" }),
+    ];
+    const tagged = buildTaggedPlaces(intents, validated);
+    expect(tagged.map((t) => [t.slotType, t.place.name])).toEqual([
+      ["breakfast", "Day 2 place"],
+      ["lunch", "Day 9 place"],
+      ["dinner", "Day 10 place"],
+    ]);
+  });
 });
 
 describe("clusterByProximity", () => {
