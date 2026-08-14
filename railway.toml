@@ -1,101 +1,42 @@
 # ============================================
 # RAILWAY DEPLOYMENT CONFIGURATION
-# Infrastructure as Code (IaC)
+# Infrastructure as Code (IaC) — build config only
 # ============================================
-# This file is shared by every Railway Environment in the project — it does
-# NOT distinguish staging from production on its own. That split is a
-# dashboard concept: create a second Environment named "staging" tracking
-# the `develop` branch, with its own Mongo/Redis and staging-mode secrets.
-# See README.md "Staging environment" for the full checklist.
+# This file is shared by EVERY service (travelplan-web, travelplan-worker)
+# AND every Environment (production, staging) in the Railway project — Railway
+# only reads [build] and [deploy] from it (verified against deployment
+# metadata: propertyFileMapping shows just build.builder/build.dockerfilePath
+# are consumed). There is no [[services]] array in Railway's schema; a
+# previous version of this file had one, and it was silently ignored in full.
+#
+# Per-service settings live in the Railway dashboard, not here, because they
+# genuinely differ per service and this one file applies to both:
+#   - travelplan-web (the API): start command is the Dockerfile CMD
+#     `node backend/dist/backend/src/index.js` (real entrypoint — note
+#     backend/tsconfig.json's rootDir: ".." reproduces the folder tree under
+#     dist/), healthcheck path /health, port 3000.
+#   - travelplan-worker: start command `npm run start:worker --workspace=backend`
+#     → `node backend/dist/backend/src/worker.js`. No HTTP listener — do NOT
+#     set a top-level healthcheckPath here, it would fail the worker's deploy.
+#
+# Do NOT add startCommand or healthcheckPath at top level: anything here
+# applies to both services simultaneously.
+#
+# Staging is a separate Railway *Environment* tracking the `develop` branch,
+# with its own Mongo/Redis and secrets — see README.md "Staging environment".
 
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "backend/Dockerfile"
+watchPatterns = [
+  "backend/**",
+  "packages/shared/**",
+  "package.json",
+  "package-lock.json",
+  "tsconfig.base.json",
+  "railway.toml",
+]
 
-# ============================================
-# API SERVICE
-# ============================================
-[[services]]
-name = "travelplan-api"
-dockerfile = "backend/Dockerfile"
-target = "production"
-
-[services.build]
-watchPatterns = ["backend/**"]
-
-[services.deploy]
-startCommand = "node dist/index.js"
+[deploy]
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
-
-[services.healthcheck]
-path = "/health"
-initialDelaySeconds = 10
-periodSeconds = 30
-timeoutSeconds = 5
-
-[services.resources]
-memory = 512
-cpu = 0.5
-
-[[services.ports]]
-port = 3000
-protocol = "http"
-
-# ============================================
-# WORKER SERVICE
-# ============================================
-[[services]]
-name = "travelplan-worker"
-dockerfile = "backend/Dockerfile"
-target = "production"
-
-[services.build]
-watchPatterns = ["backend/**"]
-
-[services.deploy]
-startCommand = "node dist/worker.js"
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3
-
-[services.resources]
-memory = 512
-cpu = 0.5
-replicas = 1
-
-# Auto-scale based on queue depth
-[services.scaling]
-minReplicas = 1
-maxReplicas = 5
-targetCPUPercent = 70
-
-# ============================================
-# REDIS (Cache & Queue)
-# ============================================
-[[services]]
-name = "travelplan-redis"
-image = "redis:7-alpine"
-
-[[services.ports]]
-port = 6379
-protocol = "tcp"
-
-[services.resources]
-memory = 256
-cpu = 0.25
-
-# ============================================
-# MONGODB (Database)
-# ============================================
-# Note: Railway provides MongoDB as a plugin
-# Configure via Railway UI or use MongoDB Atlas
-
-# ============================================
-# ENVIRONMENT VARIABLES
-# (Set via Railway UI or CLI)
-# ============================================
-# MONGO_URI=<from_railway_plugin>
-# REDIS_URL=<auto_injected>
-# CLERK_SECRET_KEY=<from_vault>
-# CLERK_WEBHOOK_SIGNING_SECRET=<from_vault>
-# GEMINI_API_KEY=<from_vault>

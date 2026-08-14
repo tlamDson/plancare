@@ -1,6 +1,6 @@
 ---
 name: voyager-devops
-description: Dùng khi sửa Dockerfile, docker-compose.yml, .github/workflows/**, railway.toml, render.yaml, vercel.json, biến môi trường, hoặc bất kỳ thứ gì liên quan tới deploy/CI của TravelPlan.
+description: Dùng khi sửa Dockerfile, docker-compose.yml, .github/workflows/**, railway.toml, vercel.json, biến môi trường, hoặc bất kỳ thứ gì liên quan tới deploy/CI của TravelPlan.
 ---
 
 # DevOps — TravelPlan
@@ -10,19 +10,19 @@ description: Dùng khi sửa Dockerfile, docker-compose.yml, .github/workflows/*
 - **Multi-stage Docker build bắt buộc** — giữ image nhỏ, tách build stage khỏi runtime stage.
 - **Tách secret theo least-privilege**: web chỉ cần `VITE_MAPBOX_ACCESS_TOKEN`/`VITE_CLERK_PUBLISHABLE_KEY`/`VITE_API_URL`; api cần `MONGO_URI`+`CLERK_SECRET_KEY`+…; worker cần AI key + DB, không cần secret của web.
 - **Container phải crash khi thiếu env bắt buộc** — đã làm qua `envalid` ở `backend/src/config/env.ts`, giữ nguyên pattern này khi thêm biến mới.
-- **IaC only** — không chỉnh cấu hình qua UI của Railway/Vercel mà không phản ánh lại trong repo (`railway.toml`, `render.yaml`, `vercel.json`).
+- **IaC only** — không chỉnh cấu hình qua UI của Railway/Vercel mà không phản ánh lại trong repo (`railway.toml`, `vercel.json`). Lưu ý: Railway chỉ đọc `[build]`/`[deploy]` từ `railway.toml` — không có `[[services]]`; start command/healthcheck riêng từng service là cấu hình dashboard (mỗi service, mỗi environment).
 - **BullBoard `/admin/queues` phải có Basic Auth** nếu bật ở production/staging — không bao giờ để mở public.
 
 ## CI thật của repo (khác tài liệu cũ)
 
 `.github/workflows/ci-pr.yml` — chạy trên `pull_request` vào `develop`/`main`. **Tên job chính là required status check trên GitHub** — không được đổi tên, không được thêm `paths:` vào `on: pull_request`, không được đặt `if:` ở cấp job cho 3 job required (gate ở cấp step bằng biến env như `SHOULD_BUILD`). Chi tiết đầy đủ ở `.claude/rules/workflow.md`.
 
-| Job | Tên (= required check) |
-|---|---|
+| Job       | Tên (= required check)                                                               |
+| --------- | ------------------------------------------------------------------------------------ |
 | `changes` | Detect changed paths (không required, chỉ để dorny/paths-filter output cho job khác) |
-| `ci` | Lint + Unit Tests |
-| `quality` | Typecheck + Build |
-| `docker` | Backend Docker Build |
+| `ci`      | Lint + Unit Tests                                                                    |
+| `quality` | Typecheck + Build                                                                    |
+| `docker`  | Backend Docker Build                                                                 |
 
 `.github/workflows/ci-main.yml` — chạy trên `push` vào `main`, một job `Full CI + Unit Tests` chạy tuần tự lint → typecheck → build → test.
 

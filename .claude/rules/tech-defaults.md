@@ -143,4 +143,8 @@ Thứ tự 6 bước **không được đổi, không được bỏ**: `flattenI
 
 ## Deploy & vận hành
 
-Railway (API + worker + Redis), Vercel (`npx turbo run build --filter=web`, output `frontend/web/dist`), `render.yaml` làm phương án dự phòng. `develop` → môi trường staging, `main` → production (xem checklist staging trong README hoặc hỏi maintainer nếu service Railway/Vercel staging chưa được set up). Container phải crash khi thiếu env bắt buộc. BullBoard `/admin/queues` **phải** có Basic Auth nếu bật ở production.
+Railway (API + worker + Redis), Vercel (`npx turbo run build --filter=web`, output `frontend/web/dist`). `develop` → môi trường staging, `main` → production (xem checklist staging trong README hoặc hỏi maintainer nếu service Railway/Vercel staging chưa được set up). Container phải crash khi thiếu env bắt buộc. BullBoard `/admin/queues` **phải** có Basic Auth nếu bật ở production.
+
+`render.yaml` và `frontend/web/vercel.json` đã bị xoá — cả hai chưa từng được apply thật (repo URL còn placeholder `YOUR_USERNAME`, `dockerContext` sai với Dockerfile build từ root, worker thiếu 3 biến Clerk envalid bắt buộc) và tồn tại song song với `railway.toml`/`vercel.json` chỉ gây nhiễu loạn nguồn sự thật. Chỉ có root `vercel.json` được Vercel dùng thật (root directory = `.`).
+
+**`railway.toml` chỉ chứa `[build]`/`[deploy]` — không có `[[services]]`**: Railway chỉ đọc `build.builder`/`build.dockerfilePath` từ file này (verify qua deployment metadata `propertyFileMapping`); file này dùng chung cho **mọi** service (`travelplan-web`, `travelplan-worker`) và **mọi** environment (production, staging), nên start command/healthcheck riêng từng service phải cấu hình ở Railway dashboard, không đặt ở top-level của file (sẽ áp nhầm cho cả hai service). Entrypoint thật: API = Dockerfile `CMD` (`node backend/dist/backend/src/index.js`, do `backend/tsconfig.json` có `rootDir: ".."`), worker = `npm run start:worker --workspace=backend`.

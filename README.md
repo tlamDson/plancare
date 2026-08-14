@@ -30,14 +30,14 @@ Trip lifecycle (simplified): `DRAFT → QUEUED → PROCESSING → COMPLETED` (or
 
 ## Tech stack
 
-| Area | Stack |
-|------|--------|
-| Monorepo | npm workspaces (`packageManager: npm@10.9.3`) |
-| Web | React (Vite), Tailwind, shadcn/ui, TanStack Query, Zustand |
-| API | Node 20+, Express, Mongoose, Zod, Envalid, Pino |
-| Queue | BullMQ + **ioredis** |
-| Data | MongoDB Atlas or local / Docker |
-| Deploy | Frontend often Vercel; API + worker + Redis described in `railway.toml` |
+| Area     | Stack                                                                   |
+| -------- | ----------------------------------------------------------------------- |
+| Monorepo | npm workspaces (`packageManager: npm@10.9.3`)                           |
+| Web      | React (Vite), Tailwind, shadcn/ui, TanStack Query, Zustand              |
+| API      | Node 20+, Express, Mongoose, Zod, Envalid, Pino                         |
+| Queue    | BullMQ + **ioredis**                                                    |
+| Data     | MongoDB Atlas or local / Docker                                         |
+| Deploy   | Frontend often Vercel; API + worker + Redis described in `railway.toml` |
 
 ---
 
@@ -69,20 +69,20 @@ TravelPlan/
 
 Validated in `backend/src/config/env.ts`. Common variables:
 
-| Variable | Purpose |
-|----------|---------|
-| `MONGO_URI` | MongoDB connection string |
-| `REDIS_HOST` | Redis hostname (e.g. `localhost`, `redis`, or `*.railway.internal`) |
-| `REDIS_PORT` | Default `6379` |
-| `REDIS_PASSWORD` | Optional locally; set in Docker/prod when Redis requires auth |
-| `REDIS_URL` | Optional. If set, overrides host/port/password (e.g. Railway `redis://default:...@...railway.internal:6379`). Use `redis://` for plain TCP, `rediss://` for TLS. |
-| `REDIS_TLS` | Optional override: `true` / `false` / `1` / `0` |
-| `CLERK_SECRET_KEY` / web publishable key | Auth |
-| `GEMINI_API_KEY` | Worker / AI pipeline |
-| `MAPBOX_ACCESS_TOKEN` | Geocoding / maps |
-| `GOOGLE_PLACES_API_KEY` | Places Text Search, Nearby, photo media |
-| `OPENWEATHER_API_KEY` | Weather proxy (optional) |
-| `SERPER_API_KEY` | Insight scraping (optional) |
+| Variable                                 | Purpose                                                                                                                                                          |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MONGO_URI`                              | MongoDB connection string                                                                                                                                        |
+| `REDIS_HOST`                             | Redis hostname (e.g. `localhost`, `redis`, or `*.railway.internal`)                                                                                              |
+| `REDIS_PORT`                             | Default `6379`                                                                                                                                                   |
+| `REDIS_PASSWORD`                         | Optional locally; set in Docker/prod when Redis requires auth                                                                                                    |
+| `REDIS_URL`                              | Optional. If set, overrides host/port/password (e.g. Railway `redis://default:...@...railway.internal:6379`). Use `redis://` for plain TCP, `rediss://` for TLS. |
+| `REDIS_TLS`                              | Optional override: `true` / `false` / `1` / `0`                                                                                                                  |
+| `CLERK_SECRET_KEY` / web publishable key | Auth                                                                                                                                                             |
+| `GEMINI_API_KEY`                         | Worker / AI pipeline                                                                                                                                             |
+| `MAPBOX_ACCESS_TOKEN`                    | Geocoding / maps                                                                                                                                                 |
+| `GOOGLE_PLACES_API_KEY`                  | Places Text Search, Nearby, photo media                                                                                                                          |
+| `OPENWEATHER_API_KEY`                    | Weather proxy (optional)                                                                                                                                         |
+| `SERPER_API_KEY`                         | Insight scraping (optional)                                                                                                                                      |
 
 **Frontend (`frontend/web`):** `VITE_*` for API base URL, Clerk, Mapbox, feature flags (see existing sections in repo for Calendar/VIP).
 
@@ -134,11 +134,10 @@ npm run dev:worker   # Optional — processes BullMQ jobs
 
 ## Deployment (Railway)
 
-`railway.toml` defines services such as:
+`railway.toml` supplies only the **build** config — Dockerfile builder + path + watch patterns — shared by every service in every Railway environment. Railway’s config file has no `[[services]]` array; verified against real deployment metadata that only `build.builder`/`build.dockerfilePath` are ever read from it. Per-service start command and healthcheck are dashboard settings, because this one file is shared by both services:
 
-- **travelplan-api** — `node dist/index.js`
-- **travelplan-worker** — `node dist/worker.js`
-- **travelplan-redis** — `redis:7-alpine`
+- **travelplan-web** (the API) — start command is the Dockerfile `CMD`, `node backend/dist/backend/src/index.js` (note `backend/tsconfig.json`’s `rootDir: ".."` reproduces the folder tree under `dist/`). Healthcheck `/health`, port 3000.
+- **travelplan-worker** — start command `npm run start:worker --workspace=backend` → `node backend/dist/backend/src/worker.js`. No HTTP listener, so it has no healthcheck path configured.
 
 Set **`REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD`** from Railway’s Redis service (private host often includes `railway.internal`). Do **not** force TLS for that internal host — the code skips TLS automatically.
 
@@ -146,42 +145,47 @@ Scale workers conservatively if you care about Redis command volume (e.g. one re
 
 ### Staging environment (`develop` → staging, `main` → production)
 
-The repo's Git Flow (see `.claude/rules/workflow.md`) assumes two deploy targets. As of this writing, **only production is set up** — the steps below are a checklist for creating the staging side, done through each provider's dashboard (not something `railway.toml`/`vercel.json` alone can express, since environment membership and which secrets belong to which environment are dashboard/CLI concepts, not repo config).
+The repo’s Git Flow (see `.claude/rules/workflow.md`) assumes two deploy targets, set up through each provider’s dashboard (not something `railway.toml`/`vercel.json` alone can express, since environment membership and which secrets belong to which environment are dashboard/CLI concepts, not repo config). Full copy-pasteable variable list: `.env.staging.example`.
 
-**Railway** — `railway.toml` is shared by every Railway Environment in the project; it does not itself distinguish staging from production.
-1. In the Railway project, create a second Environment named `staging`.
+**Railway**
+
+1. In the Railway project, create a second Environment named `staging`. Railway pre-populates a new Environment by **copying production’s variables** — the first thing to do after creating it is override `MONGO_URI` (and every other var below) before letting anything deploy, or staging will write straight into the production database.
 2. Set its **branch tracking to `develop`** (Settings → Environment → deploy trigger) so pushes to `develop` redeploy staging automatically, mirroring how `main` already redeploys production.
-3. Provision a separate MongoDB and Redis for staging — do not point staging at the production database. Set `MONGO_URI`, `REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD` (or `REDIS_URL`) for the new environment from those staging instances.
-4. Copy every other required var from `.env.example` into the staging Environment's variables (Clerk, Gemini, Mapbox, Stripe, etc.) — using **test-mode** keys where the provider supports them (Clerk test instance, Stripe test keys) so staging never touches real user data or charges real cards.
+3. Provision a separate MongoDB and Redis for staging — do not point staging at the production database, and do not reuse the E2E database (`travelplan_e2e`, which gets dropped on every E2E run). Set `MONGO_URI`, `REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD` (or `REDIS_URL`) for the new environment from those staging instances.
+4. Set every var in `.env.staging.example` Section A on **both** `travelplan-web` and `travelplan-worker` — the worker imports the same `config/env.ts` and crashes at boot on any missing required var, identically to the API. Use **test-mode** keys where the provider supports them (Clerk test instance — reuse the one already used by E2E, Stripe test keys) so staging never touches real user data or charges real cards. Remove any stray `VITE_*` vars from these services; they’re backend services and don’t consume them.
+5. `FRONTEND_URL` on the staging API = the Vercel branch alias for `develop` (see below).
 
-**Vercel** — by default every branch push gets an automatic preview deployment; only the branch configured as the **Production Branch** (Project Settings → Git) deploys to the production domain. To get a stable staging URL instead of a rotating preview link:
-1. Assign a custom domain (e.g. `staging.yourdomain.com`) to deployments of the `develop` branch (Project Settings → Domains → add domain → attach to `develop`).
-2. Add a Vercel **Environment** scoped to `develop`/Preview with its own `VITE_API_URL` (pointing at the Railway staging API), `VITE_CLERK_PUBLISHABLE_KEY` (Clerk test instance), and `VITE_MAPBOX_ACCESS_TOKEN`.
-3. `frontend/web/.env.staging` already exists locally for `npm run build:staging` — keep it in sync with whatever the Vercel staging Environment uses, minus secrets (it's gitignored).
+**Vercel** — by default every branch push gets an automatic preview deployment, and the `develop` branch already has a **stable branch alias** URL (`<project>-git-develop-<scope>.vercel.app`) — no custom domain is required. The actual work is untangling Preview from Production:
 
-Once both are wired, `develop` becomes a real staging deploy target and PRs merged there are verifiable before they ever reach `main`.
+1. Today, every `VITE_*` var is set with the **same value** across Production, Preview, and Development targets — meaning the `develop` preview currently calls the **production** API and **production** Clerk. Remove the Preview target from each existing (Production-value) var, then add a new **Preview-only** entry with the staging value — see `.env.staging.example` Section C.
+2. `VITE_API_URL` **must include the `/api` suffix** (`lib/axios.ts` uses it as `baseURL`, callers pass paths without `/api`) — verify the Production value already does before copying the pattern.
+3. Vercel builds every deployment, including `develop`, via the root `vercel.json` → `vite build` in **production mode**. `frontend/web/.env.staging` and `npm run build:staging` are **local-only** — Vercel never runs them, keeping them "in sync" is not meaningful.
+4. Add `VITE_ENV=staging` to the Preview target — nothing sets it today, and it’s what lets the frontend distinguish a staging build from a real production one.
+5. Redeploy `develop` after saving env vars — Vite bakes them in at build time.
+
+Once both are wired, `develop` becomes a real staging deploy target and PRs merged there are verifiable before they ever reach `main`. Confirm with `curl https://<staging-api>/health` → `{"status":"ok","env":"staging"}`.
 
 ---
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev:api` | Backend dev server |
-| `npm run dev:web` | Frontend dev server |
-| `npm run dev:worker` | BullMQ worker |
-| `npm run build` | Build all workspaces |
-| `npm run test` | Tests (where configured per package) |
-| `npm run typecheck` | TypeScript checks |
+| Command              | Description                          |
+| -------------------- | ------------------------------------ |
+| `npm run dev:api`    | Backend dev server                   |
+| `npm run dev:web`    | Frontend dev server                  |
+| `npm run dev:worker` | BullMQ worker                        |
+| `npm run build`      | Build all workspaces                 |
+| `npm run test`       | Tests (where configured per package) |
+| `npm run typecheck`  | TypeScript checks                    |
 
 ---
 
 ## Documentation
 
-| Path | Topic |
-|------|--------|
+| Path               | Topic                                                              |
+| ------------------ | ------------------------------------------------------------------ |
 | `docs/agents/*.md` | Role-specific standards (architect, backend, frontend, devops, qa) |
-| `docs/` | Roadmap, progress, roles |
+| `docs/`            | Roadmap, progress, roles                                           |
 
 ---
 
