@@ -98,10 +98,11 @@ export default function SignUpPage() {
         return;
       }
 
+      // "needs_first_factor"/"needs_second_factor" are sign-in-only statuses
+      // and never appear on a sign-up result — Clerk's SignUpResource.status
+      // type is narrower ("missing_requirements" | "complete" | "abandoned").
       if (
         result.status === "missing_requirements" ||
-        result.status === "needs_first_factor" ||
-        result.status === "needs_second_factor" ||
         result.unverifiedFields.includes("email_address")
       ) {
         await signUp.prepareEmailAddressVerification({
@@ -115,7 +116,9 @@ export default function SignUpPage() {
       }
 
       // Any unhandled status — surface to user instead of staying stuck
-      toast.error(`Unexpected sign-up status: ${result.status}. Please try again.`);
+      toast.error(
+        `Unexpected sign-up status: ${result.status}. Please try again.`,
+      );
     } catch (error: unknown) {
       const clerkError = error as ClerkError;
       if (clerkError.errors?.[0]) {
