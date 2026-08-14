@@ -8,6 +8,7 @@
 import { apiClient } from "@/lib/axios";
 import { z } from "zod";
 import { validateAPI } from "@/utils/validation";
+import { API_URL } from "@/config/env";
 
 // ============================================
 // TYPES & SCHEMAS
@@ -98,7 +99,7 @@ export function streamMessage(
 ): () => void {
   const controller = new AbortController();
 
-  fetch(`${import.meta.env.VITE_API_URL}/ai/sessions/${sessionId}/stream`, {
+  fetch(`${API_URL}/ai/sessions/${sessionId}/stream`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

@@ -11,6 +11,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import type { Map as MapboxMap } from "mapbox-gl";
 import type Supercluster from "supercluster";
 import { useTranslationStore } from "@/stores/useTranslationStore";
+import { MAPBOX_TOKEN } from "@/config/env";
 
 // ============================================
 // MAP INSTANCE HOOK
@@ -38,13 +39,13 @@ export function useMap({ containerId, center, zoom, style }: UseMapOptions) {
       try {
         const mapboxgl = (await import("mapbox-gl")).default;
 
-        // Get token from environment
-        const token = import.meta.env.VITE_MAPBOX_TOKEN;
-        if (!token) {
+        // Get token from environment (VITE_MAPBOX_ACCESS_TOKEN preferred,
+        // falls back to the legacy VITE_MAPBOX_TOKEN name)
+        if (!MAPBOX_TOKEN) {
           throw new Error(t("explore.mapboxTokenError"));
         }
 
-        mapboxgl.accessToken = token;
+        mapboxgl.accessToken = MAPBOX_TOKEN;
 
         const container = document.getElementById(containerId);
         if (!container || !isMounted) return;
