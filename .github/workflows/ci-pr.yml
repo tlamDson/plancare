@@ -226,3 +226,88 @@ jobs:
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
+
+  # Không phải required check — KHÔNG thêm job này vào branch protection.
+  # Đỏ ở đây không chặn merge; xem .claude/rules/workflow.md mục required
+  # check trước khi cân nhắc thay đổi điều đó.
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    # Secrets không khả dụng cho fork PR — skip thay vì fail khó hiểu.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: travelplan_admin
+          MONGO_INITDB_ROOT_PASSWORD: dev_password_change_in_prod
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E (CI-safe specs only — @live is local-only, needs real Gemini/Places keys)
+        run: npm run e2e
+        env:
+          CI: true
+          E2E_MONGO_URI: mongodb://travelplan_admin:dev_password_change_in_prod@localhost:27017/travelplan_e2e?authSource=admin
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_PASSWORD: ""
+          CLERK_PUBLISHABLE_KEY_E2E: ${{ secrets.CLERK_PUBLISHABLE_KEY_E2E }}
+          CLERK_SECRET_KEY_E2E: ${{ secrets.CLERK_SECRET_KEY_E2E }}
+          E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+          E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+          CLERK_WEBHOOK_SIGNING_SECRET: whsec_aW50ZWdyYXRpb24tdGVzdC1jbGVyay13ZWJob29rLXNlY3JldC0zMg==
+          GEMINI_API_KEY: sk-dummy-key-for-ci
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci
+          STRIPE_WEBHOOK_SECRET: whsec_test_xxxxxxxxxxxxxxxxxxxxxxxx
+          # Intentionally absent: GOOGLE_PLACES_API_KEY, MAPBOX_ACCESS_TOKEN,
+          # VITE_API_URL (axios.ts defaults to http://localhost:3000/api —
+          # setting it to http://localhost:3000 like the `quality` job's
+          # build step does would 404 every request).
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 7

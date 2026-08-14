@@ -17,12 +17,18 @@
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "check:services": "npm run check:services --workspace=backend"
+    "check:services": "npm run check:services --workspace=backend",
+    "e2e": "playwright test --config=e2e/playwright.config.ts --grep-invert @live",
+    "e2e:ui": "playwright test --config=e2e/playwright.config.ts --grep-invert @live --ui"
   },
   "engines": {
     "node": ">=20.0.0"
   },
   "devDependencies": {
+    "@clerk/testing": "^1.13.9",
+    "@playwright/test": "^1.56.1",
+    "dotenv": "^17.2.2",
+    "mongodb": "^7.0.0",
     "prettier": "^3.4.2",
     "turbo": "^2.8.3",
     "vitest": "^4.1.10"
