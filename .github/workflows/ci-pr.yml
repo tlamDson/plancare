@@ -160,7 +160,7 @@ jobs:
         env:
           CI: true
           VITE_CLERK_PUBLISHABLE_KEY: pk_test_dummy_key_for_ci
-          VITE_API_URL: http://localhost:3000
+          VITE_API_URL: http://localhost:3000/api
           VITE_MAPBOX_ACCESS_TOKEN: pk.dummy_token_for_ci
 
   # Image này là thứ được deploy lên Railway — hỏng ở đây thì hỏng cả deploy
