@@ -55,6 +55,12 @@ describe("config/env", () => {
 
   describe("IS_STAGING / IS_PROD", () => {
     it("is staging when VITE_ENV=staging, and not counted as production", async () => {
+      // Clerk key stubbed so this case isn't coupled to the throw guard
+      // below — otherwise it depends on whatever ambient VITE_CLERK_* value
+      // the machine running the test happens to have (real key locally via
+      // frontend/web/.env, nothing in CI), the exact leakage the guard test
+      // itself is checking for.
+      vi.stubEnv("VITE_CLERK_PUBLISHABLE_KEY", "pk_test_dummy");
       vi.stubEnv("VITE_ENV", "staging");
       vi.stubEnv("PROD", true);
 
@@ -65,6 +71,7 @@ describe("config/env", () => {
     });
 
     it("is production when the build is a Vite production build and VITE_ENV isn't staging", async () => {
+      vi.stubEnv("VITE_CLERK_PUBLISHABLE_KEY", "pk_test_dummy");
       vi.stubEnv("VITE_ENV", "production");
       vi.stubEnv("PROD", true);
 
