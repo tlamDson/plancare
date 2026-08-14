@@ -6,6 +6,6 @@ import { requireUserAuth } from "../../middlewares/auth";
 const router = Router();
 
 router.post("/toggle-pro", requireUserAuth, toggleProStatus);
-router.post("/scrape-insights", triggerInsightScraping);
+router.post("/scrape-insights", requireUserAuth, triggerInsightScraping);
 
 export default router;

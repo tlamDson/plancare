@@ -6,6 +6,7 @@ import stripeWebhookRoutes from "./features/billing/webhook.routes";
 import { clerkMiddleware } from "@clerk/express";
 import { logger } from "./lib/logger";
 import { corsOptions } from "./config/cors";
+import { generalLimiter } from "./middlewares/rate-limiter";
 
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
@@ -64,6 +65,11 @@ export function createApp(): Express {
 
   // 3. Clerk middleware - After webhooks
   app.use(clerkMiddleware());
+
+  // 3.5 General rate limiter — after Clerk (so req.auth is populated) and
+  // before body parsers, covering every route below except /api/webhooks
+  // (mounted above, step 2) and /health, /ready (skipped, see rate-limiter.ts)
+  app.use(generalLimiter);
 
   // 4. Body parsers - For regular API routes
   app.use(express.json({ limit: "10mb" }));

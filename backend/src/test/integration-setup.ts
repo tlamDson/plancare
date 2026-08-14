@@ -62,6 +62,20 @@ afterEach(async () => {
   await Promise.all(collections.map((c) => c.deleteMany({})));
 });
 
+// generalLimiter (backend/src/middlewares/rate-limiter.ts) is mounted
+// globally and keyed by IP, backed by a real Redis store shared across every
+// test file in this suite (all requests come from the same loopback
+// address). Without clearing its keys between tests, unrelated test files
+// would start intermittently 429-ing each other depending on run order —
+// worse, the 15-minute window means a red run could stay red on immediate
+// retry. Scoped to the `rl:general:` prefix only, so it never touches
+// BullMQ/other app keys sharing the same Redis instance.
+afterEach(async () => {
+  const { redisConnection } = await import("../lib/queue");
+  const keys = await redisConnection.keys("rl:general:*");
+  if (keys.length > 0) await redisConnection.del(...keys);
+});
+
 afterAll(async () => {
   await mongoose.disconnect();
   // Integration tests reuse the shared local dev Redis (docker-compose) —
