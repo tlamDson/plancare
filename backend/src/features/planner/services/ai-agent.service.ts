@@ -8,6 +8,22 @@ import {
 } from "../prompts/trip-generation.prompt";
 import { intentParserService, type TripIntents } from "./intent-parser.service";
 
+/**
+ * Pinned, not "-latest" — verified 2026-08-15 by calling the real API with
+ * this key (gemini-2.0-flash AND gemini-2.5-flash both returned a live 404
+ * "no longer available"; gemini-3.6-flash was the newest non-preview flash
+ * model this key could actually reach). Deliberately not `gemini-flash-latest`:
+ * intent-parser.service's JSON extraction is fragile regex, not a real
+ * parser (see `.claude/rules/tech-defaults.md`'s known `extractJson()` bug
+ * with bare arrays) — an unannounced silent model swap changing output
+ * formatting is a worse failure mode than a pinned model eventually
+ * deprecating loudly. Re-verify with `npm run check:services` (note: that
+ * only proves the API key is valid via the models-list endpoint, not that
+ * this exact model string still resolves — a generateContent call, like
+ * the one used to verify this pin, is the real test).
+ */
+const GEMINI_MODEL = "gemini-3.6-flash";
+
 export class AIAgentService {
   private model: any;
   /**
@@ -31,13 +47,15 @@ export class AIAgentService {
     try {
       const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
       this.model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: GEMINI_MODEL,
         // System instruction = persona + rules (higher compliance than user turn)
         systemInstruction: TRIP_PLANNER_SYSTEM_INSTRUCTION,
       });
       // No systemInstruction — accepts ad-hoc prompts and returns exactly what's requested
-      this.rawModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-      logger.info("✅ [AI] Both model (with system instruction) and rawModel initialized");
+      this.rawModel = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+      logger.info(
+        "✅ [AI] Both model (with system instruction) and rawModel initialized",
+      );
     } catch (error: any) {
       logger.error(
         { error: error.message },
@@ -62,7 +80,12 @@ export class AIAgentService {
       );
     }
 
-    const prompt = buildTripPrompt(preferences, language, cityCost, localInsight);
+    const prompt = buildTripPrompt(
+      preferences,
+      language,
+      cityCost,
+      localInsight,
+    );
 
     logger.info(
       {
@@ -127,7 +150,10 @@ export class AIAgentService {
     // rawModel MUST be used here — this.model has a systemInstruction that forces
     // structured { day1: { morning: [...] } } output and will ignore the plain array request.
     if (!this.rawModel) {
-      logger.warn({ destination }, "⚠️ [REGEN] rawModel not initialized — GEMINI_API_KEY missing?");
+      logger.warn(
+        { destination },
+        "⚠️ [REGEN] rawModel not initialized — GEMINI_API_KEY missing?",
+      );
       return [];
     }
 
@@ -153,21 +179,32 @@ export class AIAgentService {
 
       const jsonMatch = text.match(/\[[\s\S]*?\]/);
       if (!jsonMatch) {
-        logger.warn({ destination, rawText: text.slice(0, 200) }, "⚠️ [REGEN] No JSON array found in Gemini response");
+        logger.warn(
+          { destination, rawText: text.slice(0, 200) },
+          "⚠️ [REGEN] No JSON array found in Gemini response",
+        );
         return [];
       }
 
       const parsed: unknown = JSON.parse(jsonMatch[0]);
       if (!Array.isArray(parsed)) {
-        logger.warn({ destination, matched: jsonMatch[0].slice(0, 100) }, "⚠️ [REGEN] Parsed value is not an array");
+        logger.warn(
+          { destination, matched: jsonMatch[0].slice(0, 100) },
+          "⚠️ [REGEN] Parsed value is not an array",
+        );
         return [];
       }
 
       const results = (parsed as unknown[])
-        .filter((q): q is string => typeof q === "string" && q.trim().length > 0)
+        .filter(
+          (q): q is string => typeof q === "string" && q.trim().length > 0,
+        )
         .slice(0, count);
 
-      logger.info({ destination, results }, "✅ [REGEN] Supplementary queries parsed");
+      logger.info(
+        { destination, results },
+        "✅ [REGEN] Supplementary queries parsed",
+      );
       return results;
     } catch (error: any) {
       logger.warn(
@@ -199,7 +236,10 @@ export class AIAgentService {
 
       const jsonMatch = text.match(/\[[\s\S]*?\]/);
       if (!jsonMatch) {
-        logger.warn({ rawText: text.slice(0, 200) }, "⚠️ [REGEN-RAW] No JSON array in response");
+        logger.warn(
+          { rawText: text.slice(0, 200) },
+          "⚠️ [REGEN-RAW] No JSON array in response",
+        );
         return [];
       }
       const parsed: unknown = JSON.parse(jsonMatch[0]);
@@ -208,7 +248,10 @@ export class AIAgentService {
         (q): q is string => typeof q === "string" && q.trim().length > 0,
       );
     } catch (error: any) {
-      logger.warn({ error: error.message }, "⚠️ [REGEN-RAW] Failed to generate");
+      logger.warn(
+        { error: error.message },
+        "⚠️ [REGEN-RAW] Failed to generate",
+      );
       return [];
     }
   }
