@@ -154,7 +154,17 @@ Thứ tự 6 bước **không được đổi, không được bỏ**: `flattenI
 
 ## Deploy & vận hành
 
-Railway (API + worker + Redis), Vercel (`npx turbo run build --filter=web`, output `frontend/web/dist`). `develop` → môi trường staging, `main` → production (xem checklist staging trong README hoặc hỏi maintainer nếu service Railway/Vercel staging chưa được set up). Container phải crash khi thiếu env bắt buộc. BullBoard `/admin/queues` **phải** có Basic Auth nếu bật ở production.
+Railway (API + worker + Redis), Vercel (`npx turbo run build --filter=web`, output `frontend/web/dist`). `develop` → môi trường staging, `main` → production. Container phải crash khi thiếu env bắt buộc. BullBoard `/admin/queues` **phải** có Basic Auth nếu bật ở production.
+
+**Staging đã dựng xong và đang chạy** (Railway project `travelplan`, environment `staging`):
+
+- `travelplan-web-staging` — API, domain `https://travelplan-web-staging-staging.up.railway.app`, `/health`/`/ready` trả `env: "staging"`.
+- `travelplan-worker-staging` — start command **phải** override thành `npm run start:worker --workspace=backend` (mặc định chạy Dockerfile `CMD` = entrypoint API, sai cho worker — xem cạm bẫy "Railway `ServiceInstance` không tự sinh" bên dưới).
+- `Redis-hGhE` — Railway-hosted, khớp topology production.
+- MongoDB **không** hosted trên Railway — dùng Atlas database `travelplan_staging` riêng (cùng project Atlas với production nhưng database + user tách biệt), vì production thật sự dùng Atlas (`mongodb+srv://`), không phải Railway-hosted Mongo.
+- Vercel: biến `VITE_*` scope theo `Preview` + `git-branch=develop` (không phải toàn bộ Preview) để không đụng preview của các nhánh feature khác.
+- Webhook Clerk (Svix, subscribe `user.created`) và Stripe (`checkout.session.completed`, `customer.subscription.deleted`) test-mode riêng, trỏ đúng domain staging ở trên.
+- Full cạm bẫy dựng hạ tầng (PR #18-24, từ `deploymentTriggerCreate` tới `redeploy` dùng snapshot cũ) → xem chuỗi bullet "Railway `ServiceInstance`..." ngay bên dưới.
 
 `render.yaml` và `frontend/web/vercel.json` đã bị xoá — cả hai chưa từng được apply thật (repo URL còn placeholder `YOUR_USERNAME`, `dockerContext` sai với Dockerfile build từ root, worker thiếu 3 biến Clerk envalid bắt buộc) và tồn tại song song với `railway.toml`/`vercel.json` chỉ gây nhiễu loạn nguồn sự thật. Chỉ có root `vercel.json` được Vercel dùng thật (root directory = `.`).
 
