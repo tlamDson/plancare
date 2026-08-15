@@ -81,4 +81,4 @@ Component có business logic (vd: tự kiểm tra job status) → đặt trong `
 | `ui-styling`        | Cần tra cứu pattern shadcn/Tailwind cụ thể (theming, accessibility, responsive utilities) |
 | `itinerary-builder` | Đụng vào pipeline sinh lịch trình (backend, nhưng ảnh hưởng UI hiển thị)                  |
 | `rag-destinations`  | Đụng vào module destinations/world list                                                   |
-| `voyager-devops`    | Dockerfile, GitHub Actions, railway/render/vercel config                                  |
+| `travelplan-devops` | Dockerfile, GitHub Actions, railway/render/vercel config                                  |

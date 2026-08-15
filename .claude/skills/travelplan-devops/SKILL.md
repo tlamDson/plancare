@@ -1,5 +1,5 @@
 ---
-name: voyager-devops
+name: travelplan-devops
 description: Dùng khi sửa Dockerfile, docker-compose.yml, .github/workflows/**, railway.toml, vercel.json, biến môi trường, hoặc bất kỳ thứ gì liên quan tới deploy/CI của TravelPlan.
 ---
 

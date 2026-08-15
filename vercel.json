@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx turbo run build --filter=web",
+  "buildCommand": "npx turbo run build --filter=@travelplan/web",
   "outputDirectory": "frontend/web/dist",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }

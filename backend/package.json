@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "@travelplan/backend",
   "version": "1.0.0",
   "type": "commonjs",
   "main": "index.js",

@@ -9,9 +9,9 @@ Monorepo TypeScript, npm workspaces + turbo. Workspaces: `backend`, `frontend/we
 - **`frontend/mobile`** — Expo/React Native, giai đoạn sớm.
 - **`packages/shared`** (`@travelplan/shared`) — Zod schema + TS type dùng chung, build bằng `tsup`.
 
-⚠️ **Lệch tài liệu**: `docs/agents/*.md` và `docs/PLAN.md` mô tả layout lý tưởng `web/` + `api/` + `worker/` + `@voyager/shared` tách riêng — thực tế không có các thư mục đó, dùng cấu trúc ở trên. Đừng đi tìm thư mục không tồn tại.
+⚠️ **Lệch tài liệu**: `docs/agents/*.md` và `docs/PLAN.md` mô tả layout lý tưởng `web/` + `api/` + `worker/` + `@voyager/shared` tách riêng — thực tế không có các thư mục đó, dùng cấu trúc ở trên. Đừng đi tìm thư mục không tồn tại. (`docs/`, `.cursor/`, `.design-docs/` đều gitignored — không được git track, chỉ tồn tại local, nên các nhắc lại tên cũ "Voyager"/`@voyager/shared` trong đó vô hình với người clone repo và không nằm trong phạm vi dọn tên dự án.)
 
-## Voyager core (áp dụng cho mọi layer)
+## TravelPlan core (áp dụng cho mọi layer)
 
 - **Production Build Gate (không thương lượng):** chạy và pass `npm run build` từ root trước khi coi task xong. Zero TypeScript error, zero ESLint error, zero bundler error. Coi mọi warning là error — sửa, không suppress. Build fail → dừng mọi việc, sửa build trước. ⚠️ **`npm run typecheck -w frontend/web` hiện là no-op** — xem mục "Nợ kỹ thuật" để biết chi tiết và cách chạy typecheck thật.
 - **Rule of 200:** không file source nào vượt 200 dòng. Cách xử lý: tách hook, tách sub-component, tách service. Ngoại lệ: file config toàn cục, `frontend/web/src/stores/useTranslationStore.ts`, trang settings dài ít logic động.
@@ -154,7 +154,7 @@ Thứ tự 6 bước **không được đổi, không được bỏ**: `flattenI
 
 ## Deploy & vận hành
 
-Railway (API + worker + Redis), Vercel (`npx turbo run build --filter=web`, output `frontend/web/dist`). `develop` → môi trường staging, `main` → production. Container phải crash khi thiếu env bắt buộc. BullBoard `/admin/queues` **phải** có Basic Auth nếu bật ở production.
+Railway (API + worker + Redis), Vercel (`npx turbo run build --filter=@travelplan/web`, output `frontend/web/dist`). `develop` → môi trường staging, `main` → production. Container phải crash khi thiếu env bắt buộc. BullBoard `/admin/queues` **phải** có Basic Auth nếu bật ở production.
 
 **Staging đã dựng xong và đang chạy** (Railway project `travelplan`, environment `staging`):
 

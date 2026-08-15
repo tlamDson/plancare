@@ -1,6 +1,6 @@
 # TravelPlan — Claude Code Project Instructions
 
-Project Voyager: agentic travel planner. Monorepo TypeScript (npm workspaces + turbo): Express backend (API + BullMQ worker), React/Vite web app, shared Zod contracts, MongoDB + Redis, Clerk auth, Gemini AI trip generation, Mapbox/Google Places validation.
+TravelPlan: agentic travel planner. Monorepo TypeScript (npm workspaces + turbo): Express backend (API + BullMQ worker), React/Vite web app, shared Zod contracts, MongoDB + Redis, Clerk auth, Gemini AI trip generation, Mapbox/Google Places validation.
 
 Các rule chi tiết dưới đây áp dụng luôn, không chỉ khi được hỏi:
 

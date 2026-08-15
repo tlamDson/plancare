@@ -170,7 +170,7 @@ export default function SignInPage() {
           <div className="flex items-center justify-between mb-8">
             <Link to="/" className="flex items-center gap-2">
               <Plane className="h-6 w-6 text-primary" />
-              <span className="font-bold text-xl">TravelPlanner</span>
+              <span className="font-bold text-xl">TravelPlan</span>
             </Link>
             <ThemeToggle />
           </div>

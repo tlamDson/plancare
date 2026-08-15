@@ -1,5 +1,5 @@
 {
-  "name": "travelplan-monorepo",
+  "name": "travelplan",
   "packageManager": "npm@10.9.3",
   "private": true,
   "workspaces": [
