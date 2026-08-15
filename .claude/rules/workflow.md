@@ -21,6 +21,10 @@ git checkout -b <type>/<short-kebab-case-description>
 
 **Branch types:** `feature/`, `fix/`, `test/`, `docs/`, `chore/`. Chữ thường, phân tách bằng `-`, mô tả cụ thể phạm vi (không dùng `feature/update`, `fix/bug`, `feature/wip`). Ghi rõ module/trang liên quan khi có thể: `feature/destination-picker-search`, `fix/trip-detail-drag-drop`.
 
+## Versioning
+
+Số version sống ở root `package.json` — đây là nguồn sự thật duy nhất. 5 chỗ còn lại phải mirror theo mỗi lần bump: `backend/package.json`, `packages/shared/package.json`, `frontend/mobile/package.json`, `frontend/web/package.json`, và `backend/src/app.ts`'s Swagger `info.version` (lộ ra ở `/api/docs`, dễ bỏ sót vì không nằm trong package.json nào). Tag release dạng `v<version>` (vd `v0.1.0`), gắn trên `main` sau khi `develop → main` merge — theo mục "Merge policy" ở dưới, chỉ chủ repo merge/tag.
+
 ## Commit Messages
 
 Imperative mood, hoàn thành câu _"If applied, this commit will… [message]"_. Một dòng, không dùng prefix `feat:`/`fix:` (prefix đó chỉ dành cho PR title).
