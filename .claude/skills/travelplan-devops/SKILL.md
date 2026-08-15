@@ -30,7 +30,7 @@ description: Dùng khi sửa Dockerfile, docker-compose.yml, .github/workflows/*
 
 ## Môi trường
 
-`develop` → staging, `main` → production. **Staging đã dựng xong**: Railway environment `staging` có `travelplan-web-staging` (API), `travelplan-worker-staging`, `Redis-hGhE`; MongoDB là Atlas database `travelplan_staging` riêng (không phải Railway-hosted); Vercel scope `VITE_*` theo `Preview` + `git-branch=develop`. Chi tiết đầy đủ + toàn bộ cạm bẫy dựng hạ tầng (Railway `ServiceInstance` không tự sinh, `checkSuites` treo vĩnh viễn, `redeploy` dùng snapshot cũ...) ở `.claude/rules/tech-defaults.md` mục "Deploy & vận hành". Bootstrap 1 service mới trong environment mới (nếu cần thêm) **không có đường API/CLI thuần** — phải qua dashboard "+ New" → "GitHub Repo", xem công thức đầy đủ ở đó trước khi tự đoán.
+`develop` → staging, `main` → production. **Staging đã dựng xong**: Railway environment `staging` có `travelplan-api-staging` (API, domain vẫn giữ tên lịch sử `travelplan-web-staging-staging.up.railway.app` — rename service không đổi domain tự sinh), `travelplan-worker-staging`, `Redis-hGhE`; MongoDB là Atlas database `travelplan_staging` riêng (không phải Railway-hosted); Vercel scope `VITE_*` theo `Preview` + `git-branch=develop`. Chi tiết đầy đủ + toàn bộ cạm bẫy dựng hạ tầng (Railway `ServiceInstance` không tự sinh, `checkSuites` treo vĩnh viễn, `redeploy` dùng snapshot cũ...) ở `.claude/rules/tech-defaults.md` mục "Deploy & vận hành". Bootstrap 1 service mới trong environment mới (nếu cần thêm) **không có đường API/CLI thuần** — phải qua dashboard "+ New" → "GitHub Repo", xem công thức đầy đủ ở đó trước khi tự đoán.
 
 ## Health check
 
