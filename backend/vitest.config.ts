@@ -19,8 +19,15 @@ export default defineConfig({
       // Must be valid base64 after the "whsec_" prefix — svix's Webhook
       // constructor throws "Base64Coder: incorrect characters for decoding"
       // otherwise (verified while adding webhooks-clerk.integration.test.ts).
+      // Built from a readable string, not a hardcoded blob — a static
+      // base64 literal here reads as a real secret to entropy-based
+      // scanners (GitGuardian false positive), same as CLERK_PUBLISHABLE_KEY
+      // below.
       CLERK_WEBHOOK_SIGNING_SECRET:
-        "whsec_aW50ZWdyYXRpb24tdGVzdC1jbGVyay13ZWJob29rLXNlY3JldC0zMg==",
+        "whsec_" +
+        Buffer.from("integration-test-clerk-webhook-secret-32").toString(
+          "base64",
+        ),
       GEMINI_API_KEY: "sk-dummy-key-for-tests",
       // billing/stripe.service.ts does `new Stripe(env.STRIPE_SECRET_KEY)` at
       // *import* time — an empty key throws immediately, so any test that
