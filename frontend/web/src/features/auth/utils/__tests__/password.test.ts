@@ -25,12 +25,12 @@ describe("checkPasswordStrength", () => {
   });
 
   it("scores a password with upper+lower+number+special as Strong", () => {
-    // Built from parts, not one literal — GitGuardian flags a contiguous
-    // "Passw0rd!"-shaped string as a "Generic Password" false positive;
-    // it's pure test-fixture input for the strength scorer below, not a
-    // credential.
-    const strongTestPassword = "Passw0rd" + "!";
-    const result = checkPasswordStrength(strongTestPassword);
+    // "Passw0rd!" is test-fixture input for the strength scorer, not a
+    // credential — GitGuardian flags it as a "Generic Password" false
+    // positive; suppressed via .gitguardian.yaml's ignored_matches
+    // (splitting the literal into concatenated parts doesn't defeat
+    // GitGuardian's detector, verified empirically).
+    const result = checkPasswordStrength("Passw0rd!");
     expect(result.checks).toEqual({
       minLength: true,
       hasUppercase: true,
