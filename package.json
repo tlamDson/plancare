@@ -1,5 +1,6 @@
 {
   "name": "travelplan",
+  "version": "0.1.0",
   "packageManager": "npm@10.9.3",
   "private": true,
   "workspaces": [
