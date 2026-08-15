@@ -2,7 +2,7 @@
 # RAILWAY DEPLOYMENT CONFIGURATION
 # Infrastructure as Code (IaC) — build config only
 # ============================================
-# This file is shared by EVERY service (travelplan-web, travelplan-worker)
+# This file is shared by EVERY service (travelplan-api, travelplan-worker)
 # AND every Environment (production, staging) in the Railway project — Railway
 # only reads [build] and [deploy] from it (verified against deployment
 # metadata: propertyFileMapping shows just build.builder/build.dockerfilePath
@@ -11,7 +11,7 @@
 #
 # Per-service settings live in the Railway dashboard, not here, because they
 # genuinely differ per service and this one file applies to both:
-#   - travelplan-web (the API): start command is the Dockerfile CMD
+#   - travelplan-api (the API): start command is the Dockerfile CMD
 #     `node backend/dist/backend/src/index.js` (real entrypoint — note
 #     backend/tsconfig.json's rootDir: ".." reproduces the folder tree under
 #     dist/), healthcheck path /health, port 3000.
