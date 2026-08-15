@@ -153,7 +153,7 @@ export default function SignUpPage() {
       });
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        toast.success("Account created! Welcome to TravelPlanner.");
+        toast.success("Account created! Welcome to TravelPlan.");
         navigate("/onboarding");
       }
     } catch (error: unknown) {
@@ -233,7 +233,7 @@ export default function SignUpPage() {
           <div className="flex items-center justify-between mb-8 lg:hidden">
             <Link to="/" className="flex items-center gap-2">
               <Plane className="h-6 w-6 text-primary" />
-              <span className="font-bold text-xl">TravelPlanner</span>
+              <span className="font-bold text-xl">TravelPlan</span>
             </Link>
             <ThemeToggle />
           </div>

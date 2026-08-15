@@ -12,7 +12,7 @@ export function LandingNav() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <Plane className="h-6 w-6 text-primary" />
-          <span className="font-bold text-xl">TravelPlanner</span>
+          <span className="font-bold text-xl">TravelPlan</span>
         </Link>
         <div className="flex items-center gap-4">
           <Link to="/signin">

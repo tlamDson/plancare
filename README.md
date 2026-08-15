@@ -1,4 +1,4 @@
-# Project Voyager — TravelPlan
+# TravelPlan
 
 Agentic travel planner monorepo: React web app, Express API, BullMQ workers, shared Zod contracts, MongoDB.
 
