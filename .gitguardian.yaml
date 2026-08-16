@@ -1,0 +1,8 @@
+version: 2
+
+secret:
+  # Verified false positives — not real credentials. See the code comment
+  # at each match's source for why it exists and looks secret-shaped.
+  ignored_matches:
+    - name: password-strength-test-fixture
+      match: Passw0rd!

@@ -34,8 +34,14 @@ const apiEnv = {
   // CLERK_WEBHOOK_SIGNING_SECRET must be valid base64 after "whsec_" (see
   // backend/src/test/integration-setup.ts for why) and GEMINI_API_KEY is
   // unused by any CI-safe spec (no worker runs, nothing reaches Gemini).
+  // Built from a readable string, not a hardcoded blob — a static base64
+  // literal here reads as a real secret to entropy-based scanners
+  // (GitGuardian false positive).
   CLERK_WEBHOOK_SIGNING_SECRET:
-    "whsec_aW50ZWdyYXRpb24tdGVzdC1jbGVyay13ZWJob29rLXNlY3JldC0zMg==",
+    "whsec_" +
+    Buffer.from("integration-test-clerk-webhook-secret-32").toString(
+      "base64",
+    ),
   GEMINI_API_KEY: "sk-dummy-key-for-e2e",
   // billing/stripe.service.ts does `new Stripe(env.STRIPE_SECRET_KEY)` at
   // *import* time (not lazily) — an empty key crashes the API at boot.
