@@ -33,21 +33,16 @@ import { BackgroundProcessingModal } from "../components/BackgroundProcessingMod
 import { useActiveJobStore } from "@/stores/useActiveJobStore";
 import { ItineraryDayCard } from "../components/ItineraryDayCard";
 import { TripDetailHeader } from "../components/trip-detail/TripDetailHeader";
+import { TripDetailActionsMenu } from "../components/trip-detail/TripDetailActionsMenu";
 import { TripDetailDayStrip } from "../components/trip-detail/TripDetailDayStrip";
 import { TripDetailSummaryRail } from "../components/trip-detail/TripDetailSummaryRail";
-import { TripCalendarSyncActions } from "../components/trip-detail/TripCalendarSyncActions";
 import { resolveItineraryDayIndex } from "../components/trip-detail/resolve-itinerary-day-index";
 import type { ItineraryDay } from "@/utils/schemas";
 import { DataError } from "@/components/DataError";
 import { PageLoader } from "@/components/PageLoader";
 import { retryJob, cancelJob } from "../api/jobs.api";
 import { toast } from "sonner";
-import {
-  CalendarDays,
-  Map,
-  MapPin,
-  Undo2,
-} from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
@@ -480,8 +475,6 @@ export default function TripDetailPage() {
           <div className="space-y-6 min-w-0 max-w-3xl w-full">
             <TripDetailHeader
               tripTitleLocalized={getLocalizedTripTitle(trip.title, t)}
-              status={trip.status}
-              isAgentProcessing={trip.isAgentProcessing}
               isEditingTitle={isEditingTitle}
               editTitleValue={editTitleValue}
               onEditTitleValueChange={setEditTitleValue}
@@ -490,67 +483,31 @@ export default function TripDetailPage() {
               onCancelEditTitle={() => setIsEditingTitle(false)}
               onTitleKeyDown={handleKeyDownTitle}
               isUpdatingTrip={isUpdatingTrip}
-              lifecycle={trip.lifecycle}
-              onLifecycleChange={(val) =>
-                updateLifecycle({
-                  tripId: trip._id,
-                  lifecycle: val as TripLifecycle,
-                })
-              }
-              isUpdatingLifecycle={isUpdatingLifecycle}
-              dateRange={dateRange}
-              totalDays={totalDays}
               actions={
-                <>
-                  {trip.status === "COMPLETED" && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleReGeocode}
-                      disabled={isReGeocoding}
-                      className="h-10 px-3 gap-1.5 cursor-pointer transition-colors duration-200"
-                      aria-label={t("trip.fixLocations")}
-                    >
-                      <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
-                      {isReGeocoding
-                        ? t("trip.reGeocoding")
-                        : t("trip.fixLocations")}
-                    </Button>
-                  )}
-
-                  <TripCalendarSyncActions
-                    tripId={trip._id}
-                    tripStatus={trip.status}
-                    isAgentProcessing={trip.isAgentProcessing}
-                  />
-
-                  {trip.status === "COMPLETED" && hasMapData && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/map/${trip._id}`)}
-                      className="gap-1.5 min-h-10 cursor-pointer transition-colors duration-200 lg:hidden"
-                      aria-label={t("map.viewOnMap")}
-                    >
-                      <Map className="h-4 w-4 shrink-0" aria-hidden="true" />
-                      {t("map.viewOnMap")}
-                    </Button>
-                  )}
-
-                  {!trip.isAgentProcessing && canUndo && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleUndo}
-                      disabled={isUndoing}
-                      className="h-10 px-3 shrink-0 gap-1.5 cursor-pointer transition-colors duration-200"
-                      title={t("trip.undo")}
-                    >
-                      <Undo2 className="h-4 w-4 shrink-0" />
-                      {isUndoing ? t("trip.undoing") : t("trip.undo")}
-                    </Button>
-                  )}
-                </>
+                <TripDetailActionsMenu
+                  tripId={trip._id}
+                  tripStatus={trip.status}
+                  isAgentProcessing={trip.isAgentProcessing}
+                  hasMapData={hasMapData}
+                  dateRange={dateRange}
+                  totalDays={totalDays}
+                  lifecycle={trip.lifecycle}
+                  onLifecycleChange={(val) =>
+                    updateLifecycle({
+                      tripId: trip._id,
+                      lifecycle: val as TripLifecycle,
+                    })
+                  }
+                  isUpdatingLifecycle={isUpdatingLifecycle}
+                  showFixLocations={trip.status === "COMPLETED"}
+                  isReGeocoding={isReGeocoding}
+                  onReGeocode={handleReGeocode}
+                  showUndo={!trip.isAgentProcessing}
+                  canUndo={canUndo}
+                  isUndoing={isUndoing}
+                  onUndo={handleUndo}
+                  onViewMap={() => navigate(`/map/${trip._id}`)}
+                />
               }
             />
 
@@ -563,8 +520,10 @@ export default function TripDetailPage() {
               />
             ) : null}
 
-            <div>
-              <h2 className="text-xl font-semibold mb-4">{t("trip.itinerary")}</h2>
+            <div data-testid="trip-detail-itinerary">
+              <h2 className="text-xl font-semibold mb-4">
+                {t("trip.itinerary")}
+              </h2>
               {isChunkedTrip && (
                 <div className="mb-4 rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
                   {t("trip.longTripBanner")}

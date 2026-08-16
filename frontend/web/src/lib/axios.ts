@@ -40,9 +40,7 @@ let tokenGetter: (() => Promise<string | null>) | null = null;
  * Register a token getter from Clerk (useAuth().getToken).
  * This allows axios to attach Bearer tokens to API requests.
  */
-export function registerAuthTokenGetter(
-  getter: () => Promise<string | null>,
-) {
+export function registerAuthTokenGetter(getter: () => Promise<string | null>) {
   tokenGetter = getter;
 }
 
@@ -60,10 +58,10 @@ apiClient.interceptors.request.use(
       try {
         const token = await tokenGetter();
         if (token) {
-          config.headers = {
-            ...(config.headers || {}),
-            Authorization: `Bearer ${token}`,
-          };
+          // Set the header in place rather than replacing config.headers —
+          // axios v1 types it as an AxiosHeaders class instance, not a
+          // plain object, so a spread-object assignment fails typecheck.
+          config.headers.Authorization = `Bearer ${token}`;
         }
       } catch {
         // Silently ignore token retrieval errors

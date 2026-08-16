@@ -234,6 +234,8 @@ export function WizardDestinationPickers() {
         emptyLabel={t("wizard.noResults")}
         open={openC}
         onOpenChange={setOpenC}
+        testId="trip-wizard-country"
+        itemTestIdPrefix="country-option"
       />
       {countryId ? (
         <div className="pt-2 animate-in fade-in slide-in-from-top-1">
@@ -258,10 +260,14 @@ export function WizardDestinationPickers() {
             emptyLabel={t("wizard.noResults")}
             open={openCity}
             onOpenChange={setOpenCity}
+            testId="trip-wizard-city"
+            itemTestIdPrefix="city-option"
           />
         </div>
       ) : null}
-      <p className="text-xs text-muted-foreground">{t("wizard.destinationsHint")}</p>
+      <p className="text-xs text-muted-foreground">
+        {t("wizard.destinationsHint")}
+      </p>
       {destErr && !init ? (
         <p className="text-sm text-destructive">{destErr}</p>
       ) : null}

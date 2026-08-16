@@ -1,0 +1,320 @@
+name: CI - PR Check
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-pr-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job phụ, KHÔNG phải check bắt buộc — chỉ để biết PR có đụng backend không,
+  # dùng để gate step build Docker image cho rẻ. KHÔNG dùng để gate job "ci"/"quality"
+  # (required check phải luôn chạy, xem .claude/rules/workflow.md).
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+
+    steps:
+      - name: Detect backend-related changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'packages/shared/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'turbo.json'
+              - '.dockerignore'
+              - '.github/workflows/ci-pr.yml'
+
+  ci:
+    name: Lint + Unit Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: test_user
+          MONGO_INITDB_ROOT_PASSWORD: test_password
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared package
+        run: npm run build:shared
+
+      - name: Lint
+        run: npm run lint
+        env:
+          CI: true
+
+      - name: Unit Tests - Backend + Frontend
+        # CLERK_WEBHOOK_SIGNING_SECRET is computed here, not a static env:
+        # value — must be valid base64 after "whsec_" (svix's Webhook
+        # constructor throws otherwise, see backend/src/test/integration-setup.ts),
+        # and a hardcoded base64 blob reads as a real secret to entropy-based
+        # scanners (GitGuardian false positive) even though it's a fixture.
+        run: |
+          export CLERK_WEBHOOK_SIGNING_SECRET="whsec_$(printf '%s' 'integration-test-clerk-webhook-secret-32' | base64 -w0)"
+          npm run test
+        env:
+          CI: true
+          NODE_ENV: test
+          MONGO_URI: mongodb://test_user:test_password@localhost:27017/test_db?authSource=admin
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_PASSWORD: ""
+          CLERK_SECRET_KEY: sk_test_dummy_key_for_ci
+          GEMINI_API_KEY: sk-dummy-key-for-ci
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci
+          STRIPE_WEBHOOK_SECRET: whsec_test_xxxxxxxxxxxxxxxxxxxxxxxx
+
+      # Reuses this job's mongo/redis services — real DB/queue, no mocks.
+      - name: Backend Integration Tests
+        # See the Unit Tests step above for why this is computed, not static.
+        run: |
+          export CLERK_WEBHOOK_SIGNING_SECRET="whsec_$(printf '%s' 'integration-test-clerk-webhook-secret-32' | base64 -w0)"
+          npm run test:integration -w backend
+        env:
+          CI: true
+          NODE_ENV: test
+          MONGO_URI: mongodb://test_user:test_password@localhost:27017/test_db?authSource=admin
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_PASSWORD: ""
+          CLERK_SECRET_KEY: sk_test_dummy_key_for_ci
+          GEMINI_API_KEY: sk-dummy-key-for-ci
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci
+          STRIPE_WEBHOOK_SECRET: whsec_test_xxxxxxxxxxxxxxxxxxxxxxxx
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.run_id }}
+          path: |
+            backend/coverage/
+            frontend/web/coverage/
+          retention-days: 7
+
+  # Tách job riêng để không đổi tên check bắt buộc "Lint + Unit Tests"
+  quality:
+    name: Typecheck + Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared package
+        run: npm run build:shared
+
+      - name: Typecheck
+        run: npm run typecheck
+        env:
+          CI: true
+
+      - name: Build
+        run: npm run build
+        env:
+          CI: true
+          VITE_CLERK_PUBLISHABLE_KEY: pk_test_dummy_key_for_ci
+          VITE_API_URL: http://localhost:3000/api
+          VITE_MAPBOX_ACCESS_TOKEN: pk.dummy_token_for_ci
+
+  # Image này là thứ được deploy lên Railway — hỏng ở đây thì hỏng cả deploy
+  docker:
+    name: Backend Docker Build
+    runs-on: ubuntu-latest
+    needs: changes
+    # KHÔNG đặt `if:` ở cấp job và KHÔNG đổi tên job: đây là required status check.
+    # Job phải luôn chạy và luôn kết thúc Success, chỉ các step nặng mới gate bằng `if:`.
+    env:
+      # PR release develop → main luôn build thật, không tin vào filter
+      SHOULD_BUILD: ${{ needs.changes.outputs.backend == 'true' || github.base_ref == 'main' }}
+
+    steps:
+      - name: Checkout
+        if: env.SHOULD_BUILD == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        if: env.SHOULD_BUILD == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        if: env.SHOULD_BUILD == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./backend/Dockerfile
+          target: production
+          push: false
+          tags: travelplan-api:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Bỏ qua build image
+        if: env.SHOULD_BUILD != 'true'
+        run: echo "PR không đụng backend, packages/shared hay manifest gốc — bỏ qua build image."
+
+  # Không phải required check — báo cáo lỗ hổng, không chặn merge.
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "HIGH,CRITICAL"
+          exit-code: "0"
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+  # Không phải required check — KHÔNG thêm job này vào branch protection.
+  # Đỏ ở đây không chặn merge; xem .claude/rules/workflow.md mục required
+  # check trước khi cân nhắc thay đổi điều đó.
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    # Secrets không khả dụng cho fork PR — skip thay vì fail khó hiểu.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: travelplan_admin
+          MONGO_INITDB_ROOT_PASSWORD: dev_password_change_in_prod
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E (CI-safe specs only — @live is local-only, needs real Gemini/Places keys)
+        # See the Unit Tests step above for why CLERK_WEBHOOK_SIGNING_SECRET
+        # is computed here, not a static env: value.
+        run: |
+          export CLERK_WEBHOOK_SIGNING_SECRET="whsec_$(printf '%s' 'integration-test-clerk-webhook-secret-32' | base64 -w0)"
+          npm run e2e
+        env:
+          CI: true
+          E2E_MONGO_URI: mongodb://travelplan_admin:dev_password_change_in_prod@localhost:27017/travelplan_e2e?authSource=admin
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_PASSWORD: ""
+          CLERK_PUBLISHABLE_KEY_E2E: ${{ secrets.CLERK_PUBLISHABLE_KEY_E2E }}
+          CLERK_SECRET_KEY_E2E: ${{ secrets.CLERK_SECRET_KEY_E2E }}
+          E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+          E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+          GEMINI_API_KEY: sk-dummy-key-for-ci
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci
+          STRIPE_WEBHOOK_SECRET: whsec_test_xxxxxxxxxxxxxxxxxxxxxxxx
+          # Intentionally absent: GOOGLE_PLACES_API_KEY, MAPBOX_ACCESS_TOKEN,
+          # VITE_API_URL (axios.ts defaults to http://localhost:3000/api —
+          # setting it to http://localhost:3000 like the `quality` job's
+          # build step does would 404 every request).
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 7

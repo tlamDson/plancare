@@ -18,6 +18,10 @@ export const createCheckout = async (
 
     res.json({ url: session.url });
   } catch (error: any) {
+    if (error?.message === "STRIPE_NOT_CONFIGURED") {
+      res.status(503).json({ message: "Billing is not configured" });
+      return;
+    }
     logger.error(
       { error: error.message, userId: req.auth?.()?.userId },
       "Failed to create checkout session",

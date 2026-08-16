@@ -59,7 +59,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<TabId>("personal");
+  const [settingsInitialTab, setSettingsInitialTab] =
+    useState<TabId>("personal");
 
   useEffect(() => {
     if (!me) return;
@@ -199,7 +200,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </Link>
               );
             })}
-            {!isPro && usage?.tripLimit > 0 && (
+            {!isPro && usage && usage.tripLimit > 0 && (
               <div className="mx-2 mt-4 rounded-lg border bg-muted/30 p-3">
                 <p className="text-xs font-medium text-foreground">
                   {`${usage.tripsUsedThisCycle}/${usage.tripLimit} Free Trips Used`}

@@ -41,7 +41,10 @@ export function useTripCalendarSync(tripId: string | undefined) {
     },
     onError: (err: unknown) => {
       const e = err as {
-        response?: { status?: number; data?: { code?: string; message?: string } };
+        response?: {
+          status?: number;
+          data?: { code?: string; message?: string };
+        };
       };
       const code = e?.response?.data?.code;
       if (code === "GOOGLE_NOT_CONNECTED") {
@@ -63,8 +66,7 @@ export function useTripCalendarSync(tripId: string | undefined) {
         return;
       }
       toast.error(
-        e?.response?.data?.message ??
-          "Không thể đồng bộ lên Google Calendar.",
+        e?.response?.data?.message ?? "Không thể đồng bộ lên Google Calendar.",
       );
     },
   });
@@ -91,8 +93,12 @@ export function useTripCalendarSync(tripId: string | undefined) {
       return;
     }
 
+    // Clerk's OAuthProvider values dropped the "oauth_" prefix (now just
+    // "google") — comparing against "oauth_google" never matched, so a
+    // linked Google account was never found and this errored out for
+    // every user, even ones who signed in with Google.
     const google = user.externalAccounts?.find(
-      (a) => a.provider === "oauth_google",
+      (a) => a.provider === "google",
     ) as ExternalAccountWithReauthorize | undefined;
 
     if (!google) {

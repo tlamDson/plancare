@@ -83,7 +83,7 @@ export default function SignUpScreen() {
               <TouchableOpacity style={styles.logo}>
                 <Plane size={24} color={colors.primary} />
                 <Text style={[styles.logoText, { color: colors.foreground }]}>
-                  TravelPlanner
+                  TravelPlan
                 </Text>
               </TouchableOpacity>
             </Link>

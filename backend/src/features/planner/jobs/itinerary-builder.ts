@@ -3,6 +3,7 @@ import sanitizeHtml from "sanitize-html";
 import {
   type TripIntents,
   SLOT_ORDER as INTENT_SLOT_ORDER,
+  sortedDayKeys,
 } from "../services/intent-parser.service";
 import type { ValidatedPlace } from "../services/validation.service";
 import type { TripPreferences } from "@travelplan/shared";
@@ -21,7 +22,7 @@ const SLOT_ORDER_MAP: Record<string, number> = Object.fromEntries(
   INTENT_SLOT_ORDER.map((s, i) => [s, i]),
 );
 
-interface TaggedPlace {
+export interface TaggedPlace {
   place: ValidatedPlace;
   slotType: string;
   slotOrder: number;
@@ -30,14 +31,14 @@ interface TaggedPlace {
 // Reconstruct the (slot, ValidatedPlace) correspondence by iterating intents
 // in the same order as flattenIntents so that validated[i] maps to the correct
 // (day, slot) pair. Supports 2–6 slots per day.
-function buildTaggedPlaces(
+export function buildTaggedPlaces(
   intents: TripIntents,
   validated: ValidatedPlace[],
 ): TaggedPlace[] {
   const tagged: TaggedPlace[] = [];
   let idx = 0;
 
-  for (const dayKey of Object.keys(intents).sort()) {
+  for (const dayKey of sortedDayKeys(intents)) {
     const slots = intents[dayKey];
     if (!slots || typeof slots !== "object") continue;
 
@@ -62,7 +63,7 @@ function buildTaggedPlaces(
 // After each cluster is assembled, it is sorted by slotOrder so that
 // "morning-type" places always precede "afternoon-type" which precede "evening-type".
 // Result: geographic grouping + preserved temporal intent within each day.
-function clusterByProximity(
+export function clusterByProximity(
   taggedPlaces: TaggedPlace[],
   numDays: number,
   slotsPerDay: number,
@@ -131,7 +132,10 @@ function clusterByProximity(
   // Fill short clusters with passthrough places ([0,0] coords — dev fallback)
   let passthroughIdx = 0;
   for (const cluster of clusters) {
-    while (cluster.length < slotsPerDay && passthroughIdx < withoutCoords.length) {
+    while (
+      cluster.length < slotsPerDay &&
+      passthroughIdx < withoutCoords.length
+    ) {
       cluster.push(withoutCoords[passthroughIdx++]!);
     }
   }
@@ -161,32 +165,6 @@ export async function updateJobProgress(
   currentStep: string,
 ) {
   await job.updateProgress({ percent, currentStep });
-}
-
-// ─── Dynamic time slots based on activitiesPerDay ─────────────────────────
-// Generates slot names for 2–6 activities per day.
-function generateTimeSlots(count: number): string[] {
-  const allSlots = [
-    "morning",
-    "late morning",
-    "afternoon",
-    "late afternoon",
-    "evening",
-    "night",
-  ];
-  // Always start from "morning", take `count` evenly spaced slots
-  if (count <= 2) return ["morning", "evening"];
-  if (count === 3) return ["morning", "afternoon", "evening"];
-  if (count === 4) return ["morning", "late morning", "afternoon", "evening"];
-  if (count === 5)
-    return [
-      "morning",
-      "late morning",
-      "afternoon",
-      "late afternoon",
-      "evening",
-    ];
-  return allSlots; // 6
 }
 
 // Default start times mapped to slot names
@@ -223,9 +201,6 @@ export async function buildItinerary(
   const activitiesPerDay = preferences.activitiesPerDay ?? 3;
   const transportMode: TransportMode =
     (preferences.transportMode as TransportMode) ?? "walking";
-  const timeSlots = generateTimeSlots(activitiesPerDay);
-
-  const aiDayKeys = Object.keys(intents).sort();
 
   // Tag each validated place with its original slot intent (morning/afternoon/evening),
   // then cluster by geographic proximity while sorting within each cluster by slot order.
@@ -248,9 +223,6 @@ export async function buildItinerary(
   );
 
   for (let dayNum = 0; dayNum < expectedDays; dayNum++) {
-    const dayKey = aiDayKeys[dayNum] ?? `day${dayNum + 1}`;
-    const slots = intents[dayKey];
-
     const dayDate = new Date(
       new Date(startDateStr).getTime() + dayNum * msPerDay,
     );
@@ -295,18 +267,18 @@ export async function buildItinerary(
           activity.priceLevel = place.priceLevel;
         if (place.photoUrl) activity.photoUrl = place.photoUrl;
 
-          if (place.openingHoursArray && place.openingHoursArray.length > 0) {
-            const dayJs = dayDate.getDay();
-            const googleIdx = dayJs === 0 ? 6 : dayJs - 1;
-            const entry = place.openingHoursArray[googleIdx];
-            if (entry) {
-              const colonIdx = entry.indexOf(":");
-              activity.openingHours =
-                colonIdx !== -1 ? entry.slice(colonIdx + 1).trim() : entry;
-            }
-          } else if (place.openingHours) {
-            activity.openingHours = place.openingHours;
+        if (place.openingHoursArray && place.openingHoursArray.length > 0) {
+          const dayJs = dayDate.getDay();
+          const googleIdx = dayJs === 0 ? 6 : dayJs - 1;
+          const entry = place.openingHoursArray[googleIdx];
+          if (entry) {
+            const colonIdx = entry.indexOf(":");
+            activity.openingHours =
+              colonIdx !== -1 ? entry.slice(colonIdx + 1).trim() : entry;
           }
+        } else if (place.openingHours) {
+          activity.openingHours = place.openingHours;
+        }
 
         // ─── Nearby food suggestions ─────────────────────────────────────
         // Fire-and-forget with cache: costs 0 API calls on cache hit

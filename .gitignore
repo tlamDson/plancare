@@ -14,6 +14,7 @@ lerna-debug.log*
 .env.*
 .env.docker
 !.env.example
+!.env.staging.example
 **/backend/.env
 **/backend/.env.*
 **/frontend/**/.env
@@ -38,7 +39,9 @@ docs/
 .agent/
 .design-docs/
 .expo/
-scripts/
+# Root scripts/ only (private mongo-init.js) — anchored so it doesn't also
+# swallow backend/scripts/ or .claude/scripts/, which are meant to be tracked.
+/scripts/
 
 # Private UI/UX data and prompts
 .shared/
@@ -50,6 +53,14 @@ scripts/
 
 # Keep CI/CD workflows (exception)
 !.github/workflows/
+
+# ============================================
+# CLAUDE CODE — LOCAL/RUNTIME ONLY
+# ============================================
+# .claude/ itself IS committed (rules, agents, skills, commands, settings.json)
+# — only per-machine overrides and runtime state stay local.
+.claude/settings.local.json
+.claude/.ci-watch.json
 # ============================================
 # IDE & EDITORS
 # ============================================
@@ -78,11 +89,20 @@ Thumbs.db
 coverage/
 .nyc_output/
 *.lcov
+e2e/test-results/
+e2e/playwright-report/
+e2e/.auth/
+/playwright/.cache/
 
 # ============================================
 # DOCKER
 # ============================================
 docker-compose.override.yml
+
+# ============================================
+# VERCEL
+# ============================================
+.vercel/
 
 # ============================================
 # LOGS
@@ -97,7 +117,11 @@ pino-*.log
 temp/
 tmp/
 *.tmp
-frontend/web/lint_unix.txt
-frontend/web/lint.txt
 
-.design-docs/
+# ============================================
+# SCRATCH / DEBUG SCRIPTS — never commit ad-hoc debug output
+# ============================================
+tsc-output.txt
+eslint_report.json
+backend/tz-test*.js
+backend/test-db.js

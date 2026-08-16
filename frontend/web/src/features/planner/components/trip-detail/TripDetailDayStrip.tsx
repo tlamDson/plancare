@@ -46,6 +46,7 @@ export function TripDetailDayStrip({
             <button
               key={day._id ?? `day-${day.day}`}
               type="button"
+              data-testid={`trip-detail-day-tab-${day.day}`}
               aria-current={selected ? "true" : undefined}
               onClick={() => onSelectDay(idx)}
               className={cn(

@@ -1,0 +1,110 @@
+name: CI - Main (Full)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  full-ci:
+    name: Full CI + Unit Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: test_user
+          MONGO_INITDB_ROOT_PASSWORD: test_password
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared package
+        run: npm run build:shared
+
+      - name: Lint
+        run: npm run lint
+        env:
+          CI: true
+
+      - name: Typecheck
+        run: npm run typecheck
+        env:
+          CI: true
+
+      - name: Build
+        run: npm run build
+        env:
+          CI: true
+          VITE_CLERK_PUBLISHABLE_KEY: pk_test_dummy_key_for_ci
+          VITE_API_URL: http://localhost:3000/api
+          VITE_MAPBOX_ACCESS_TOKEN: pk.dummy_token_for_ci
+
+      - name: Unit Tests
+        run: npm run test
+        env:
+          CI: true
+          NODE_ENV: test
+          MONGO_URI: mongodb://test_user:test_password@localhost:27017/test_db?authSource=admin
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_PASSWORD: ""
+          CLERK_SECRET_KEY: sk_test_dummy_key_for_ci
+          CLERK_WEBHOOK_SIGNING_SECRET: whsec_dummy_secret
+          GEMINI_API_KEY: sk-dummy-key-for-ci
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci
+
+      - name: Backend Integration Tests
+        run: npm run test:integration -w backend
+        env:
+          CI: true
+          NODE_ENV: test
+          MONGO_URI: mongodb://test_user:test_password@localhost:27017/test_db?authSource=admin
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_PASSWORD: ""
+          CLERK_SECRET_KEY: sk_test_dummy_key_for_ci
+          CLERK_WEBHOOK_SIGNING_SECRET: whsec_dummy_secret
+          GEMINI_API_KEY: sk-dummy-key-for-ci
+          STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-main-${{ github.run_id }}
+          path: |
+            backend/coverage/
+            frontend/web/coverage/
+          retention-days: 14
+
+# Env vars nhạy cảm thật (JWT/API key/DB credential) dùng ${{ secrets.XXX }} khi
+# workflow này cần chạy integration/e2e thật — hiện tại chỉ dùng giá trị dummy
+# đủ để build/test pass mà không cần secret thật.

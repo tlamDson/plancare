@@ -43,7 +43,7 @@ export function itineraryToGoogleEvents(
   itinerary: IItineraryDay[],
   tripId: string,
   destination?: string,
-  tripTitle?: string,
+  _tripTitle?: string,
 ): EventWithKey[] {
   const tz = getTimezoneForDestination(destination);
   const events: EventWithKey[] = [];

@@ -66,6 +66,7 @@ export function StepBudget() {
           <span className="text-sm font-medium">{formattedBudget}</span>
         </div>
         <Slider
+          data-testid="trip-wizard-budget-total"
           value={[data.budget.total]}
           min={sliderMin}
           max={sliderMax}

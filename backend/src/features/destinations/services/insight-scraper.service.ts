@@ -101,7 +101,7 @@ ${snippets.join("\n\n")}`;
               }
             }
           }
-        } catch (err) {
+        } catch (_err) {
           logger.warn({ city: cityNameEn, theme: theme.key, textSnippet: text.substring(0, 50) }, "Failed to parse Gemini JSON output");
         }
       }

@@ -39,7 +39,7 @@ export default function LandingScreen() {
         <View style={styles.logo}>
           <Plane size={28} color={colors.primary} />
           <Text style={[styles.logoText, { color: colors.foreground }]}>
-            TravelPlanner
+            TravelPlan
           </Text>
         </View>
         <ThemeToggle />
@@ -105,7 +105,7 @@ export default function LandingScreen() {
 
       {/* Footer */}
       <Text style={[styles.footer, { color: colors.mutedForeground }]}>
-        © 2026 TravelPlanner. All rights reserved.
+        © 2026 TravelPlan. All rights reserved.
       </Text>
     </SafeAreaView>
   );

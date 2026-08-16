@@ -42,15 +42,8 @@ export function buildTripPrompt(
   cityCost?: any,
   localInsight?: string | null,
 ): string {
-  const {
-    destination,
-    startDate,
-    endDate,
-    budget,
-    travelers,
-    mood,
-    priorities,
-  } = preferences;
+  const { destination, startDate, endDate, budget, travelers, priorities } =
+    preferences;
 
   const days = daysBetween(startDate, endDate);
   const totalTravelers = travelers.adults + travelers.children;

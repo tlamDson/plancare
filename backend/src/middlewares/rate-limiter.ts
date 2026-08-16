@@ -3,11 +3,17 @@ import RedisStore from "rate-limit-redis";
 import { redisConnection } from "../lib/queue";
 import { ClerkRequest } from "../types/express";
 
+export const GENERAL_RATE_LIMIT_MAX = 100;
+
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: GENERAL_RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
+  // Liveness/readiness probes (Railway, Docker healthcheck) hit these paths
+  // frequently and share the app-wide IP-keyed budget with real traffic —
+  // never let infra polling exhaust it and 429 real requests.
+  skip: (req) => req.path === "/health" || req.path === "/ready",
   store: new RedisStore({
     sendCommand: async (...args: any[]): Promise<any> => {
       const [command, ...commandArgs] = args;

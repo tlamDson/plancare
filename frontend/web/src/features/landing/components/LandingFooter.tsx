@@ -11,7 +11,7 @@ export function LandingFooter() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <Plane className="h-5 w-5 text-primary" />
-            <span className="font-semibold">TravelPlanner</span>
+            <span className="font-semibold">TravelPlan</span>
           </div>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <a href="#" className="hover:text-foreground transition-colors">
@@ -28,7 +28,7 @@ export function LandingFooter() {
             </a>
           </div>
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} TravelPlanner. All rights reserved.
+            © {new Date().getFullYear()} TravelPlan. All rights reserved.
           </p>
         </div>
       </div>

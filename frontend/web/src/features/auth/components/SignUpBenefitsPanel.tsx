@@ -13,7 +13,7 @@ export function SignUpBenefitsPanel() {
       <div className="max-w-md">
         <div className="flex items-center gap-2 mb-8">
           <Plane className="h-8 w-8 text-primary" />
-          <span className="font-bold text-2xl">TravelPlanner</span>
+          <span className="font-bold text-2xl">TravelPlan</span>
         </div>
         <h2 className="text-3xl font-bold mb-4">
           Start planning your perfect journey today

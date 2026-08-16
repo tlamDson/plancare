@@ -46,6 +46,7 @@ export default function OnBoardingPage() {
 
   useEffect(() => {
     if (isLoaded && user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from Clerk's async `user` once it loads, not a per-render derivation
       setName(user.fullName || user.firstName || "");
     }
 
@@ -118,7 +119,7 @@ export default function OnBoardingPage() {
     toast.success(
       isResetMode
         ? "Onboarding preferences updated successfully"
-        : "Welcome to TravelPlanner!",
+        : "Welcome to TravelPlan!",
     );
     navigate(redirectTo);
     setIsLoading(false);
@@ -132,7 +133,7 @@ export default function OnBoardingPage() {
       <header className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Plane className="h-6 w-6 text-primary" />
-          <span className="font-bold text-xl">TravelPlanner</span>
+          <span className="font-bold text-xl">TravelPlan</span>
         </div>
         <Button variant="ghost" onClick={handleSkip}>
           Skip for now

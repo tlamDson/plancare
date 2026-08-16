@@ -105,6 +105,10 @@ export function AgentLockBanner({
 
   return (
     <Alert
+      data-testid="agent-lock-banner"
+      data-state={
+        showError ? "error" : isCancelled ? "cancelled" : "processing"
+      }
       className={
         showError
           ? "border-destructive/50 bg-destructive/5"
@@ -116,7 +120,10 @@ export function AgentLockBanner({
       ) : (
         <Loader2 className="h-4 w-4 animate-spin text-primary" />
       )}
-      <AlertTitle className={showError ? "text-destructive" : "text-primary"}>
+      <AlertTitle
+        data-testid="agent-lock-title"
+        className={showError ? "text-destructive" : "text-primary"}
+      >
         {showError
           ? "AI failed to generate your trip"
           : "AI is working on your trip"}
@@ -133,13 +140,19 @@ export function AgentLockBanner({
           showProgress
         />
         {jobId && (
-          <div className="text-xs text-muted-foreground">Job ID: {jobId}</div>
+          <div
+            className="text-xs text-muted-foreground"
+            data-testid="agent-lock-job-id"
+          >
+            Job ID: {jobId}
+          </div>
         )}
         {canRetry && (
           <div>
             <Button
               size="sm"
               variant="secondary"
+              data-testid="agent-lock-retry"
               onClick={onRetry}
               disabled={isRetrying}
             >
@@ -152,6 +165,7 @@ export function AgentLockBanner({
             <Button
               size="sm"
               variant="outline"
+              data-testid="agent-lock-cancel"
               onClick={onCancel}
               disabled={isCancelling}
               className="mt-2 text-muted-foreground hover:text-destructive"

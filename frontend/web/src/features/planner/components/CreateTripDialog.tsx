@@ -12,7 +12,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useTripWizardStore } from "@/stores/trip-wizard.store";
-import type { TripWizardData } from "@/stores/trip-wizard.store";
 import { StepBasics } from "./wizard/StepBasics";
 import { StepBudget } from "./wizard/StepBudget";
 import { StepAccommodation } from "./wizard/StepAccommodation";
@@ -20,15 +19,14 @@ import { StepTransport } from "./wizard/StepTransport";
 import { StepActivities } from "./wizard/StepActivities";
 import { StepRequirements } from "./wizard/StepRequirements";
 import { useTripWizard } from "../hooks/useTripWizard";
-import type { TripPreferences } from "@travelplan/shared";
 import { useTranslationStore } from "@/stores/useTranslationStore";
 import { useSubscriptionStore } from "@/stores/useSubscriptionStore";
 import { useActiveJobStore } from "@/stores/useActiveJobStore";
 import { getUserPreferences } from "@/features/settings/types/user-preferences.types";
+import { getTripDays, buildPreferences } from "./create-trip-dialog.utils";
 
 const TOTAL_STEPS = 6;
 const MIN_DAILY_BUDGET = 20;
-const MAX_TRIP_DAYS = 90;
 
 const steps = [
   { titleKey: "wizard.step1Title", descKey: "wizard.step1Desc" },
@@ -38,62 +36,6 @@ const steps = [
   { titleKey: "wizard.step5Title", descKey: "wizard.step5Desc" },
   { titleKey: "wizard.step6Title", descKey: "wizard.step6Desc" },
 ];
-
-function getTripDays(startDate: string, endDate: string) {
-  if (!startDate || !endDate) return null;
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
-  const diffTime = end.getTime() - start.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  if (diffDays < 1 || diffDays > MAX_TRIP_DAYS) return null;
-  return diffDays;
-}
-
-const PACE_TO_ACTIVITIES: Record<string, number> = {
-  relaxed: 2,
-  balanced: 4,
-  packed: 6,
-};
-
-function buildPreferences(data: TripWizardData) {
-  const preferences: TripPreferences = {
-    destination: data.destination.trim(),
-    startDate: new Date(data.startDate).toISOString(),
-    endDate: new Date(data.endDate).toISOString(),
-    budget: {
-      total: data.budget.total,
-      currency: data.budget.currency,
-    },
-    travelers: {
-      adults: data.travelers.adults,
-      children: data.travelers.children,
-    },
-    accommodationType:
-      data.accommodationType === "" || !data.accommodationType
-        ? "any"
-        : data.accommodationType,
-    priorities: data.priorities,
-    mood: data.mood || undefined,
-    interests: data.interests.length > 0 ? data.interests : undefined,
-    dealBreakers: data.dealBreakers.length > 0 ? data.dealBreakers : undefined,
-    purpose: data.purpose,
-    groupType: data.groupType,
-    transportMode: data.transportMode,
-    // New Step 5 fields
-    pace: data.pace,
-    focus: data.focus,
-    constraints: data.constraints,
-    specialRequirements: data.specialRequirements || undefined,
-    includedMeals: data.includedMeals,
-    activitiesPerDay: PACE_TO_ACTIVITIES[data.pace] ?? 3,
-    // RAG lookup idKeys — only set when user selected from dropdown
-    countryIdKey: data.countryIdKey,
-    cityIdKey: data.cityIdKey,
-  };
-
-  return preferences;
-}
 
 export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
   const navigate = useNavigate();
@@ -218,7 +160,11 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
       }}
     >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent
+        className="sm:max-w-2xl"
+        data-testid="trip-wizard"
+        data-step={stepIndex}
+      >
         <DialogHeader>
           <DialogTitle>{t(stepMeta.titleKey)}</DialogTitle>
           <DialogDescription>{t(stepMeta.descKey)}</DialogDescription>
@@ -227,7 +173,10 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
         <div className="space-y-4">
           <div>
             <Progress value={progressValue} />
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p
+              className="mt-2 text-sm text-muted-foreground"
+              data-testid="trip-wizard-step-indicator"
+            >
               {t("wizard.step")} {stepIndex + 1} {t("wizard.of")} {TOTAL_STEPS}
             </p>
           </div>
@@ -237,6 +186,7 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
         <DialogFooter className="pt-2">
           <Button
             variant="outline"
+            data-testid="trip-wizard-reset"
             onClick={() => {
               reset();
               setStepIndex(0);
@@ -246,6 +196,7 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
           </Button>
           <Button
             variant="ghost"
+            data-testid="trip-wizard-back"
             onClick={handleBack}
             disabled={stepIndex === 0}
           >
@@ -253,6 +204,7 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
           </Button>
           {stepIndex < TOTAL_STEPS - 1 ? (
             <Button
+              data-testid="trip-wizard-next"
               onClick={handleNext}
               disabled={!stepValid}
               className={
@@ -266,7 +218,11 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
                 : t("wizard.btnNext")}
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={!stepValid || isPending}>
+            <Button
+              data-testid="trip-wizard-create"
+              onClick={handleSubmit}
+              disabled={!stepValid || isPending}
+            >
               {isPending ? t("wizard.btnCreating") : t("wizard.btnCreate")}
             </Button>
           )}

@@ -69,7 +69,10 @@ export function TripDetailHeader({
           </div>
         ) : (
           <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-2xl md:text-3xl font-bold truncate capitalize">
+            <h1
+              className="text-2xl md:text-3xl font-bold truncate capitalize"
+              data-testid="trip-detail-title"
+            >
               {tripTitleLocalized}
             </h1>
             <Button

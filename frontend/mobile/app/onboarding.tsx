@@ -60,7 +60,7 @@ export default function OnboardingScreen() {
           <View style={styles.logo}>
             <Plane size={28} color={colors.primary} />
             <Text style={[styles.logoText, { color: colors.foreground }]}>
-              TravelPlanner
+              TravelPlan
             </Text>
           </View>
         </View>

@@ -1,10 +1,11 @@
 import pino from "pino";
-import { env } from "../config/env";
+import { env, appEnv } from "../config/env";
 
 const options: pino.LoggerOptions = {
   level: env.NODE_ENV === "development" ? "debug" : "info",
   base: {
     service: "api",
+    env: appEnv,
   },
 };
 
