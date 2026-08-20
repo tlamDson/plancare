@@ -14,6 +14,11 @@ export interface IPlaceCache extends Document {
   reviewCount?: number;
   priceLevel?: number;
   photos?: string[];
+  /** Resolved CDN photo URL (see place-photo.service.ts) — distinct from
+   * `photos` (raw Google photo refs, currently unused by any writer). */
+  photoUrl?: string;
+  openingHours?: string;
+  openingHoursArray?: string[];
   categories?: string[];
   isVerified: boolean;
   source: "mapbox" | "google" | "both";
@@ -61,6 +66,9 @@ const PlaceCacheSchema = new Schema<IPlaceCache>(
     reviewCount: Number,
     priceLevel: { type: Number, min: 0, max: 4 },
     photos: [String],
+    photoUrl: String,
+    openingHours: String,
+    openingHoursArray: [String],
     categories: [String],
     isVerified: { type: Boolean, default: false },
     source: {
