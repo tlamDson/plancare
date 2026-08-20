@@ -3,7 +3,7 @@ import { tripGeneratorProcessor } from "./features/planner/jobs/trip.processor";
 import { calendarSyncProcessor } from "./features/calendar/jobs/calendar-sync.processor";
 import { insightWorker } from "./features/destinations/jobs/insight-worker";
 import { scheduleInsightScraping } from "./features/destinations/jobs/insight-queue";
-import { logger } from "./lib/logger";
+import { workerLogger as logger } from "./lib/logger";
 import mongoose from "mongoose";
 import { env } from "./config/env";
 import { userRepository } from "./features/user/repositories/user.repository";
@@ -70,7 +70,10 @@ const startWorker = async () => {
 
     // Insight Scraper Worker — processes 1 city per job at max 1 req/2s
     insightWorker.on("completed", (job) => {
-      logger.info({ jobId: job.id, result: job.returnvalue }, "Insight scrape completed");
+      logger.info(
+        { jobId: job.id, result: job.returnvalue },
+        "Insight scrape completed",
+      );
     });
     insightWorker.on("failed", (job, err) => {
       logger.error({ jobId: job?.id, err }, "Insight scrape failed");

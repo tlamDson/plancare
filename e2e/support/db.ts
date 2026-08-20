@@ -6,10 +6,12 @@ import { MongoClient } from "mongodb";
  * persistent DB across runs would eventually start failing specs with a
  * quota error that looks like a UI bug.
  *
- * No test-only HTTP reset endpoint is added for this: the repo already has
- * one unauthenticated dev route (POST /api/dev/scrape-insights, documented
- * as a known vulnerability) — adding a second, more destructive one would
- * repeat that mistake with a bigger blast radius.
+ * No test-only HTTP reset endpoint is added for this: even POST
+ * /api/dev/scrape-insights — auth-gated and dev-only (see
+ * isDevRoutesEnabled() in app.ts) — stays scoped to fanning out a scrape job,
+ * never a raw DB write. A reset endpoint would be a more destructive
+ * precedent than anything currently in /api/dev, so this stays a direct
+ * MongoClient drop instead of an HTTP route.
  */
 export async function resetE2EDatabase(uri: string): Promise<void> {
   if (!/\/travelplan_e2e(\?|$)/.test(uri)) {

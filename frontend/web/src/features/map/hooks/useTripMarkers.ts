@@ -212,11 +212,6 @@ export function useTripMarkers({
           return [lng, lat];
         });
 
-        console.log(
-          `[useTripMarkers] Day ${day.day} - LINE COORDS:`,
-          lineCoords,
-        );
-
         // ── Connecting dashed line
         if (lineCoords.length > 1) {
           map.addSource(sourceId, {
@@ -249,10 +244,6 @@ export function useTripMarkers({
           const lng = Number(rawLng);
           const lat = Number(rawLat);
           const actId = act._id ?? `day${day.day}-idx${idx}`;
-
-          console.log(
-            `[useTripMarkers] Day ${day.day} - Stop ${idx + 1} MARKER: [${lng}, ${lat}] - ${act.name}`,
-          );
 
           const el = document.createElement("div");
           el.className = "trip-marker"; // Add class for potential future global targeting
@@ -294,10 +285,6 @@ export function useTripMarkers({
 
           el.textContent = String(idx + 1);
           el.setAttribute("aria-label", act.name);
-
-          console.log(
-            `[Popup Cost Debug] ${act.name}: cost=${act.cost}, priceLevel=${act.priceLevel}`,
-          );
 
           // ── Create Popup Content ──────────────────────────────
           const timeText = act.time

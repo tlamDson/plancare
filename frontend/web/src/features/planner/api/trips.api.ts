@@ -132,6 +132,5 @@ export async function updateTripLifecycle(
   });
   // Backend returns { success: true, trip: {...} }
   const payload = response.data.trip ?? response.data.data ?? response.data;
-  console.log("[lifecycle] 📦 Raw response payload:", payload);
   return validateAPI(tripSchema, payload, "updateTripLifecycle");
 }
