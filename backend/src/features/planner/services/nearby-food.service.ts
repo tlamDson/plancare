@@ -10,7 +10,7 @@
 import axios from "axios";
 import { env } from "../../../config/env";
 import { logger } from "../../../lib/logger";
-import PlaceCache from "../models/PlaceCache";
+import { placeCacheRepository } from "../repositories/place-cache.repository";
 import { resolveBestPhotoUrl } from "./place-photo.service";
 import type { TransportMode } from "./geo-validator.service";
 
@@ -56,9 +56,9 @@ export class NearbyFoodService {
 
     // 1. Cache check — look up by googlePlaceId
     if (anchor.googlePlaceId) {
-      const cached = await PlaceCache.findOne({
-        googlePlaceId: anchor.googlePlaceId,
-      });
+      const cached = await placeCacheRepository.findByGooglePlaceId(
+        anchor.googlePlaceId,
+      );
       if (cached?.nearbyFood && cached.nearbyFood.length > 0) {
         logger.debug(
           { anchor: anchor.name },
@@ -81,12 +81,7 @@ export class NearbyFoodService {
       const response = await axios.post(
         "https://places.googleapis.com/v1/places:searchNearby",
         {
-          includedTypes: [
-            "restaurant",
-            "cafe",
-            "bakery",
-            "meal_takeaway",
-          ],
+          includedTypes: ["restaurant", "cafe", "bakery", "meal_takeaway"],
           maxResultCount: 10,
           locationRestriction: {
             circle: {
@@ -158,10 +153,9 @@ export class NearbyFoodService {
 
       // 3. Cache results on the anchor's PlaceCache document
       if (anchor.googlePlaceId) {
-        await PlaceCache.findOneAndUpdate(
-          { googlePlaceId: anchor.googlePlaceId },
-          { $set: { nearbyFood: results } },
-          { new: false }, // don't need the updated doc
+        await placeCacheRepository.updateNearbyFood(
+          anchor.googlePlaceId,
+          results,
         );
       }
 
