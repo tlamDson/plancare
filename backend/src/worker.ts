@@ -4,10 +4,13 @@ import { calendarSyncProcessor } from "./features/calendar/jobs/calendar-sync.pr
 import { insightWorker } from "./features/destinations/jobs/insight-worker";
 import { scheduleInsightScraping } from "./features/destinations/jobs/insight-queue";
 import { workerLogger as logger } from "./lib/logger";
+import { initSentry, Sentry } from "./lib/sentry";
 import mongoose from "mongoose";
 import { env } from "./config/env";
 import { userRepository } from "./features/user/repositories/user.repository";
 import cron from "node-cron";
+
+initSentry("worker");
 
 /** Fewer stalled checks → fewer Redis commands; lock covers long AI / I/O jobs. */
 const workerThroughputOpts = {
@@ -32,6 +35,7 @@ const startWorker = async () => {
     // Logs a error mesesage with the jobId
     worker.on("failed", async (job, err) => {
       logger.error({ jobId: job?.id, err }, "Job failed");
+      Sentry.captureException(err);
 
       if (!job) return;
       const maxAttempts = job.opts?.attempts ?? 1;
@@ -66,6 +70,7 @@ const startWorker = async () => {
     });
     calendarWorker.on("failed", (job, err) => {
       logger.error({ jobId: job?.id, err }, "Calendar sync job failed");
+      Sentry.captureException(err);
     });
 
     // Insight Scraper Worker — processes 1 city per job at max 1 req/2s
@@ -77,6 +82,7 @@ const startWorker = async () => {
     });
     insightWorker.on("failed", (job, err) => {
       logger.error({ jobId: job?.id, err }, "Insight scrape failed");
+      Sentry.captureException(err);
     });
 
     // Weekly cron: every Sunday at 2 AM — fans out 1 job per stale city
@@ -107,6 +113,7 @@ const startWorker = async () => {
       { err: error, message: error?.message, stack: error?.stack },
       "Worker failed to start",
     );
+    Sentry.captureException(error);
     process.exit(1);
   }
 };

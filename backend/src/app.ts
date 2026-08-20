@@ -5,6 +5,7 @@ import webhookRoutes from "./features/auth/routes";
 import stripeWebhookRoutes from "./features/billing/webhook.routes";
 import { clerkMiddleware } from "@clerk/express";
 import { logger } from "./lib/logger";
+import { initSentry, Sentry } from "./lib/sentry";
 import { corsOptions } from "./config/cors";
 import { generalLimiter } from "./middlewares/rate-limiter";
 import { env, appEnv } from "./config/env";
@@ -50,6 +51,8 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
  * entrypoint (index.ts) share the exact same middleware/route wiring.
  */
 export function createApp(): Express {
+  initSentry("api");
+
   const app: Express = express();
 
   // ============================================
@@ -161,6 +164,7 @@ export function createApp(): Express {
   // 8. Global error handler (MUST BE LAST)
   app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     logger.error({ err, stack: err.stack }, "Unhandled error");
+    Sentry.captureException(err);
 
     res.status(500).json({
       success: false,
