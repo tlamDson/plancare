@@ -17,7 +17,10 @@ const authedRoutes: Array<["get" | "post" | "delete", string]> = [
   ["post", "/api/ai/sessions/placeholder-id/stream"],
   ["get", "/api/ai/trips/000000000000000000000000/suggestions"],
   ["post", "/api/billing/create-checkout-session"],
-  ["post", "/api/dev/scrape-insights"],
+  // /api/dev/* is NOT listed here: it's gated at the app.use() mount by
+  // isDevRoutesEnabled() (env.NODE_ENV === "development"), so it 404s in the
+  // "test" env this suite runs under rather than 401ing — see
+  // misc-routes.integration.test.ts for its dedicated coverage.
 ];
 
 describe("auth guard — requireUserAuth is present on every listed route", () => {

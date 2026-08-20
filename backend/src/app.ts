@@ -22,6 +22,8 @@ import calendarRoutes from "./features/calendar/routes";
 import { isCalendarSyncEnabled } from "./features/calendar/calendar-feature-flag";
 import destinationRoutes from "./features/destinations/routes";
 import weatherRoutes from "./features/weather/routes";
+import { isDevRoutesEnabled } from "./features/dev/dev-routes-flag";
+import { isApiDocsEnabled } from "./lib/api-docs-flag";
 
 const swaggerOptions = {
   definition: {
@@ -83,8 +85,10 @@ export function createApp(): Express {
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-  // 5. Swagger
-  app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  // 5. Swagger — never in production; the spec has no auth of its own
+  if (isApiDocsEnabled()) {
+    app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  }
 
   // 5.5 Welcome root endpoint
   app.get("/", (req: Request, res: Response) => {
@@ -95,7 +99,11 @@ export function createApp(): Express {
   app.use("/api/ai", assistantRoutes);
   app.use("/api/users", userRoutes);
   app.use("/api/billing", billingRoutes);
-  app.use("/api/dev", devRoutes);
+  // Dev-only admin endpoints — mounted only in local development. Each
+  // controller also keeps its own env.NODE_ENV guard as defense-in-depth.
+  if (isDevRoutesEnabled()) {
+    app.use("/api/dev", devRoutes);
+  }
   app.use("/api", plannerRoutes);
   app.use("/api", weatherRoutes);
   if (isCalendarSyncEnabled()) {

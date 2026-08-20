@@ -54,38 +54,33 @@ describe("GET /api/weather/forecast", () => {
 });
 
 describe("POST /api/dev/toggle-pro", () => {
-  it("requires authentication", async () => {
+  it("is unreachable outside local development (404, not even mounted)", async () => {
+    // `/api/dev` is now gated at the app.use() mount by isDevRoutesEnabled()
+    // (env.NODE_ENV === "development"), which trips in the "test" env this
+    // suite runs under — so the whole route surface 404s regardless of auth,
+    // before requireUserAuth or the controller's own NODE_ENV guard ever run.
     const res = await request(app).post("/api/dev/toggle-pro");
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(404);
   });
 
-  it("returns 403 outside local development even once authenticated", async () => {
-    // requireUserAuth runs before toggleProStatus in the route chain, so an
-    // authenticated request is the only way to reach the controller's own
-    // `env.NODE_ENV !== "development"` guard — which trips in the "test" env
-    // this suite runs under. Characterizes the route as unreachable outside
-    // local dev regardless of who's calling it.
+  it("stays 404 even once authenticated", async () => {
     const res = await request(app)
       .post("/api/dev/toggle-pro")
       .set(asUser("user-1"));
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 });
 
 describe("POST /api/dev/scrape-insights", () => {
-  it("requires authentication", async () => {
+  it("is unreachable outside local development (404, not even mounted)", async () => {
     const res = await request(app).post("/api/dev/scrape-insights");
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(404);
   });
 
-  it("returns 403 outside local development even once authenticated", async () => {
-    // requireUserAuth runs before triggerInsightScraping, so an authenticated
-    // request is the only way to reach the controller's own
-    // `env.NODE_ENV !== "development"` guard — which trips in the "test" env
-    // this suite runs under. Mirrors POST /api/dev/toggle-pro above.
+  it("stays 404 even once authenticated", async () => {
     const res = await request(app)
       .post("/api/dev/scrape-insights")
       .set(asUser("user-1"));
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 });

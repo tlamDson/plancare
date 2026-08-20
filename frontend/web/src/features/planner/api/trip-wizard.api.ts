@@ -52,8 +52,6 @@ export async function createTripFromWizard(
     throw new Error("Trip preferences are invalid");
   }
 
-  console.log("🚀 [TRIP WIZARD] Sending preferences to API:", validation.data);
-
   const idempotencyKey = uuidv4();
   const response = await apiClient.post(
     "/trips",
@@ -70,11 +68,6 @@ export async function createTripFromWizard(
   if (!parsed.success) {
     throw new Error(parsed.message || "Failed to start trip generation");
   }
-
-  console.log("✅ [TRIP WIZARD] Job started:", {
-    jobId: parsed.jobId,
-    tripId: parsed.tripId,
-  });
 
   return parsed;
 }

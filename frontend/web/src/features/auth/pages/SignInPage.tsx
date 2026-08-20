@@ -64,33 +64,18 @@ export default function SignInPage() {
 
   // Redirect if already signed in
   useEffect(() => {
-    console.log("[SignIn] Auth state changed:", { isSignedIn, isLoaded });
     if (isLoaded && isSignedIn) {
-      console.log("[SignIn] User already signed in, redirecting to dashboard");
       navigate("/dashboard");
     }
   }, [isLoaded, isSignedIn, navigate]);
 
-  // Log Clerk loading state
-  useEffect(() => {
-    console.log("[SignIn] Clerk loaded:", isLoaded);
-    console.log("[SignIn] SignIn object available:", !!signIn);
-  }, [isLoaded, signIn]);
-
   // Handle manual sign in
   const onSubmit = async (data: SignInFormData) => {
-    console.log("[SignIn] Form submitted with email:", data.email);
-
     if (!isLoaded || !signIn) {
-      console.error("[SignIn] Clerk not loaded or signIn not available", {
-        isLoaded,
-        signIn: !!signIn,
-      });
       return;
     }
 
     setIsSubmitting(true);
-    console.log("[SignIn] Attempting sign in...");
 
     try {
       const result = await signIn.create({
@@ -98,66 +83,37 @@ export default function SignInPage() {
         password: data.password,
       });
 
-      console.log("[SignIn] Sign in result:", {
-        status: result.status,
-        createdSessionId: result.createdSessionId,
-        firstFactorVerification: result.firstFactorVerification,
-        secondFactorVerification: result.secondFactorVerification,
-      });
-
       if (result.status === "complete") {
-        console.log("[SignIn] Sign in complete, setting active session");
         await setActive({ session: result.createdSessionId });
         toast.success("Welcome back!");
-        console.log("[SignIn] Navigating to dashboard");
         navigate("/dashboard");
-      } else {
-        console.warn("[SignIn] Sign in not complete, status:", result.status);
       }
     } catch (error: unknown) {
-      console.error("[SignIn] Sign in error:", error);
       const clerkError = error as {
         errors?: Array<{ message: string; code: string; longMessage?: string }>;
       };
-
-      if (clerkError.errors) {
-        console.error("[SignIn] Clerk errors:", clerkError.errors);
-        clerkError.errors.forEach((e, i) => {
-          console.error(`[SignIn] Error ${i + 1}:`, {
-            message: e.message,
-            code: e.code,
-            longMessage: e.longMessage,
-          });
-        });
-      }
 
       toast.error(
         clerkError.errors?.[0]?.message || "Invalid email or password",
       );
     } finally {
       setIsSubmitting(false);
-      console.log("[SignIn] Sign in attempt finished");
     }
   };
 
   // Handle Google sign in
   const handleGoogleSignIn = async () => {
-    console.log("[SignIn] Google sign in initiated");
-
     if (!isLoaded || !signIn) {
-      console.error("[SignIn] Clerk not loaded for Google sign in");
       return;
     }
 
     try {
-      console.log("[SignIn] Redirecting to Google OAuth...");
       await signIn.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: "/sso-callback",
         redirectUrlComplete: "/dashboard",
       });
-    } catch (error) {
-      console.error("[SignIn] Google sign-in error:", error);
+    } catch {
       toast.error("Failed to sign in with Google. Please try again.");
     }
   };
