@@ -8,8 +8,11 @@
 import { createRoot } from "react-dom/client";
 import { AppProviders } from "./app/providers";
 import { AppRouter } from "./app/router";
+import { initSentry } from "./lib/sentry";
 import "./index.css";
 import "mapbox-gl/dist/mapbox-gl.css";
+
+initSentry();
 
 createRoot(document.getElementById("root")!).render(
   <AppProviders>
