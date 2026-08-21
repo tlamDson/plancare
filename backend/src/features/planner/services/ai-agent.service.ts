@@ -9,6 +9,25 @@ import {
 } from "../prompts/trip-generation.prompt";
 import { intentParserService, type TripIntents } from "./intent-parser.service";
 
+/** Token/latency usage for a single generateContent call — captured so
+ * trip.processor.ts can persist it on Trip.generationMeta instead of it
+ * only ever existing in a log line. */
+export interface AIUsage {
+  promptTokens: number | null;
+  totalTokens: number | null;
+  latencyMs: number;
+}
+
+export interface GenerateIntentsResult extends AIUsage {
+  intents: TripIntents;
+}
+
+export interface GenerateIntentsRetryResult extends AIUsage {
+  intents: TripIntents;
+  /** Which attempt (1-indexed) actually succeeded. */
+  attempts: number;
+}
+
 export class AIAgentService {
   private model: any;
   /**
@@ -54,7 +73,7 @@ export class AIAgentService {
     language?: string,
     cityCost?: any,
     localInsight?: string | null,
-  ): Promise<TripIntents> {
+  ): Promise<GenerateIntentsResult> {
     if (!this.model) {
       logger.error(
         { hasApiKey: !!env.GEMINI_API_KEY },
@@ -91,7 +110,9 @@ export class AIAgentService {
     );
 
     try {
+      const startedAt = Date.now();
       const result = await this.model.generateContent(prompt);
+      const latencyMs = Date.now() - startedAt;
       const text = result.response.text();
 
       // 📌 LOG POINT A — full raw text from Gemini (before any parsing)
@@ -111,7 +132,15 @@ export class AIAgentService {
         "✅ [GEMINI PARSED] Structured intents (search queries per day/slot)",
       );
 
-      return intents;
+      // usageMetadata is absent on some SDK/mock responses — never let a
+      // missing field crash generation, just report it as unknown.
+      const usage = result.response.usageMetadata;
+      return {
+        intents,
+        promptTokens: usage?.promptTokenCount ?? null,
+        totalTokens: usage?.totalTokenCount ?? null,
+        latencyMs,
+      };
     } catch (error: any) {
       logger.error(
         { error: error.message, stack: error.stack },
@@ -247,7 +276,7 @@ export class AIAgentService {
     cityCost?: any,
     maxRetries = 4,
     localInsight?: string | null,
-  ): Promise<TripIntents> {
+  ): Promise<GenerateIntentsRetryResult> {
     for (let i = 0; i < maxRetries; i++) {
       try {
         // Wait before retrying (skip delay on first attempt)
@@ -257,19 +286,19 @@ export class AIAgentService {
           await this.delay(waitMs);
         }
 
-        const intents = await this.generateIntents(
+        const generated = await this.generateIntents(
           preferences,
           language,
           cityCost,
           localInsight,
         );
 
-        if (intentParserService.isValidIntentFormat(intents)) {
+        if (intentParserService.isValidIntentFormat(generated.intents)) {
           logger.info(
             { destination: preferences.destination, attempt: i + 1 },
             "Successfully generated valid intents",
           );
-          return intents;
+          return { ...generated, attempts: i + 1 };
         }
 
         logger.warn({ attempt: i + 1 }, "Invalid intent format, retrying...");

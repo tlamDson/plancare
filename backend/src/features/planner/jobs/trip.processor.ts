@@ -16,8 +16,12 @@ import {
   getProgressPercent,
   updateJobProgress,
 } from "./itinerary-builder";
-import { getRelevantPlaceInsights } from "../../destinations/services/place-insight-retrieval.service";
-import { getCityInsight } from "../../destinations/services/destination-lookup.service";
+import { fetchLocalInsightWithMeta } from "../services/local-insight.service";
+import { GEMINI_MODEL } from "../../../config/gemini-models";
+import {
+  countUnresolvedPlaces,
+  buildGenerationMeta,
+} from "./itinerary-metrics";
 
 interface TripJobData {
   tripId: string;
@@ -208,113 +212,24 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
       : undefined;
 
     // ─── RAG: Fetch local insight (Vector Search → Graceful Fallback to legacy insightText)
-    let localInsight: string | null = null;
-    try {
-      logger.info(
-        {
-          jobId: job.id,
-          tripId,
-          destination: preferences.destination,
-        },
-        "[RAG_USED] Trip generation invoked RAG retrieval",
-      );
+    // Shared with itinerary-chunker.service.ts — captures structured
+    // metadata (not just a formatted string) so it can be persisted on
+    // Trip.generationMeta, not just logged.
+    const {
+      localInsight,
+      ragUsed,
+      ragResultCount,
+      ragAvgScore,
+      ragFallbackReason,
+    } = await fetchLocalInsightWithMeta(preferences, { jobId: job.id, tripId });
 
-      logger.info(
-        {
-          destination: preferences.destination,
-          cityIdKey: preferences.cityIdKey,
-          countryIdKey: preferences.countryIdKey,
-          focus: preferences.focus,
-          pace: preferences.pace,
-        },
-        "📚 RAG: Starting PlaceInsight retrieval for trip generation",
-      );
-
-      localInsight = await getRelevantPlaceInsights(
-        preferences.destination,
-        {
-          ...(preferences.countryIdKey
-            ? { countryIdKey: preferences.countryIdKey }
-            : {}),
-          ...(preferences.cityIdKey
-            ? { cityIdKey: preferences.cityIdKey }
-            : {}),
-        },
-        preferences,
-      );
-      // Fallback: if Vector Search returned empty, try legacy getCityInsight
-      if (!localInsight) {
-        logger.info(
-          { destination: preferences.destination },
-          "📚 RAG: Vector search returned empty, attempting legacy getCityInsight",
-        );
-        localInsight =
-          (await getCityInsight(preferences.destination, {
-            ...(preferences.countryIdKey
-              ? { countryIdKey: preferences.countryIdKey }
-              : {}),
-            ...(preferences.cityIdKey
-              ? { cityIdKey: preferences.cityIdKey }
-              : {}),
-          })) ?? null;
-      }
-      if (localInsight) {
-        logger.info(
-          {
-            jobId: job.id,
-            tripId,
-            destination: preferences.destination,
-            chars: localInsight.length,
-            lines: localInsight.split("\n").length,
-            preview: localInsight.substring(0, 100) + "...",
-          },
-          "✅ RAG: Local insight loaded — injecting into AI prompt",
-        );
-        logger.info(
-          {
-            jobId: job.id,
-            tripId,
-            ragUsed: true,
-            localInsightLength: localInsight.length,
-          },
-          "[RAG_USED] Trip generation used RAG context",
-        );
-      } else {
-        logger.warn(
-          { jobId: job.id, tripId, destination: preferences.destination },
-          "⚠️ RAG: No local insight found (neither vector nor legacy) — using generalized AI prompt",
-        );
-        logger.info(
-          {
-            jobId: job.id,
-            tripId,
-            ragUsed: false,
-          },
-          "[RAG_USED] Trip generation proceeded without RAG context",
-        );
-      }
-    } catch (ragErr) {
-      logger.error(
-        {
-          jobId: job.id,
-          tripId,
-          ragErr: ragErr instanceof Error ? ragErr.message : String(ragErr),
-          destination: preferences.destination,
-        },
-        "❌ RAG: Failed to fetch insight — continuing without it",
-      );
-      logger.info(
-        {
-          jobId: job.id,
-          tripId,
-          ragUsed: false,
-          reason: "rag_exception",
-        },
-        "[RAG_USED] Trip generation proceeded without RAG context",
-      );
-    }
-
-    const intents = await aiAgentService.generateIntentsWithRetry(
+    const {
+      intents,
+      attempts: aiAttempts,
+      promptTokens,
+      totalTokens,
+      latencyMs,
+    } = await aiAgentService.generateIntentsWithRetry(
       preferences,
       language,
       cityCostContext,
@@ -466,7 +381,19 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
     );
 
     // 5. Save & complete (90% → 100%)
-    await tripRepository.update(tripId, { itinerary });
+    const generationMeta = buildGenerationMeta({
+      ragUsed,
+      ragResultCount,
+      ragAvgScore,
+      ragFallbackReason,
+      model: GEMINI_MODEL,
+      aiAttempts,
+      unresolvedPlaceCount: countUnresolvedPlaces(itinerary),
+      promptTokens,
+      totalTokens,
+      latencyMs,
+    });
+    await tripRepository.update(tripId, { itinerary, generationMeta });
     await tripRepository.updateStatus(tripId, "COMPLETED");
     await updateJobProgress(job, 90, "Finalizing...");
     logger.info({ jobId: job.id, tripId }, "Step 4: Finalizing...");
