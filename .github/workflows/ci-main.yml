@@ -68,7 +68,15 @@ jobs:
           VITE_MAPBOX_ACCESS_TOKEN: pk.dummy_token_for_ci
 
       - name: Unit Tests
-        run: npm run test
+        # CLERK_WEBHOOK_SIGNING_SECRET is computed here, not a static env:
+        # value — must be valid base64 after "whsec_" (svix's Webhook
+        # constructor throws otherwise, see backend/src/test/integration-setup.ts),
+        # and a hardcoded base64 blob reads as a real secret to entropy-based
+        # scanners (GitGuardian false positive) even though it's a fixture.
+        # Kept in sync with ci-pr.yml's "Unit Tests - Backend + Frontend" step.
+        run: |
+          export CLERK_WEBHOOK_SIGNING_SECRET="whsec_$(printf '%s' 'integration-test-clerk-webhook-secret-32' | base64 -w0)"
+          npm run test
         env:
           CI: true
           NODE_ENV: test
@@ -77,12 +85,15 @@ jobs:
           REDIS_PORT: 6379
           REDIS_PASSWORD: ""
           CLERK_SECRET_KEY: sk_test_dummy_key_for_ci
-          CLERK_WEBHOOK_SIGNING_SECRET: whsec_dummy_secret
           GEMINI_API_KEY: sk-dummy-key-for-ci
           STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci
+          STRIPE_WEBHOOK_SECRET: whsec_test_xxxxxxxxxxxxxxxxxxxxxxxx
 
       - name: Backend Integration Tests
-        run: npm run test:integration -w backend
+        # See the Unit Tests step above for why this is computed, not static.
+        run: |
+          export CLERK_WEBHOOK_SIGNING_SECRET="whsec_$(printf '%s' 'integration-test-clerk-webhook-secret-32' | base64 -w0)"
+          npm run test:integration -w backend
         env:
           CI: true
           NODE_ENV: test
@@ -91,9 +102,9 @@ jobs:
           REDIS_PORT: 6379
           REDIS_PASSWORD: ""
           CLERK_SECRET_KEY: sk_test_dummy_key_for_ci
-          CLERK_WEBHOOK_SIGNING_SECRET: whsec_dummy_secret
           GEMINI_API_KEY: sk-dummy-key-for-ci
           STRIPE_SECRET_KEY: sk_test_dummy_key_for_ci
+          STRIPE_WEBHOOK_SECRET: whsec_test_xxxxxxxxxxxxxxxxxxxxxxxx
 
       - name: Upload coverage report
         if: always()
