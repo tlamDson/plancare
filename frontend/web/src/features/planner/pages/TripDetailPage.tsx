@@ -88,9 +88,10 @@ export default function TripDetailPage() {
     }
   }, [trip?.agentJobId, trip?.isAgentProcessing, tripId, setActiveJob]);
 
-  // ── Debug: log trip data whenever it loads or is refreshed ──
+  // ── Debug: log trip data whenever it loads or is refreshed (dev only —
+  // Vite dead-code-eliminates this block from production builds) ──
   useEffect(() => {
-    if (!trip) return;
+    if (!trip || !import.meta.env.DEV) return;
     const title = getLocalizedTripTitle(trip.title, t);
     console.groupCollapsed(
       `[TripDetailPage] 🗺️ Trip loaded — "${title}" (${trip._id})`,
@@ -116,9 +117,16 @@ export default function TripDetailPage() {
     console.groupEnd();
   }, [trip, t]);
 
-  // ── Debug: log when AI job finishes and itinerary is ready to render ──
+  // ── Debug: log when AI job finishes and itinerary is ready to render
+  // (dev only) ──
   useEffect(() => {
-    if (!trip || trip.isAgentProcessing || trip.itinerary.length === 0) return;
+    if (
+      !trip ||
+      !import.meta.env.DEV ||
+      trip.isAgentProcessing ||
+      trip.itinerary.length === 0
+    )
+      return;
     const title = getLocalizedTripTitle(trip.title, t);
     console.group(
       `[TripDetailPage] ✅ Itinerary READY — "${title}" | ${trip.itinerary.length} day(s)`,

@@ -24,6 +24,9 @@ export const OPENWEATHER_BASE_URL =
   import.meta.env.VITE_OPENWEATHER_BASE_URL ||
   "https://api.openweathermap.org/data/2.5";
 
+// Sentry error tracking — empty = disabled (initSentry() in main.tsx no-ops)
+export const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
+
 // Feature Flags
 export const IS_DEV = ENV === "development";
 export const IS_STAGING = ENV === "staging";

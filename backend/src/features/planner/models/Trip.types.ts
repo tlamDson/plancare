@@ -24,6 +24,11 @@ export interface IEmbeddedBudget {
 
 /** Activity within a day's itinerary */
 export interface IActivity {
+  /** Present on every persisted activity (ActivitySchema uses `{ _id: true }`)
+   * — optional here because freshly-built replacement objects (e.g.
+   * activity-regen.service.ts's regenOne()) don't have one until Mongoose
+   * assigns it on save. */
+  _id?: Types.ObjectId;
   type: "poi" | "accommodation" | "transport" | "custom";
   /** Reference to Place collection for static data */
   placeId?: Types.ObjectId;
@@ -58,6 +63,17 @@ export interface IActivity {
     priceLevel?: number;
     photoUrl?: string;
   }>;
+}
+
+/** `IActivity` as it actually exists on a hydrated Mongoose subdocument —
+ * `_id` and `toObject()` are guaranteed by ActivitySchema's `{ _id: true }`
+ * at runtime but not modeled by the plain IActivity interface above (which
+ * also describes freshly-built, not-yet-persisted replacement objects). Cast
+ * to this instead of `any` at the few call sites that need `.toObject()` or
+ * a guaranteed `_id` (e.g. building an id → activity Map for reordering). */
+export interface IActivitySubdocument extends IActivity {
+  _id: Types.ObjectId;
+  toObject(): IActivity;
 }
 
 /** Single day in the itinerary */
@@ -108,12 +124,7 @@ export interface ITrip extends Document {
     unique: number;
   };
   mood?:
-    | "city_break"
-    | "beach"
-    | "hiking"
-    | "foodie"
-    | "romantic"
-    | "adventure";
+    "city_break" | "beach" | "hiking" | "foodie" | "romantic" | "adventure";
   dealBreakers?: string[];
 
   // 1. EMBEDDED BUDGET (No separate collection)

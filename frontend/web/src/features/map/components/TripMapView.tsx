@@ -377,7 +377,9 @@ export function TripMapView({ trip }: TripMapViewProps) {
               const isExpanded = !!expandedDays[day.day];
               const displayCount = isExpanded ? activities.length : 5;
               const visibleActivities = activities.slice(0, displayCount);
-              const dayIndex = trip.itinerary.findIndex((d) => d.day === day.day);
+              const dayIndex = trip.itinerary.findIndex(
+                (d) => d.day === day.day,
+              );
 
               return (
                 <div
@@ -418,7 +420,9 @@ export function TripMapView({ trip }: TripMapViewProps) {
                   ) : (
                     <DndContext
                       sensors={sensors}
-                      onDragEnd={(e: DragEndEvent) => handleDragEnd(e, dayIndex)}
+                      onDragEnd={(e: DragEndEvent) =>
+                        handleDragEnd(e, dayIndex)
+                      }
                     >
                       <SortableContext
                         items={visibleActivities.map((a) => a._id!)}
@@ -443,9 +447,6 @@ export function TripMapView({ trip }: TripMapViewProps) {
                                 language={language}
                                 isSelected={isSelected}
                                 onSelect={() => {
-                                  console.log(
-                                    `[TripMapView] Clicked sidebar activity: "${act.name}" -> passing coords [${lng}, ${lat}] to Mapbox`,
-                                  );
                                   selectActivity(actId, lng, lat);
                                 }}
                               />
@@ -459,7 +460,10 @@ export function TripMapView({ trip }: TripMapViewProps) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setExpandedDays((prev) => ({ ...prev, [day.day]: true }));
+                        setExpandedDays((prev) => ({
+                          ...prev,
+                          [day.day]: true,
+                        }));
                       }}
                       className="mt-2 text-[10px] font-semibold text-primary hover:underline pl-7"
                     >
@@ -470,7 +474,10 @@ export function TripMapView({ trip }: TripMapViewProps) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setExpandedDays((prev) => ({ ...prev, [day.day]: false }));
+                        setExpandedDays((prev) => ({
+                          ...prev,
+                          [day.day]: false,
+                        }));
                       }}
                       className="mt-2 text-[10px] font-semibold text-muted-foreground hover:underline pl-7"
                     >

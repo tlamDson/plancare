@@ -64,11 +64,13 @@ async function fetchJobStatus(jobId: string): Promise<Job> {
     response.data.data || response.data,
     "fetchJobStatus",
   );
-  // 📌 LOG POINT D — every poll tick visible in browser console
-  console.log(
-    `📡 [POLL] jobId=${jobId} | status=${job.status} | progress=${job.progress}% | step=${job.currentStep ?? "-"}`,
-    job,
-  );
+  // 📌 LOG POINT D — every poll tick visible in browser console (dev only)
+  if (import.meta.env.DEV) {
+    console.log(
+      `📡 [POLL] jobId=${jobId} | status=${job.status} | progress=${job.progress}% | step=${job.currentStep ?? "-"}`,
+      job,
+    );
+  }
   return job;
 }
 
@@ -133,10 +135,12 @@ export function useJobPoller({
 
     if (job.status === "COMPLETED") {
       // 📌 LOG POINT E — final result that becomes the itinerary on the page
-      console.log(
-        "🎉 [JOB COMPLETE] Final result from AI pipeline:",
-        job.result,
-      );
+      if (import.meta.env.DEV) {
+        console.log(
+          "🎉 [JOB COMPLETE] Final result from AI pipeline:",
+          job.result,
+        );
+      }
       onComplete?.(job.result);
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.trips.all });

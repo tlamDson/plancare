@@ -30,6 +30,9 @@ export default defineConfig([
         "warn",
         { allowConstantExport: true },
       ],
+      // Mirrors backend/eslint.config.mjs — warn, not error, so existing
+      // console.error() call sites don't need an immediate audit.
+      "no-console": ["warn", { allow: ["error"] }],
     },
   },
 ]);
