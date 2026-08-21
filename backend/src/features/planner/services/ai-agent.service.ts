@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { env } from "../../../config/env";
+import { GEMINI_MODEL } from "../../../config/gemini-models";
 import { logger } from "../../../lib/logger";
 import type { TripPreferences } from "@travelplan/shared";
 import {
@@ -7,22 +8,6 @@ import {
   TRIP_PLANNER_SYSTEM_INSTRUCTION,
 } from "../prompts/trip-generation.prompt";
 import { intentParserService, type TripIntents } from "./intent-parser.service";
-
-/**
- * Pinned, not "-latest" — verified 2026-08-15 by calling the real API with
- * this key (gemini-2.0-flash AND gemini-2.5-flash both returned a live 404
- * "no longer available"; gemini-3.6-flash was the newest non-preview flash
- * model this key could actually reach). Deliberately not `gemini-flash-latest`:
- * intent-parser.service's JSON extraction is fragile regex, not a real
- * parser (see `.claude/rules/tech-defaults.md`'s known `extractJson()` bug
- * with bare arrays) — an unannounced silent model swap changing output
- * formatting is a worse failure mode than a pinned model eventually
- * deprecating loudly. Re-verify with `npm run check:services` (note: that
- * only proves the API key is valid via the models-list endpoint, not that
- * this exact model string still resolves — a generateContent call, like
- * the one used to verify this pin, is the real test).
- */
-const GEMINI_MODEL = "gemini-3.6-flash";
 
 export class AIAgentService {
   private model: any;
