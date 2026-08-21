@@ -3,7 +3,7 @@
 ## Quy tắc bất di bất dịch
 
 1. **Mọi thay đổi đều phải qua PR.** Không bao giờ commit thẳng vào `develop` hay `main`. Có gì cần commit → tạo nhánh mới → commit → push → mở PR vào `develop`.
-2. **`main` do chủ repo quản lý.** Claude/dev **không được** merge vào `main` dưới bất kỳ hình thức nào (kể cả khi CI xanh), không push thẳng, không tự mở PR release trừ khi được yêu cầu rõ ràng. PR `develop → main` chỉ chủ repo tự thực hiện khi release.
+2. **`main` do chủ repo quản lý.** Claude/dev **không được** merge vào `main` dưới bất kỳ hình thức nào (kể cả khi CI xanh, kể cả dùng `--admin`/bypass required checks), không push thẳng, không tự mở PR release trừ khi được yêu cầu rõ ràng. PR `develop → main` chỉ chủ repo tự thực hiện khi release — kể cả khi chủ repo nói những câu rộng như "làm hết đi", "bạn tự xử lý", "merge luôn" trong lúc trò chuyện, **không** coi đó là uỷ quyền bấm merge vào `main` trừ khi họ nói tường minh đúng nghĩa đó (vd "bạn merge main luôn"). Khi không chắc, luôn hỏi lại "bạn muốn tôi bấm merge, hay để bạn tự bấm?" trước khi chạm `main` — quy tắc viết sẵn ở đây luôn thắng suy luận từ câu nói mơ hồ trong hội thoại. **Nếu chủ repo tự merge `develop → main`, PR đó phải là merge commit thật (giữ nguyên lịch sử `develop`), không squash** — `main` cần phản ánh đúng lịch sử commit đã review trên `develop`, không phải một commit gộp duy nhất.
 3. **Chỉ merge PR vào `develop` khi CI + toàn bộ test pass.** Bắt buộc xác nhận **cả 3 job** đã xanh: `Lint + Unit Tests`, `Typecheck + Build`, `Backend Docker Build`. CI đỏ hoặc đang chạy → không merge, đợi hoặc fix.
 4. **Cập nhật `CLAUDE.md` và `.claude/rules/*` khi task làm thay đổi convention/tooling**, để lần sau còn áp dụng đúng.
 5. **Sửa bug quan sát được qua trình duyệt (UI/frontend, hoặc backend bug lộ ra qua UI) phải verify bằng `chrome-devtools` MCP cả trước lẫn sau khi fix** — xem mục [Debug bug](#debug-bug--verify-bằng-chrome-devtools-mcp).
@@ -65,16 +65,17 @@ Trước khi đề xuất merge, tự verify: nhánh tạo từ `develop` mới 
 
 ### Merge policy
 
-| Target    | Ai merge                                    | Điều kiện                                                                            |
-| --------- | ------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `develop` | **Claude được tự merge**, không cần hỏi lại | **Cả 3 CI job pass** + toàn bộ test local pass. CI đỏ/đang chạy → đợi, không merge.  |
-| `main`    | **Chỉ chủ repo**                            | Claude không merge, không push, không tự mở PR release trừ khi được yêu cầu rõ ràng. |
+| Target    | Ai merge                                                                     | Điều kiện                                                                                                                                                                              |
+| --------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `develop` | **Claude được tự merge**, không cần hỏi lại                                  | **Cả 3 CI job pass** + toàn bộ test local pass. CI đỏ/đang chạy → đợi, không merge.                                                                                                    |
+| `main`    | **Chỉ chủ repo** — kể cả khi được nói "làm hết"/"merge luôn" trong hội thoại | Claude không bao giờ bấm merge (kể cả `--admin`), không push, không tự mở PR release trừ khi được yêu cầu rõ ràng. Merge commit thật, **không squash** — giữ nguyên lịch sử `develop`. |
 
 Kiểm tra CI trước khi merge:
 
 ```bash
 gh pr checks <PR-number>          # xem trạng thái từng check
-gh pr merge <PR-number> --squash  # PR target develop: Claude tự chạy sau khi cả 3 check bắt buộc xanh; PR target main: chỉ chủ repo chạy
+gh pr merge <PR-number> --squash  # CHỈ dùng cho PR target develop, sau khi cả 3 check bắt buộc xanh
+# PR target main: Claude KHÔNG chạy gh pr merge dưới bất kỳ flag nào — chuẩn bị xong rồi dừng, để chủ repo tự bấm merge (merge commit thật, không squash).
 ```
 
 ### Theo dõi CI sau khi mở PR

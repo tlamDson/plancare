@@ -195,16 +195,9 @@ export function useUpdateTripLifecycle() {
       tripId: string;
       lifecycle: import("@travelplan/shared").TripLifecycle;
     }) => {
-      console.log(
-        `[lifecycle] 🔄 Sending PATCH /trips/${tripId}/lifecycle →`,
-        lifecycle,
-      );
       return tripsApi.updateTripLifecycle(tripId, lifecycle);
     },
     onSuccess: (updatedTrip) => {
-      console.log(
-        `[lifecycle] ✅ Success — tripId: ${updatedTrip._id} | lifecycle: ${updatedTrip.lifecycle}`,
-      );
       // Update cache
       queryClient.setQueryData(
         queryKeys.trips.detail(updatedTrip._id),

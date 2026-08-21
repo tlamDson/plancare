@@ -61,6 +61,9 @@ export const env = cleanEnv(process.env, {
   OPENWEATHER_API_KEY: str({ default: "" }),
   /** Override OpenWeather API base (default https://api.openweathermap.org/data/2.5) */
   OPENWEATHER_BASE_URL: str({ default: "" }),
+  /** Sentry error tracking. Empty = disabled (initSentry() no-ops) — every
+   * environment without a DSN configured yet must still boot cleanly. */
+  SENTRY_DSN: str({ default: "" }),
 });
 
 /** Which environment this process is actually running as — APP_ENV if set

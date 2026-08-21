@@ -1,0 +1,54 @@
+name: MongoDB Backup
+
+on:
+  schedule:
+    # Daily at 01:00 UTC — one hour before data-pipeline.yml's bulk-write
+    # slot (02:00 UTC on the 1st/15th), so that scheduled ETL run never lands
+    # against unprotected data. See backend/scripts/BACKUP.md for restore.
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Install MongoDB Database Tools
+        run: |
+          curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
+          echo "deb [ arch=amd64,signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update
+          sudo apt-get install -y mongodb-database-tools
+
+      # ─── Backup ──────────────────────────────────────────────────────
+      # Soft-skips (exit 0, no Discord alert) if the S3/R2 secrets below
+      # aren't configured yet — see backend/scripts/backup-mongo.sh. Only a
+      # missing MONGO_URI, a failed mongodump, or an unexpectedly small
+      # archive (empty/wrong-database dump) is treated as a real failure.
+      - name: Run Backup
+        working-directory: ./backend
+        run: bash scripts/backup-mongo.sh
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          BACKUP_S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+          BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+
+      # ─── Discord Alert: Notify on failure ──────────────────────────────
+      # Requires the same DISCORD_WEBHOOK secret data-pipeline.yml uses
+      # (Server Settings → Integrations → Webhooks → New Webhook → Copy URL).
+      - name: Send Discord Alert
+        if: failure()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d '{
+            "content": "🚨 **[TravelPlan] MongoDB Backup Failed!** 🚨\n\n**Repository:** `${{ github.repository }}`\n**Branch:** `${{ github.ref_name }}`\n**Run ID:** `${{ github.run_id }}`\n\n🔗 **[Click here to view full logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**\n\n_Backup thất bại — kiểm tra MONGO_URI, bucket credentials, hoặc dump có bị rỗng bất thường không._"
+          }' \
+          $DISCORD_WEBHOOK

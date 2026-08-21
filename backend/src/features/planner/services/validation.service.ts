@@ -49,8 +49,22 @@ export class ValidationService {
     destination?: string,
   ): Promise<ValidatedPlace | null> {
     try {
+      // Append destination to geo-constrain results — prevents queries like
+      // "Paris Baguette" from resolving to "Paris Baguette Cao Thắng" in
+      // Vietnam. Computed up front so the cache is keyed by the same string
+      // actually sent to Google — keying by raw `intent` let two trips with
+      // the same intent in different cities ("Old Quarter" in Hanoi vs.
+      // Prague) collide on one cache entry and return each other's coords.
+      const destCity = (destination?.split(",")[0] ?? "").trim();
+      const alreadyContainsDest =
+        destCity.length > 0 &&
+        intent.toLowerCase().includes(destCity.toLowerCase());
+      const geoConstrainedQuery =
+        destCity && !alreadyContainsDest ? `${intent}, ${destCity}` : intent;
+
       // 1. Cache check
-      const cached = await placeCacheRepository.findByQuery(intent);
+      const cached =
+        await placeCacheRepository.findByQuery(geoConstrainedQuery);
       if (cached) {
         if (this.isBroadCachedPlace(cached)) {
           logger.info(
@@ -76,20 +90,15 @@ export class ValidationService {
             result.priceLevel = cached.priceLevel;
           if (cached.googlePlaceId) result.googlePlaceId = cached.googlePlaceId;
           if (cached.categories) result.categories = cached.categories;
+          if (cached.photoUrl) result.photoUrl = cached.photoUrl;
+          if (cached.openingHoursArray)
+            result.openingHoursArray = cached.openingHoursArray;
+          if (cached.openingHours) result.openingHours = cached.openingHours;
           return result;
         }
       }
 
       // 2. PRIMARY: Google Places Text Search
-      //    Append destination to geo-constrain results — prevents queries like
-      //    "Paris Baguette" from resolving to "Paris Baguette Cao Thắng" in Vietnam.
-      const destCity = (destination?.split(",")[0] ?? "").trim();
-      const alreadyContainsDest =
-        destCity.length > 0 &&
-        intent.toLowerCase().includes(destCity.toLowerCase());
-      const geoConstrainedQuery =
-        destCity && !alreadyContainsDest ? `${intent}, ${destCity}` : intent;
-
       logger.info(
         { intent, geoConstrainedQuery },
         "Validation: Querying Google Places v1 Text Search",
@@ -120,9 +129,13 @@ export class ValidationService {
           result.openingHoursArray = place.openingHoursArray;
         if (place.openingHours) result.openingHours = place.openingHours; // legacy fallback
 
-        // Cache the result
+        // Cache the result, keyed by the same geo-constrained string that
+        // was actually queried (see comment above `destCity`), and upsert
+        // rather than create — `query` has no unique index, and
+        // validateBatch() fires every intent concurrently via
+        // Promise.allSettled, so duplicate intents in one batch would
+        // otherwise race into duplicate documents.
         const cacheData: any = {
-          query: intent,
           coordinates: { type: "Point", coordinates: [lng, lat] },
           placeName: place.name,
           placeType: place.categories?.[0] ?? "poi",
@@ -137,8 +150,12 @@ export class ValidationService {
         if (place.priceLevel !== undefined)
           cacheData.priceLevel = place.priceLevel;
         if (place.categories) cacheData.categories = place.categories;
+        if (place.photoUrl) cacheData.photoUrl = place.photoUrl;
+        if (place.openingHoursArray)
+          cacheData.openingHoursArray = place.openingHoursArray;
+        if (place.openingHours) cacheData.openingHours = place.openingHours;
 
-        await placeCacheRepository.create(cacheData);
+        await placeCacheRepository.upsert(geoConstrainedQuery, cacheData);
 
         logger.debug(
           { intent, name: place.name, lat, lng, rating: place.rating },
@@ -180,8 +197,9 @@ export class ValidationService {
         source: "mapbox",
       };
 
-      await placeCacheRepository.create({
-        query: intent,
+      // Keyed the same way as the Google branch above so a later lookup for
+      // this (intent, destination) pair hits what this call wrote.
+      await placeCacheRepository.upsert(geoConstrainedQuery, {
         coordinates: { type: "Point", coordinates: [lng, lat] },
         placeName: geocode.placeName,
         placeType: geocode.placeType,

@@ -126,13 +126,6 @@ export function CreateTripDialog({ trigger }: { trigger: React.ReactNode }) {
     const preferences = buildPreferences(data);
     const title = data.title.trim();
 
-    console.log(
-      "🚀 [CreateTripDialog] Submitting trip with preferences:",
-      preferences,
-      "language:",
-      language,
-    );
-    console.log("📊 [CreateTripDialog] Wizard data before building:", data);
     mutate({ preferences, language, title });
   };
 

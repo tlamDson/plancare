@@ -28,7 +28,10 @@ export class PlaceCacheRepository {
     return cache.save();
   }
 
-  async upsert(query: string, data: Partial<IPlaceCache>): Promise<IPlaceCache> {
+  async upsert(
+    query: string,
+    data: Partial<IPlaceCache>,
+  ): Promise<IPlaceCache> {
     const normalized = query.toLowerCase().trim();
 
     const existing = await PlaceCache.findOne({ query: normalized }).exec();
@@ -48,25 +51,22 @@ export class PlaceCacheRepository {
     await PlaceCache.findByIdAndUpdate(id, { $inc: { hitCount: 1 } }).exec();
   }
 
-  async findStale(days: number = 30): Promise<IPlaceCache[]> {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - days);
-
-    return PlaceCache.find({
-      lastVerifiedAt: { $lt: cutoff },
-    }).exec();
+  /** Nearby-food suggestions are keyed by googlePlaceId (the anchor place),
+   * not by `query` — a separate lookup path from findByQuery() above. */
+  async findByGooglePlaceId(
+    googlePlaceId: string,
+  ): Promise<IPlaceCache | null> {
+    return PlaceCache.findOne({ googlePlaceId }).exec();
   }
 
-  async deleteStale(days: number = 90): Promise<number> {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - days);
-
-    const result = await PlaceCache.deleteMany({
-      lastVerifiedAt: { $lt: cutoff },
-      hitCount: { $lt: 5 },
-    }).exec();
-
-    return result.deletedCount;
+  async updateNearbyFood(
+    googlePlaceId: string,
+    nearbyFood: IPlaceCache["nearbyFood"],
+  ): Promise<void> {
+    await PlaceCache.findOneAndUpdate(
+      { googlePlaceId },
+      { $set: { nearbyFood } },
+    ).exec();
   }
 }
 
