@@ -6,3 +6,10 @@ secret:
   ignored_matches:
     - name: password-strength-test-fixture
       match: Passw0rd!
+    - name: clerk-webhook-secret-hardcoded-fixture-legacy
+      # Historical hardcoded value of CLERK_WEBHOOK_SIGNING_SECRET, present
+      # in old commits of ci-pr.yml / e2e/playwright.config.ts before both
+      # were changed to compute this at runtime instead (see the "GitGuardian
+      # false positive" comment at each current call site). Not a real
+      # secret — svix test fixture, base64 of a fixed test string.
+      match: whsec_aW50ZWdyYXRpb24tdGVzdC1jbGVyay13ZWJob29rLXNlY3JldC0zMg==
