@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { selectEvalCorpusCities } from "./eval-corpus-selection";
+import {
+  selectEvalCorpusCities,
+  excludeAlreadyScraped,
+} from "./eval-corpus-selection";
 import type { CountrySeedPayload } from "./world-destinations.builder";
 
 describe("selectEvalCorpusCities", () => {
@@ -83,5 +86,55 @@ describe("selectEvalCorpusCities", () => {
 
   it("returns an empty array when nothing is supported", () => {
     expect(selectEvalCorpusCities([notSupported])).toEqual([]);
+  });
+});
+
+describe("excludeAlreadyScraped", () => {
+  const targets = [
+    {
+      countryIdKey: "vn",
+      countryNameEn: "Vietnam",
+      cityIdKey: "hanoi",
+      cityNameEn: "Hanoi",
+    },
+    {
+      countryIdKey: "fr",
+      countryNameEn: "France",
+      cityIdKey: "paris",
+      cityNameEn: "Paris",
+    },
+    {
+      countryIdKey: "ae",
+      countryNameEn: "United Arab Emirates",
+      cityIdKey: "dubai",
+      cityNameEn: "Dubai",
+    },
+  ];
+
+  it("drops targets whose cityIdKey already has scraped data (makes re-running the seed idempotent and resumable)", () => {
+    // Real incident 2026-08-22: a 26-city seed run exhausted the day's
+    // Gemini quota partway through, with 7 cities already succeeded
+    // (removeOnComplete:true, so they don't show up as "failed" jobs —
+    // the only way to know they're done is PlaceInsight itself). Re-running
+    // the naive select-all would waste quota re-scraping cities that
+    // already have real data.
+    const result = excludeAlreadyScraped(targets, ["dubai"]);
+
+    expect(result.map((t) => t.cityIdKey)).toEqual(["hanoi", "paris"]);
+  });
+
+  it("returns everything unchanged when nothing has been scraped yet", () => {
+    expect(excludeAlreadyScraped(targets, [])).toEqual(targets);
+  });
+
+  it("returns an empty array when everything has already been scraped", () => {
+    expect(excludeAlreadyScraped(targets, ["hanoi", "paris", "dubai"])).toEqual(
+      [],
+    );
+  });
+
+  it("ignores already-scraped cityIdKeys that aren't in the target list", () => {
+    const result = excludeAlreadyScraped(targets, ["tokyo", "dubai"]);
+    expect(result.map((t) => t.cityIdKey)).toEqual(["hanoi", "paris"]);
   });
 });

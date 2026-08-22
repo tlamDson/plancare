@@ -1,6 +1,6 @@
 /**
- * Enqueues exactly 1 representative city per RAG_ISO2 country (~26 cities)
- * into the real `insight-scraper` BullMQ queue, for building the RAG eval
+ * Enqueues 1 representative city per RAG_ISO2 country (~26 cities) into
+ * the real `insight-scraper` BullMQ queue, for building the RAG eval
  * corpus (`.claude/plans/1-rag-eval-eventual-hickey.md` Phase 0.4).
  *
  * Deliberately does NOT call `scheduleInsightScraping()` — that fans out
@@ -9,6 +9,12 @@
  * `extended-cities.rag-pack.json`), which is far more Serper/Gemini spend
  * than the eval corpus needs. `selectEvalCorpusCities()` picks exactly one
  * (the first/capital-first) city per country instead.
+ *
+ * Idempotent/resumable: skips any city that already has PlaceInsight docs
+ * (see `excludeAlreadyScraped()`) — a real incident (2026-08-22) exhausted
+ * the day's Gemini quota partway through a run, and because scrape jobs use
+ * removeOnComplete:true, the only way to know a city already succeeded is
+ * to check PlaceInsight itself, not the queue.
  *
  * This only enqueues jobs — it does NOT scrape anything itself. Run
  * `npm run worker --workspace=backend` (or ensure it's already running)
@@ -26,8 +32,12 @@ import path from "path";
 import * as dotenv from "dotenv";
 import mongoose from "mongoose";
 import { buildAllCountrySeedPayloads } from "../src/features/destinations/services/world-destinations.builder";
-import { selectEvalCorpusCities } from "../src/features/destinations/services/eval-corpus-selection";
+import {
+  selectEvalCorpusCities,
+  excludeAlreadyScraped,
+} from "../src/features/destinations/services/eval-corpus-selection";
 import { enqueueCityScrapes } from "../src/features/destinations/jobs/insight-queue";
+import { PlaceInsight } from "../src/features/destinations/models/PlaceInsight";
 
 dotenv.config();
 
@@ -49,11 +59,24 @@ async function main() {
 
   const seedDataDir = path.join(process.cwd(), "scripts", "seed-data");
   const payloads = buildAllCountrySeedPayloads(seedDataDir);
-  const targets = selectEvalCorpusCities(payloads);
+  const allTargets = selectEvalCorpusCities(payloads);
 
-  console.log(`Selected ${targets.length} representative cities:`);
+  const alreadyScraped = await PlaceInsight.distinct("cityIdKey");
+  const targets = excludeAlreadyScraped(allTargets, alreadyScraped);
+  const skipped = allTargets.length - targets.length;
+
+  console.log(
+    `Selected ${allTargets.length} representative cities` +
+      (skipped > 0 ? ` (${skipped} already have data, skipping):` : ":"),
+  );
   for (const t of targets) {
     console.log(`  ${t.countryIdKey.toUpperCase()} — ${t.cityNameEn}`);
+  }
+
+  if (targets.length === 0) {
+    console.log("\nNothing to enqueue — every target city already has data.");
+    await mongoose.disconnect();
+    process.exit(0);
   }
 
   const jobsAdded = await enqueueCityScrapes(targets);

@@ -29,3 +29,21 @@ export function selectEvalCorpusCities(
 
   return selected;
 }
+
+/**
+ * Drops targets whose cityIdKey already has scraped PlaceInsight data —
+ * makes re-running the eval corpus seed idempotent and resumable.
+ *
+ * Real incident, 2026-08-22: a 26-city seed run exhausted the day's Gemini
+ * quota partway through, with 7 cities already succeeded. Because
+ * enqueueCityScrapes() uses removeOnComplete:true, those 7 don't show up
+ * as "failed" jobs in the queue — the only way to know they're already
+ * done is to check PlaceInsight itself, which is what this is for.
+ */
+export function excludeAlreadyScraped(
+  targets: ScrapeCityPayload[],
+  alreadyScrapedCityIdKeys: string[],
+): ScrapeCityPayload[] {
+  const done = new Set(alreadyScrapedCityIdKeys);
+  return targets.filter((t) => !done.has(t.cityIdKey));
+}
