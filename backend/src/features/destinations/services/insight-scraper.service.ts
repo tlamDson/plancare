@@ -8,7 +8,7 @@
 import axios from "axios";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { env } from "../../../config/env";
-import { GEMINI_MODEL } from "../../../config/gemini-models";
+import { GEMINI_INSIGHT_MODEL } from "../../../config/gemini-models";
 import { logger } from "../../../lib/logger";
 
 const SERPER_URL = "https://google.serper.dev/search";
@@ -60,7 +60,7 @@ export async function extractCityEntities(
   const allEntities: ExtractedEntity[] = [];
 
   const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+  const model = genAI.getGenerativeModel({ model: GEMINI_INSIGHT_MODEL });
 
   for (const theme of THEMATIC_QUERIES) {
     const query = theme.query(cityNameEn, countryNameEn);
