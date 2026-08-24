@@ -1,5 +1,6 @@
 import { createWorker } from "./lib/queue";
 import { QUEUE_NAMES } from "./lib/queue-defaults";
+import { attachJobMetrics } from "./features/reliability/services/attach-job-metrics";
 import { tripGeneratorProcessor } from "./features/planner/jobs/trip.processor";
 import { calendarSyncProcessor } from "./features/calendar/jobs/calendar-sync.processor";
 import { insightWorker } from "./features/destinations/jobs/insight-worker";
@@ -33,6 +34,8 @@ const startWorker = async () => {
         ...workerThroughputOpts,
       },
     );
+    attachJobMetrics(worker, QUEUE_NAMES.TRIP_GENERATION);
+
     // Logs a success mesesage with the jobId when a job is completed
     worker.on("completed", (job) => {
       logger.info({ jobId: job.id }, "Job completed");
@@ -70,6 +73,7 @@ const startWorker = async () => {
       calendarSyncProcessor,
       { concurrency: 3, ...workerThroughputOpts },
     );
+    attachJobMetrics(calendarWorker, QUEUE_NAMES.CALENDAR_SYNC);
     calendarWorker.on("completed", (job) => {
       logger.info({ jobId: job.id }, "Calendar sync job completed");
     });
@@ -79,6 +83,7 @@ const startWorker = async () => {
     });
 
     // Insight Scraper Worker — processes 1 city per job at max 1 req/2s
+    attachJobMetrics(insightWorker, QUEUE_NAMES.INSIGHT_SCRAPER);
     insightWorker.on("completed", (job) => {
       logger.info(
         { jobId: job.id, result: job.returnvalue },

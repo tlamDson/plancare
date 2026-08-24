@@ -13,7 +13,7 @@ import { PlaceInsight } from "../models/PlaceInsight";
 import { Country } from "../models/Country";
 import { createWorker } from "../../../lib/queue";
 import { QUEUE_NAMES } from "../../../lib/queue-defaults";
-import { logger } from "../../../lib/logger";
+import { workerLogger as logger } from "../../../lib/logger";
 import type { ScrapeCityPayload } from "./insight-queue";
 
 export async function insightScraperProcessor(

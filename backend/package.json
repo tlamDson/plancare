@@ -19,7 +19,9 @@
     "seed:destinations": "tsx scripts/seed-destinations.ts",
     "seed:eval-corpus": "tsx scripts/seed-eval-corpus.ts",
     "ensure:vector-index": "tsx scripts/ensure-vector-index.ts",
-    "check:services": "tsx scripts/check-services.ts"
+    "check:services": "tsx scripts/check-services.ts",
+    "seed:job-metrics": "tsx scripts/seed-job-metrics.ts",
+    "seed:real-trip-jobs": "tsx scripts/seed-real-trip-jobs.ts"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.59.2",
