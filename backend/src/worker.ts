@@ -1,6 +1,10 @@
 import { createWorker } from "./lib/queue";
 import { QUEUE_NAMES } from "./lib/queue-defaults";
 import { attachJobMetrics } from "./features/reliability/services/attach-job-metrics";
+import {
+  startHeartbeat,
+  recordStall,
+} from "./features/reliability/services/worker-heartbeat.service";
 import { tripGeneratorProcessor } from "./features/planner/jobs/trip.processor";
 import { calendarSyncProcessor } from "./features/calendar/jobs/calendar-sync.processor";
 import { insightWorker } from "./features/destinations/jobs/insight-worker";
@@ -26,6 +30,25 @@ const startWorker = async () => {
     await mongoose.connect(env.MONGO_URI, { serverSelectionTimeoutMS: 10000 });
     logger.info("Worker connected to MongoDB");
 
+    const { workerId, stop: stopHeartbeat } = startHeartbeat({
+      queues: [
+        QUEUE_NAMES.TRIP_GENERATION,
+        QUEUE_NAMES.CALENDAR_SYNC,
+        QUEUE_NAMES.INSIGHT_SCRAPER,
+      ],
+      // Mirrors each createWorker() call's own concurrency/limiter below —
+      // not read from those options programmatically, so a change to any
+      // of the 3 createWorker() calls below must be mirrored here by hand
+      // or this saturation signal silently goes stale. INSIGHT_SCRAPER
+      // has no explicit `concurrency` option (it uses a `limiter` instead)
+      // so 1 is BullMQ's own unset default, not read from config.
+      concurrency: {
+        [QUEUE_NAMES.TRIP_GENERATION]: 5,
+        [QUEUE_NAMES.CALENDAR_SYNC]: 3,
+        [QUEUE_NAMES.INSIGHT_SCRAPER]: 1,
+      },
+    });
+
     const worker = createWorker(
       QUEUE_NAMES.TRIP_GENERATION,
       tripGeneratorProcessor,
@@ -35,6 +58,7 @@ const startWorker = async () => {
       },
     );
     attachJobMetrics(worker, QUEUE_NAMES.TRIP_GENERATION);
+    worker.on("stalled", () => recordStall(workerId));
 
     // Logs a success mesesage with the jobId when a job is completed
     worker.on("completed", (job) => {
@@ -74,6 +98,7 @@ const startWorker = async () => {
       { concurrency: 3, ...workerThroughputOpts },
     );
     attachJobMetrics(calendarWorker, QUEUE_NAMES.CALENDAR_SYNC);
+    calendarWorker.on("stalled", () => recordStall(workerId));
     calendarWorker.on("completed", (job) => {
       logger.info({ jobId: job.id }, "Calendar sync job completed");
     });
@@ -84,6 +109,7 @@ const startWorker = async () => {
 
     // Insight Scraper Worker — processes 1 city per job at max 1 req/2s
     attachJobMetrics(insightWorker, QUEUE_NAMES.INSIGHT_SCRAPER);
+    insightWorker.on("stalled", () => recordStall(workerId));
     insightWorker.on("completed", (job) => {
       logger.info(
         { jobId: job.id, result: job.returnvalue },
@@ -109,6 +135,7 @@ const startWorker = async () => {
 
     // Tells the worker wait don't just die. Finish what you are doing. Clos Redis connection and MongoDb and then shut down.
     process.on("SIGTERM", async () => {
+      stopHeartbeat();
       await worker.close();
       await calendarWorker.close();
       await insightWorker.close();
