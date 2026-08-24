@@ -1,5 +1,5 @@
 import { Job } from "bullmq";
-import { logger } from "../../../lib/logger";
+import { workerLogger as logger } from "../../../lib/logger";
 import { tripRepository } from "../repositories/trip.repository";
 import { aiAgentService } from "../services/ai-agent.service";
 import { intentParserService } from "../services/intent-parser.service";
@@ -393,14 +393,11 @@ export const tripGeneratorProcessor = async (job: Job<TripJobData>) => {
     await tripRepository.releaseLock(tripId, job.id as string);
     await updateJobProgress(job, 100, "Completed");
 
-    logger.info(
-      {
-        jobId: job.id,
-        tripId,
-        duration: job.finishedOn ? job.finishedOn - (job.processedOn || 0) : 0,
-      },
-      "✅ Trip generation completed",
-    );
+    // No `duration` field here — job.finishedOn is unset while the
+    // processor is still running, so it always computed 0. Real job
+    // latency is now measured in attach-job-metrics.ts's `completed`
+    // handler, where finishedOn is actually populated.
+    logger.info({ jobId: job.id, tripId }, "✅ Trip generation completed");
 
     return { success: true, tripId, status: "COMPLETED" };
   } catch (error: any) {
