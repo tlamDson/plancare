@@ -79,15 +79,18 @@ afterEach(async () => {
 afterAll(async () => {
   await mongoose.disconnect();
   // Integration tests reuse the shared local dev Redis (docker-compose) —
-  // obliterate just the queue(s) our own requests create so leftover test
-  // jobs don't pile up in that instance. Skipped if BullMQ never touched
-  // Redis for a given file (e.g. cors/destinations tests).
-  try {
-    const { createQueue } = await import("../lib/queue");
-    const queue = createQueue("trip-generation");
-    await queue.obliterate({ force: true });
-    await queue.close();
-  } catch {
-    // Best-effort cleanup only — never fail the suite over it.
+  // obliterate every queue our own requests could have touched so leftover
+  // test jobs don't pile up in that instance. Skipped per-queue if BullMQ
+  // never touched Redis for a given file (e.g. cors/destinations tests).
+  const { createQueue } = await import("../lib/queue");
+  const { QUEUE_NAMES } = await import("../lib/queue-defaults");
+  for (const name of Object.values(QUEUE_NAMES)) {
+    try {
+      const queue = createQueue(name);
+      await queue.obliterate({ force: true });
+      await queue.close();
+    } catch {
+      // Best-effort cleanup only — never fail the suite over it.
+    }
   }
 });

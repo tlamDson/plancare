@@ -6,10 +6,12 @@
  */
 
 import { createQueue } from "../../../lib/queue";
+import {
+  QUEUE_NAMES,
+  DEFAULT_JOB_RETENTION,
+} from "../../../lib/queue-defaults";
 import { Country } from "../models/Country";
 import { logger } from "../../../lib/logger";
-
-const INSIGHT_QUEUE_NAME = "insight-scraper";
 
 export interface ScrapeCityPayload {
   countryIdKey: string;
@@ -18,7 +20,7 @@ export interface ScrapeCityPayload {
   cityNameEn: string;
 }
 
-export const insightQueue = createQueue(INSIGHT_QUEUE_NAME);
+export const insightQueue = createQueue(QUEUE_NAMES.INSIGHT_SCRAPER);
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -38,8 +40,7 @@ export async function enqueueCityScrapes(
       jobId: `scrape-${payload.countryIdKey}-${payload.cityIdKey}`,
       attempts: 3,
       backoff: { type: "exponential" as const, delay: 5000 },
-      removeOnComplete: true,
-      removeOnFail: false,
+      ...DEFAULT_JOB_RETENTION,
     });
   }
   return payloads.length;

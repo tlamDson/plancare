@@ -1,4 +1,5 @@
 import { createWorker } from "./lib/queue";
+import { QUEUE_NAMES } from "./lib/queue-defaults";
 import { tripGeneratorProcessor } from "./features/planner/jobs/trip.processor";
 import { calendarSyncProcessor } from "./features/calendar/jobs/calendar-sync.processor";
 import { insightWorker } from "./features/destinations/jobs/insight-worker";
@@ -24,10 +25,14 @@ const startWorker = async () => {
     await mongoose.connect(env.MONGO_URI, { serverSelectionTimeoutMS: 10000 });
     logger.info("Worker connected to MongoDB");
 
-    const worker = createWorker("trip-generation", tripGeneratorProcessor, {
-      concurrency: 5, // Tier 1: 300 RPM → safely handle 5 simultaneous trips
-      ...workerThroughputOpts,
-    });
+    const worker = createWorker(
+      QUEUE_NAMES.TRIP_GENERATION,
+      tripGeneratorProcessor,
+      {
+        concurrency: 5, // Tier 1: 300 RPM → safely handle 5 simultaneous trips
+        ...workerThroughputOpts,
+      },
+    );
     // Logs a success mesesage with the jobId when a job is completed
     worker.on("completed", (job) => {
       logger.info({ jobId: job.id }, "Job completed");
@@ -61,7 +66,7 @@ const startWorker = async () => {
 
     // Calendar Sync Worker
     const calendarWorker = createWorker(
-      "sync-google-calendar",
+      QUEUE_NAMES.CALENDAR_SYNC,
       calendarSyncProcessor,
       { concurrency: 3, ...workerThroughputOpts },
     );

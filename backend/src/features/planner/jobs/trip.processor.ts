@@ -6,8 +6,8 @@ import { intentParserService } from "../services/intent-parser.service";
 import { validationService } from "../services/validation.service";
 import { geoValidatorService } from "../services/geo-validator.service";
 import { processChunkedTrip } from "../services/itinerary-chunker.service";
-import type { TripPreferences } from "@travelplan/shared";
 import type { TripIntents } from "../services/intent-parser.service";
+import type { TripJobData } from "../trip.queue";
 import { CityCost } from "../models/CityCost";
 import { getStaticTemplate } from "../services/static-template.service";
 import { isMVPDestination } from "../utils/destination-utils";
@@ -22,14 +22,6 @@ import {
   countUnresolvedPlaces,
   buildGenerationMeta,
 } from "./itinerary-metrics";
-
-interface TripJobData {
-  tripId: string;
-  userId: string;
-  preferences: TripPreferences;
-  language?: string;
-  userTier?: "free" | "pro";
-}
 
 const MIN_DUPLICATE_DISTANCE_KM = 0.1; // ~100m: treat ultra-close POIs as duplicates
 
