@@ -12,6 +12,7 @@ import { geoValidatorService } from "../services/geo-validator.service";
 import { nearbyFoodService } from "../services/nearby-food.service";
 import { logger } from "../../../lib/logger";
 import type { TransportMode } from "../services/geo-validator.service";
+import type { TripJobData } from "../trip.queue";
 
 // ─── Slot-aware geographic clustering ────────────────────────────────────────
 // Strategy: cluster places by proximity (so nearby places share a day) AND
@@ -141,13 +142,6 @@ export function clusterByProximity(
   }
 
   return clusters;
-}
-
-interface TripJobData {
-  tripId: string;
-  userId: string;
-  preferences: TripPreferences;
-  language?: string;
 }
 
 export function getProgressPercent(progress: unknown): number {

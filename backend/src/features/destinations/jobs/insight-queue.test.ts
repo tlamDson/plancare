@@ -153,4 +153,34 @@ describe("enqueueCityScrapes", () => {
     expect(await enqueueCityScrapes([])).toBe(0);
     expect(mockAdd).not.toHaveBeenCalled();
   });
+
+  it("retains completed jobs long enough to inspect them (object retention, not `true` which deletes them instantly)", async () => {
+    // [BUG] removeOnComplete: true used to delete a completed job the
+    // instant it finished — getJobCounts().completed was always ~0, and no
+    // event-driven reader could ever see it either, since the job was gone
+    // before anything could read it back.
+    const { enqueueCityScrapes } = await import("./insight-queue");
+
+    await enqueueCityScrapes([
+      {
+        countryIdKey: "vn",
+        countryNameEn: "Vietnam",
+        cityIdKey: "hanoi",
+        cityNameEn: "Hanoi",
+      },
+    ]);
+
+    const [, , options] = mockAdd.mock.calls[0] as [
+      unknown,
+      unknown,
+      { removeOnComplete: unknown; removeOnFail: unknown },
+    ];
+    expect(options.removeOnComplete).not.toBe(true);
+    expect(options.removeOnComplete).toEqual(
+      expect.objectContaining({
+        age: expect.any(Number),
+        count: expect.any(Number),
+      }),
+    );
+  });
 });

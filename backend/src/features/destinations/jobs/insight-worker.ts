@@ -12,10 +12,9 @@ import { embedTexts } from "../services/embedding.service";
 import { PlaceInsight } from "../models/PlaceInsight";
 import { Country } from "../models/Country";
 import { createWorker } from "../../../lib/queue";
+import { QUEUE_NAMES } from "../../../lib/queue-defaults";
 import { logger } from "../../../lib/logger";
 import type { ScrapeCityPayload } from "./insight-queue";
-
-const INSIGHT_QUEUE_NAME = "insight-scraper";
 
 export async function insightScraperProcessor(
   job: Job<ScrapeCityPayload>,
@@ -37,9 +36,9 @@ export async function insightScraperProcessor(
 
   // Batch embed texts
   const textsToEmbed = entities.map(
-    (e) => `${e.name} ${e.description} ${e.tags.join(" ")}`
+    (e) => `${e.name} ${e.description} ${e.tags.join(" ")}`,
   );
-  
+
   const embeddings = await embedTexts(textsToEmbed);
 
   // Bulk write to PlaceInsight collection with updateOne + upsert
@@ -77,14 +76,14 @@ export async function insightScraperProcessor(
     { jobId: job.id, city: cityNameEn, totalProcessed: entities.length },
     "PlaceInsight entities extracted and bulk upserted",
   );
-  
+
   return `Done: ${cityNameEn} (${entities.length} places)`;
 }
 
 // Worker with rate limiter: max 1 job processed every 2 seconds
 // This protects Serper and Gemini API rate limits.
 export const insightWorker = createWorker(
-  INSIGHT_QUEUE_NAME,
+  QUEUE_NAMES.INSIGHT_SCRAPER,
   insightScraperProcessor,
   {
     limiter: { max: 1, duration: 2000 },
