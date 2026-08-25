@@ -27,6 +27,7 @@ import { isDevRoutesEnabled } from "./features/dev/dev-routes-flag";
 import { isApiDocsEnabled } from "./lib/api-docs-flag";
 import reliabilityRoutes from "./features/reliability/routes";
 import { isReliabilityApiEnabled } from "./features/reliability/reliability-flag";
+import { createBullBoardRouter } from "./features/reliability/bull-board";
 
 const swaggerOptions = {
   definition: {
@@ -108,6 +109,13 @@ export function createApp(): Express {
   // controller also keeps its own env.NODE_ENV guard as defense-in-depth.
   if (isDevRoutesEnabled()) {
     app.use("/api/dev", devRoutes);
+    // Bull Board — drill-down queue inspector, dev-only for the same
+    // reason /api/dev is: this app's origin (Railway) differs from the
+    // frontend's (Vercel), so the Clerk session cookie never reaches a
+    // request typed directly into this URL — requireAuth() would 401
+    // every time, and there's no precedent in this repo for a basic-auth
+    // fallback. See reliability plan Phase 7 for the full reasoning.
+    app.use("/admin/queues", createBullBoardRouter());
   }
   app.use("/api", plannerRoutes);
   app.use("/api", weatherRoutes);
