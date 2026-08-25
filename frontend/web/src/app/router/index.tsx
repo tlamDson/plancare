@@ -6,41 +6,27 @@
  */
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { ProtectedRoute } from "@/features/auth/components/ProtectedRoute";
 import { PageLoader } from "@/components/PageLoader";
-
-// ============================================
-// LAZY LOADED PAGES
-// Section 5: Performance - Lazy load heavy components
-// ============================================
 
 // Public pages (can be eagerly loaded for better UX)
 import LandingPage from "@/features/landing/pages/LandingPage";
 
-// Auth pages
-const SignInPage = lazy(() => import("@/features/auth/pages/SignInPage"));
-const SignUpPage = lazy(() => import("@/features/auth/pages/SignUpPage"));
-const SSOCallbackPage = lazy(
-  () => import("@/features/auth/pages/SSOCallbackPage"),
-);
-const OnBoardingPage = lazy(
-  () => import("@/features/auth/pages/OnBoardingPage"),
-);
-
-// Protected pages (lazy loaded)
-const DashboardPage = lazy(
-  () => import("@/features/dashboard/pages/DashboardPage"),
-);
-const TripsPage = lazy(() => import("@/features/planner/pages/TripsPage"));
-const TripDetailPage = lazy(
-  () => import("@/features/planner/pages/TripDetailPage"),
-);
-const MapPage = lazy(() => import("@/features/map/pages/MapPage"));
-
-// Error pages
-const NotFound = lazy(() => import("@/app/pages/NotFound"));
-const InDevelopment = lazy(() => import("@/app/pages/InDevelopment"));
+// Section 5: Performance - lazy-loaded pages, see ./lazy-pages.ts
+import {
+  SignInPage,
+  SignUpPage,
+  SSOCallbackPage,
+  OnBoardingPage,
+  DashboardPage,
+  TripsPage,
+  TripDetailPage,
+  MapPage,
+  ReliabilityPage,
+  NotFound,
+  InDevelopment,
+} from "./lazy-pages";
 
 /**
  * Suspense wrapper for lazy loaded routes
@@ -170,6 +156,17 @@ export function AppRouter() {
             <ProtectedRoute>
               <LazyRoute>
                 <MapPage />
+              </LazyRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reliability"
+          element={
+            <ProtectedRoute>
+              <LazyRoute>
+                <ReliabilityPage />
               </LazyRoute>
             </ProtectedRoute>
           }
