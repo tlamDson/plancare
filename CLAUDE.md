@@ -38,6 +38,8 @@ Theo `docs/PROGRESS.md`: tiến độ tổng thể ~85%. Đang có thay đổi d
 
 **GitHub MCP đã verify hoạt động thật** (không chỉ cấu hình lý thuyết) — client_id `Ov23lijeoeW3qbp7cH35` của OAuth App "TravelPlan" đã đăng ký và test xong luồng OAuth đầy đủ. Chi tiết cạm bẫy (DCR không hỗ trợ, path callback thật, lỗi do Windows Git Bash vs PowerShell tính khác project) ở `.claude/rules/tech-defaults.md`.
 
+**Lớp đo reliability/SRE cho pipeline BullMQ đã xong toàn bộ 8 phase** (PR #54-#61, tất cả đã merge vào `develop`, 2026-08-25): SLI/SLO/error-budget đúng khung SRE golden-signals (latency/traffic/errors/saturation) cho trip-generation. Điểm mấu chốt: `JobMetric` (backend/src/features/reliability/models/) ghi outcome thật từ event `completed`/`failed` của worker thay vì tin trạng thái BullMQ — sửa đúng bug "FALLBACK đội lốt thành công" (Gemini chết hoàn toàn mà dashboard cũ vẫn báo xanh, đúng tình huống đã xảy ra thật với bug `gemini-2.0-flash` deprecate). Đọc qua `GET /api/reliability/slo` (gate 3 lớp: flag `ENABLE_RELIABILITY_API` → Clerk auth → allowlist `SRE_ADMIN_EMAILS`), drill-down qua Bull Board dev-only ở `/admin/queues`, và dashboard UI tại `/reliability` (**cố ý không có link ở menu nào** — chỉ vào bằng URL trực tiếp, đúng quyết định đã chốt vì hiện chỉ có 1 người xem). Toàn bộ 8 phase, quyết định thiết kế, và bug đã sửa dọc đường nằm ở `docs/PROGRESS.md` mục "Reliability / SRE Measurement Layer" (local, không track git) — **chưa verify end-to-end bằng dữ liệu thật** vì không có sẵn session trình duyệt đã đăng nhập bằng tài khoản nằm trong `SRE_ADMIN_EMAILS` lúc implement; nên tự tay verify một lượt sau khi đọc plan này.
+
 ## MCP Servers
 
 Khai báo ở `.mcp.json`, mỗi người tự approve/authorize khi dùng lần đầu (`/mcp`).
