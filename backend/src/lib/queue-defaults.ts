@@ -41,3 +41,21 @@ export const QUEUE_NAMES = {
   CALENDAR_SYNC: "sync-google-calendar",
   INSIGHT_SCRAPER: "insight-scraper",
 } as const;
+
+/**
+ * Single source of truth for per-queue concurrency — shared by
+ * `worker.ts` (each `createWorker()` call's own `concurrency` option)
+ * and `queue-saturation.service.ts` (`utilisation = active / concurrency`
+ * for the reliability report). Before this, worker.ts hardcoded these
+ * numbers inline with no link to the report's copy of the same numbers,
+ * so a change to one could silently drift from the other.
+ *
+ * INSIGHT_SCRAPER has no explicit `concurrency` option at its
+ * `createWorker()` call site (it uses a `limiter: {max:1, duration:2000}`
+ * instead) — 1 here is BullMQ's own unset default, not read from config.
+ */
+export const QUEUE_CONCURRENCY: Record<string, number> = {
+  [QUEUE_NAMES.TRIP_GENERATION]: 5,
+  [QUEUE_NAMES.CALENDAR_SYNC]: 3,
+  [QUEUE_NAMES.INSIGHT_SCRAPER]: 1,
+};

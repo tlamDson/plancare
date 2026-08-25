@@ -67,6 +67,23 @@ export class JobMetricRepository {
   async countSince(queue: string, since: Date): Promise<number> {
     return JobMetric.countDocuments({ queue, finishedAt: { $gte: since } });
   }
+
+  /** Completed jobs slower than `thresholdMs` — folded into the SLI as
+   * bad by slo-math.ts's computeSli() even though BullMQ itself reports
+   * these as successful completions. */
+  async countSlowCompleted(
+    queue: string,
+    since: Date,
+    until: Date,
+    thresholdMs: number,
+  ): Promise<number> {
+    return JobMetric.countDocuments({
+      queue,
+      finishedAt: { $gte: since, $lt: until },
+      outcome: "completed",
+      endToEndMs: { $gt: thresholdMs },
+    });
+  }
 }
 
 export const jobMetricRepository = new JobMetricRepository();

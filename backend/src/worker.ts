@@ -1,5 +1,5 @@
 import { createWorker } from "./lib/queue";
-import { QUEUE_NAMES } from "./lib/queue-defaults";
+import { QUEUE_NAMES, QUEUE_CONCURRENCY } from "./lib/queue-defaults";
 import { attachJobMetrics } from "./features/reliability/services/attach-job-metrics";
 import {
   startHeartbeat,
@@ -36,24 +36,18 @@ const startWorker = async () => {
         QUEUE_NAMES.CALENDAR_SYNC,
         QUEUE_NAMES.INSIGHT_SCRAPER,
       ],
-      // Mirrors each createWorker() call's own concurrency/limiter below —
-      // not read from those options programmatically, so a change to any
-      // of the 3 createWorker() calls below must be mirrored here by hand
-      // or this saturation signal silently goes stale. INSIGHT_SCRAPER
-      // has no explicit `concurrency` option (it uses a `limiter` instead)
-      // so 1 is BullMQ's own unset default, not read from config.
-      concurrency: {
-        [QUEUE_NAMES.TRIP_GENERATION]: 5,
-        [QUEUE_NAMES.CALENDAR_SYNC]: 3,
-        [QUEUE_NAMES.INSIGHT_SCRAPER]: 1,
-      },
+      // Single source of truth (lib/queue-defaults.ts) shared with each
+      // createWorker() call's own `concurrency` option below and with
+      // queue-saturation.service.ts's utilisation calc — a change to one
+      // no longer silently drifts from the others.
+      concurrency: QUEUE_CONCURRENCY,
     });
 
     const worker = createWorker(
       QUEUE_NAMES.TRIP_GENERATION,
       tripGeneratorProcessor,
       {
-        concurrency: 5, // Tier 1: 300 RPM → safely handle 5 simultaneous trips
+        concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.TRIP_GENERATION]!, // Tier 1: 300 RPM → safely handle 5 simultaneous trips
         ...workerThroughputOpts,
       },
     );
@@ -95,7 +89,10 @@ const startWorker = async () => {
     const calendarWorker = createWorker(
       QUEUE_NAMES.CALENDAR_SYNC,
       calendarSyncProcessor,
-      { concurrency: 3, ...workerThroughputOpts },
+      {
+        concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.CALENDAR_SYNC]!,
+        ...workerThroughputOpts,
+      },
     );
     attachJobMetrics(calendarWorker, QUEUE_NAMES.CALENDAR_SYNC);
     calendarWorker.on("stalled", () => recordStall(workerId));

@@ -25,6 +25,8 @@ import destinationRoutes from "./features/destinations/routes";
 import weatherRoutes from "./features/weather/routes";
 import { isDevRoutesEnabled } from "./features/dev/dev-routes-flag";
 import { isApiDocsEnabled } from "./lib/api-docs-flag";
+import reliabilityRoutes from "./features/reliability/routes";
+import { isReliabilityApiEnabled } from "./features/reliability/reliability-flag";
 
 const swaggerOptions = {
   definition: {
@@ -113,6 +115,12 @@ export function createApp(): Express {
     app.use("/api", calendarRoutes);
   }
   app.use("/api/destinations", destinationRoutes);
+  // Reliability/SLO dashboard read API — off everywhere by default,
+  // including local dev (see reliability-flag.ts). 3-layer security:
+  // this mount flag → requireUserAuth (routes.ts) → allowlist (controller).
+  if (isReliabilityApiEnabled()) {
+    app.use("/api/reliability", reliabilityRoutes);
+  }
 
   //7. Health checks
   app.get("/health", (req: Request, res: Response) => {

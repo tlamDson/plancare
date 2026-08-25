@@ -64,6 +64,17 @@ export const env = cleanEnv(process.env, {
   /** Sentry error tracking. Empty = disabled (initSentry() no-ops) — every
    * environment without a DSN configured yet must still boot cleanly. */
   SENTRY_DSN: str({ default: "" }),
+  /** When exactly "true", /api/reliability/* is mounted. Unlike calendar
+   * sync, this does NOT default to on in development — an SLO endpoint
+   * must be explicitly opted into everywhere, including local dev. */
+  ENABLE_RELIABILITY_API: str({ default: "" }),
+  /**
+   * Comma-separated emails allowed to read /api/reliability/* (production).
+   * Empty in production = no one. Empty outside production = everyone —
+   * same semantics as VIP_EMAILS, kept separate because "beta tester" and
+   * "can see internal reliability data" are different roles.
+   */
+  SRE_ADMIN_EMAILS: str({ default: "" }),
 });
 
 /** Which environment this process is actually running as — APP_ENV if set
