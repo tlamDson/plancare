@@ -1,22 +1,31 @@
-import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Must run before any import of app.ts/config/env.ts, which read
-// process.env once at module-load time (envalid's cleanEnv). Vitest gives
-// each integration test file its own module registry, so this mutation
-// doesn't leak into other files' `env` — but process.env itself IS a real
-// global, so it's still restored in afterAll to be safe regardless of
-// file execution order.
-process.env.ENABLE_RELIABILITY_API = "true";
-process.env.SRE_ADMIN_EMAILS = "admin@example.com";
-
-// getClerkUserPrimaryEmail makes a REAL network call to Clerk's REST API
-// (unrelated to the @clerk/express session stub aliased in for every
-// integration test) — mocked here the same way @clerk/express itself is
-// stubbed, so this suite never depends on network access or a real key.
-const mockGetEmail = vi.fn();
-vi.mock("../../features/calendar/services/clerk-primary-email.service", () => ({
-  getClerkUserPrimaryEmail: (...args: unknown[]) => mockGetEmail(...args),
+// Mocked directly rather than flipped via process.env — CI proved that
+// approach unreliable: process.env.ENABLE_RELIABILITY_API set at the top
+// of this file did NOT take effect, because config/env.ts's cleanEnv()
+// had already run (and its module output was already cached) from an
+// earlier integration test file importing app.ts within the same Vitest
+// worker — module isolation is per-file for the test's own module graph,
+// but the already-evaluated `env` object is not re-computed just because
+// process.env changed afterward. Mocking the flag function directly
+// sidesteps this entirely: it's hoisted and applies to every import
+// resolved from this file, independent of any other file's env timing.
+vi.mock("../../features/reliability/reliability-flag", () => ({
+  isReliabilityApiEnabled: () => true,
 }));
+
+// Bypasses the Clerk-email lookup entirely (assertReliabilityAdminAccess
+// would otherwise call getClerkUserPrimaryEmail, a REAL network call to
+// Clerk's REST API that the @clerk/express session stub doesn't
+// intercept) — full control per test case, no external dependency.
+const mockAssertAccess = vi.fn();
+vi.mock(
+  "../../features/reliability/services/reliability-admin-guard.service",
+  () => ({
+    assertReliabilityAdminAccess: (...args: unknown[]) =>
+      mockAssertAccess(...args),
+  }),
+);
 
 import request from "supertest";
 import { createApp } from "../../app";
@@ -39,23 +48,19 @@ function makeDoc(jobId: string, outcome: string, finishedAt: Date) {
   };
 }
 
-afterAll(() => {
-  delete process.env.ENABLE_RELIABILITY_API;
-  delete process.env.SRE_ADMIN_EMAILS;
-});
-
-describe("GET /api/reliability/slo — access control (flag on)", () => {
+describe("GET /api/reliability/slo — access control (flag mocked on)", () => {
   beforeEach(() => {
-    mockGetEmail.mockReset();
+    mockAssertAccess.mockReset();
   });
 
-  it("401s an unauthenticated request", async () => {
+  it("401s an unauthenticated request — the guard is never even called", async () => {
     const res = await request(app).get("/api/reliability/slo");
     expect(res.status).toBe(401);
+    expect(mockAssertAccess).not.toHaveBeenCalled();
   });
 
-  it("403s an authenticated user whose email isn't on SRE_ADMIN_EMAILS", async () => {
-    mockGetEmail.mockResolvedValue("stranger@example.com");
+  it("403s an authenticated user the admin guard rejects", async () => {
+    mockAssertAccess.mockResolvedValue({ ok: false, reason: "not_admin" });
     const res = await request(app)
       .get("/api/reliability/slo")
       .set(asUser("user-stranger"));
@@ -63,7 +68,10 @@ describe("GET /api/reliability/slo — access control (flag on)", () => {
   });
 
   it("400s an invalid windowDays query param", async () => {
-    mockGetEmail.mockResolvedValue("admin@example.com");
+    mockAssertAccess.mockResolvedValue({
+      ok: true,
+      email: "admin@example.com",
+    });
     const res = await request(app)
       .get("/api/reliability/slo?windowDays=abc")
       .set(asUser("user-admin"));
@@ -73,7 +81,10 @@ describe("GET /api/reliability/slo — access control (flag on)", () => {
 
 describe("GET /api/reliability/slo — report content for an allowlisted admin", () => {
   beforeEach(() => {
-    mockGetEmail.mockResolvedValue("admin@example.com");
+    mockAssertAccess.mockResolvedValue({
+      ok: true,
+      email: "admin@example.com",
+    });
   });
 
   it("returns 200 with insufficientData:true and no NaN when there is no recorded data", async () => {

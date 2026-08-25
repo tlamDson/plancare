@@ -7,11 +7,13 @@
  * from `@clerk/express` — the `clerk-express.stub.ts` alias every
  * integration test gets (via `resolve.alias` in
  * vitest.integration.config.ts) does NOT intercept this. Any integration
- * test exercising a route that calls this must `vi.mock()` it explicitly,
- * or it will silently hit the real Clerk API with the test env's dummy
+ * test exercising a route that (transitively) calls this must `vi.mock()`
+ * something upstream of it — either this module directly, or a guard
+ * function that calls it (see reliability.integration.test.ts, which
+ * mocks `reliability-admin-guard.service.ts` one level up) — or it will
+ * silently hit the real Clerk API with the test env's dummy
  * `CLERK_SECRET_KEY` and always fail closed (this function returns
- * `null` on any error) — see reliability.integration.test.ts for the
- * pattern.
+ * `null` on any error).
  */
 
 import axios from "axios";
