@@ -131,3 +131,27 @@ describe("jobMetricRepository.countByOutcome", () => {
     expect(result).toEqual({ completed: 5, fallback: 0, failed: 0 });
   });
 });
+
+describe("jobMetricRepository.countSlowCompleted", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCountDocuments.mockResolvedValue(3);
+  });
+
+  it("counts only completed jobs slower than the given threshold", async () => {
+    const result = await jobMetricRepository.countSlowCompleted(
+      "trip-generation",
+      new Date(0),
+      new Date(1),
+      180_000,
+    );
+
+    expect(mockCountDocuments).toHaveBeenCalledWith({
+      queue: "trip-generation",
+      finishedAt: { $gte: new Date(0), $lt: new Date(1) },
+      outcome: "completed",
+      endToEndMs: { $gt: 180_000 },
+    });
+    expect(result).toBe(3);
+  });
+});

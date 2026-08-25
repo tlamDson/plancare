@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { DEFAULT_JOB_RETENTION, QUEUE_NAMES } from "./queue-defaults";
+import {
+  DEFAULT_JOB_RETENTION,
+  QUEUE_NAMES,
+  QUEUE_CONCURRENCY,
+} from "./queue-defaults";
 
 describe("DEFAULT_JOB_RETENTION", () => {
   it("bounds removeOnComplete by both age and count", () => {
@@ -37,5 +41,17 @@ describe("QUEUE_NAMES", () => {
     expect(QUEUE_NAMES.TRIP_GENERATION).toBe("trip-generation");
     expect(QUEUE_NAMES.CALENDAR_SYNC).toBe("sync-google-calendar");
     expect(QUEUE_NAMES.INSIGHT_SCRAPER).toBe("insight-scraper");
+  });
+});
+
+describe("QUEUE_CONCURRENCY", () => {
+  it("has an entry for every queue in QUEUE_NAMES", () => {
+    // The single source of truth for concurrency, shared by worker.ts
+    // (the createWorker() calls that set it) and
+    // queue-saturation.service.ts (utilisation = active/concurrency) —
+    // without this, the two could silently drift apart.
+    for (const name of Object.values(QUEUE_NAMES)) {
+      expect(QUEUE_CONCURRENCY[name]).toBeGreaterThan(0);
+    }
   });
 });
